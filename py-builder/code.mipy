@@ -1,0 +1,59 @@
+
+#!open ./repos/imports.py
+
+# 基本的な変数の読み込み
+#!open ./repos/constant.py
+#!open ./repos/discord/is_log.py
+
+# エラー時の処理
+#!open ./repos/wait_for_keypress.py
+
+# ロガー作成前なので最小限
+#!open ./repos/config/read_config_minimum.py
+
+# Colorクラスの定義
+#!open ./repos/colors.py
+
+# ログのフォーマットクラス作成
+#!open ./repos/logger/logger_formatter.py
+
+# ロガーの作成および設定
+#!open ./repos/logger/logger_create.py
+
+# 残りのconfig読み出し
+#!open ./repos/config/read_config_all.py
+
+# ファイルの作成/修正/アップデート
+#!open ./repos/files/create.py
+
+# mcサーバー用properties読み込み
+#!open ./repos/minecraft/read_properties.py
+
+# テキスト関連データの作成
+#!open ./repos/assets/text_dat.py
+
+# util関数のロード
+#!open ./repos/assets/utils.py
+
+# 読み込み結果の出力
+#!open ./repos/files/output_read.py
+
+# 読み込み時関数/ループ関数/メッセージ受信時関数を定義
+#!open ./repos/discord/start_funcs.py
+
+# スラッシュコマンドを定義
+#!open ./repos/discord/commands.py
+
+# flask関連コードの読み込み
+#!open ./repos/web/main.py
+
+# discordロガーの設定
+#!open ./repos/discord/logger.py
+
+
+# 事実上のエントリポイント(client.runを実行)
+#!ignore
+from .repos.constant import *
+from .repos.logger.logger_create import *
+#!end-ignore
+client.run(token, log_formatter=console_formatter)
