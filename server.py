@@ -1,11 +1,14 @@
+
+
+#--------------------
+
+"""
+各種必要なパッケージを呼び出す
+"""
 import discord 
 from discord import app_commands 
 from discord.ext import tasks
 import waitress.server
-intents = discord.Intents.default() 
-intents.message_content = True
-client = discord.Client(intents=intents) 
-tree = app_commands.CommandTree(client)
 
 from enum import Enum
 from datetime import datetime, timedelta
@@ -20,6 +23,26 @@ import sys
 import logging
 import requests
 import json
+
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
+from ansi2html import Ansi2HTMLConverter
+import waitress
+#--------------------
+
+
+# 基本的な変数の読み込み
+
+#--------------------
+
+"""
+処理に必要な定数を宣言する
+"""
+
+
+intents = discord.Intents.default() 
+intents.message_content = True
+client = discord.Client(intents=intents) 
+tree = app_commands.CommandTree(client)
 
 use_flask_server = True
 
@@ -44,6 +67,33 @@ if now_path == "": now_path = "."
 now_file = __file__.replace("\\","/").split("/")[-1]
 WEB_TOKEN_FILE = '/mikanassets/web/usr/tokens.json'
 
+#asyncioの制限を回避
+if platform.system() == 'Windows':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+#/cmdに関する定数
+cmd_logs = deque(maxlen=100)
+
+
+status_lock = threading.Lock()
+discord_terminal_item = deque()
+discord_terminal_send_length = 0
+discord_loop_is_run = False
+#--------------------
+
+
+#--------------------
+
+
+#ログをdiscordにも返す可能性がある
+is_back_discord = False
+#--------------------
+
+
+# エラー時の処理
+
+#--------------------
+
 def wait_for_keypress():
     print("please press any key to continue...")
     if platform.system() == "Windows":
@@ -65,6 +115,17 @@ def wait_for_keypress():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
             exit()
+#--------------------
+
+
+# ロガー作成前なので最小限
+
+#--------------------
+
+"""
+configの読み込みと最小限の変数へのロードを行う
+"""
+
 
 config_file_place = now_path + "/" + ".config"
 
@@ -184,6 +245,13 @@ try:
 except KeyError:
     print("(log or server_path) in config file is broken. please input true or false and try again.")
     wait_for_keypress()
+#--------------------
+
+
+# Colorクラスの定義
+
+#--------------------
+
 
 #--------------------------------------------------------------------------------------------ログ関連
 class Color(Enum):
@@ -224,6 +292,16 @@ class Color(Enum):
             return other + self.value
         else:
             raise NotImplementedError
+#--------------------
+
+
+# ログのフォーマットクラス作成
+
+#--------------------
+
+"""
+loggerで用いるフォーマッタの定義
+"""
 
 class Formatter():
     levelname_size = 8
@@ -390,6 +468,18 @@ class Formatter():
 dt_fmt = '%Y-%m-%d %H:%M:%S'
 console_formatter = Formatter.ColoredFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt)
 file_formatter = Formatter.DefaultConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt)
+
+#--------------------
+
+
+# ロガーの作成および設定
+
+#--------------------
+
+"""
+ロガーの作成および設定を行う
+"""
+
 #/log用のログ保管場所
 log_msg = deque(maxlen=19)
 #discord送信用のログ
@@ -453,7 +543,12 @@ token_logger = create_logger("token")
 terminal_logger = create_logger("terminal")
 minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.MinecraftConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
 
-#--------------------------------------------------------------------------------------------
+#--------------------
+
+
+# 残りのconfig読み出し
+
+#--------------------
 
 
 #configの読み込み
@@ -480,6 +575,12 @@ try:
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+#--------------------
+
+
+# ファイルの作成/修正/アップデート
+
+#--------------------
 
 
 
@@ -578,16 +679,14 @@ def make_temp():
 make_token_file()
 make_temp()
 
-#asyncioの制限を回避
-if platform.system() == 'Windows':
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-#/cmdに関する定数
-cmd_logs = deque(maxlen=100)
+#--------------------
 
 
-#ログをdiscordにも返す可能性がある
-is_back_discord = False
+# mcサーバー用properties読み込み
+
+#--------------------
+
+
 
 #java properties の読み込み
 def properties_to_dict(filename):
@@ -614,6 +713,13 @@ if config["mc"]:
 
 #コマンド利用ログ
 use_stop = False
+#--------------------
+
+
+# テキスト関連データの作成
+
+#--------------------
+
 
 # 権限データ
 COMMAND_PERMISSION = {
@@ -858,7 +964,13 @@ async def get_text_dat():
 
 get_text = asyncio.run(get_text_dat())
 sys_logger.info('create text data')
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#--------------------
+
+
+# util関数のロード
+
+#--------------------
 
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
@@ -968,7 +1080,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=Fal
         if errors:
             raise Error(errors)
     await copytree(src, dst, symlinks)
-
+    
 #logger thread
 def server_logger(proc:subprocess.Popen,ret):
     global process,is_back_discord , use_stop
@@ -1009,6 +1121,16 @@ def server_logger(proc:subprocess.Popen,ret):
 async def print_user(logger: logging.Logger,user: discord.user):
     logger.info('command used by ' + str(user))
 
+class ServerBootException(Exception):pass
+
+#--------------------
+
+
+# 読み込み結果の出力
+
+#--------------------
+
+
 #ローカルファイルの読み込み結果出力
 sys_logger.info("read token file -> " + now_path + "/" +".token")
 sys_logger.info("read config file -> " + now_path + "/" +".config")
@@ -1016,13 +1138,12 @@ view_config = config.copy()
 view_config["web"]["secret_key"] = "****"
 sys_logger.info("config -> " + str(view_config))
 if config_changed: sys_logger.info("added config because necessary elements were missing")
+#--------------------
 
-class ServerBootException(Exception):pass
 
-status_lock = threading.Lock()
-discord_terminal_item = deque()
-discord_terminal_send_length = 0
-discord_loop_is_run = False
+# 読み込み時関数/ループ関数/メッセージ受信時関数を定義
+
+#--------------------
 
 @tasks.loop(seconds=10)
 async def update_loop():
@@ -1121,6 +1242,13 @@ async def on_ready():
         await tree.sync()
     except Exception as e:
         sys_logger.error("error on ready -> ",e)
+#--------------------
+
+
+# スラッシュコマンドを定義
+
+#--------------------
+
 
 #start
 @tree.command(name="start",description=COMMAND_DESCRIPTION[lang]["start"])
@@ -1475,10 +1603,14 @@ async def on_error(interaction: discord.Interaction, error: Exception):
     sys_logger.error(error)
     await interaction.response.send_message(RESPONSE_MSG["error"]["error_base"] + str(error))
 
-#-------------------------------------------------------------------------------------------------------web
-from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
-from ansi2html import Ansi2HTMLConverter
-import waitress
+#--------------------
+
+
+# flask関連コードの読み込み
+
+#--------------------
+
+
 
 app = Flask(__name__,template_folder="mikanassets/web",static_folder="mikanassets/web")
 app.secret_key = flask_secret_key
@@ -1675,7 +1807,12 @@ def run_web():
 if use_flask_server:
     web_thread = threading.Thread(target=run_web, daemon=True)
     web_thread.start()
-#-------------------------------------------------------------------------------------------------------
+#--------------------
+
+
+# discordロガーの設定
+
+#--------------------
 
 
 # discord.py用のロガーを取得して設定
@@ -1684,5 +1821,9 @@ if log["all"]:
     file_handler = logging.FileHandler(now_path + "/logs/all " + time + ".log")
     file_handler.setFormatter(file_formatter)
     discord_logger.addHandler(file_handler)
+#--------------------
 
+
+
+# 事実上のエントリポイント(client.runを実行)
 client.run(token, log_formatter=console_formatter)
