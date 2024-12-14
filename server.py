@@ -18,7 +18,7 @@ import threading
 import asyncio
 import platform
 import os
-from shutil import copystat,Error,copy2,copytree
+from shutil import copystat,Error,copy2,copytree,rmtree
 import sys
 import logging
 import requests
@@ -764,7 +764,7 @@ COMMAND_PERMISSION = {
     "/replace    ":2,
     "/ip         ":0,
     "/logs       ":1,
-    "/force_admin":2,
+    "/admin      ":2,
     "/permission ":0,
     "/lang       ":2,
     "/tokengen   ":1,
@@ -778,34 +778,36 @@ async def get_text_dat():
 #help
     HELP_MSG = {
         "ja":{
-            "/stop       ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
-            "/start      ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
-            "/exit       ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
-            "/cmd        ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
-            "/backup     ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
-            "/replace    ":"/replace <py file> によってbotのコードを置き換えます。",
-            "/ip         ":"サーバーのIPアドレスを表示します。",
-            "/logs       ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
-            "/force_admin":"/force_admin <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
-            "/permission ":"/permission <user> で、userのbot操作権利を表示します。",
-            "/lang       ":"/lang <lang> で、botの言語を変更します。",
-            "/tokengen   ":"/tokengen で、webでログインするためのトークンを生成します。",
-            "/terminal   ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/stop        ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
+            "/start       ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
+            "/exit        ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
+            "/cmd serverin":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
+            "/backup      ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
+            "/replace     ":"/replace <py file> によってbotのコードを置き換えます。",
+            "/ip          ":"サーバーのIPアドレスを表示します。",
+            "/logs        ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
+            "/admin       ":"/admin force <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
+            "/permission  ":"/permission <user> で、userのbot操作権利を表示します。",
+            "/lang        ":"/lang <lang> で、botの言語を変更します。",
+            "/tokengen    ":"/tokengen で、webでログインするためのトークンを生成します。",
+            "/terminal    ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
         },
         "en":{
-            "/stop       ":"Stop the server. If the server is not running, an error message will be returned.",
-            "/start      ":"Start the server. If the server is running, an error message will be returned.",
-            "/exit       ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
-            "/cmd        ":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
-            "/backup     ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
-            "/replace    ":"/replace <py file> replaces the bot's code.",
-            "/ip         ":"The server's IP address will be displayed to discord.",
-            "/logs       ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
-            "/force_admin":"/force_admin <add/remove> <user> gives or removes user's bot operation rights.",
-            "/permission ":"/permission <user> displays the user's bot operation rights.",
-            "/lang       ":"/lang <lang> changes the bot's language.",
-            "/tokengen   ":"/tokengen generates a token for login to the web.",
-            "/terminal   ":"/terminal connects the server's console to a channel.",
+            "/stop        ":"Stop the server. If the server is not running, an error message will be returned.",
+            "/start       ":"Start the server. If the server is running, an error message will be returned.",
+            "/exit        ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
+            "/cmd serverin":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
+            "/backup      ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
+            "/replace     ":"/replace <py file> replaces the bot's code.",
+            "/ip          ":"The server's IP address will be displayed to discord.",
+            "/logs        ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
+            "/admin       ":"/admin force <add/remove> <user> gives or removes user's bot operation rights.",
+            "/permission  ":"/permission <user> displays the user's bot operation rights.",
+            "/lang        ":"/lang <lang> changes the bot's language.",
+            "/tokengen    ":"/tokengen generates a token for login to the web.",
+            "/terminal    ":"/terminal connects the server's console to a channel.",
         },
     }
         
@@ -822,6 +824,8 @@ async def get_text_dat():
                     "mk": "指定した相対パスを渡されたファイルまたは空にします。",
                     "rm": "指定した相対パスに完全一致するファイルを削除します。",
                     "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
+                    "mkdir": "指定した相対パスに新しいディレクトリを作成します。",
+                    "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
@@ -848,6 +852,8 @@ async def get_text_dat():
                     "mk":"Set the file specified by the relative path from the server.",
                     "rm":"Delete the file specified by the relative path from the server.",
                     "ls":"Display the file specified by the relative path from the server.",
+                    "mkdir":"Create a new directory specified by the relative path from the server.",
+                    "rmdir":"Recursively delete the directory specified by the relative path from the server.",
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
@@ -888,7 +894,7 @@ async def get_text_dat():
                     "invalid_path": "パス{}は不正/操作不可能な領域です",
                     "not_file": "{}はファイルではありません",
                     "mk":{
-                        "success":"{}を作成または上書きしました",
+                        "success":"ファイル{}を作成または上書きしました",
                         "is_link":"{}はシンボリックリンクであるため書き込めません",
                     },
                     "rm":{
@@ -900,6 +906,15 @@ async def get_text_dat():
                         "file_not_found":"{}は見つかりません",
                         "success":"{}\n```ansi\n{}```\n",
                         "to_long": "内容が2000文字を超えたためファイルに変換します。",
+                    },
+                    "mkdir":{
+                        "success":"ディレクトリ{}を作成しました",
+                        "exists":"{}は既に存在します",
+                    },
+                    "rmdir":{
+                        "success":"ディレクトリ{}を削除しました",
+                        "not_directory":"{}はディレクトリではありません",
+                        "not_exists":"{}は見つかりません",
                     },
                 }
             },
@@ -987,6 +1002,15 @@ async def get_text_dat():
                         "file_not_found":"{} not found",
                         "success":"{}\n```ansi\n{}```\n",
                         "to_long": "The content is over 2000 characters and will be converted to a file.",
+                    },
+                    "mkdir":{
+                        "success":"Directory {} has been created",
+                        "exists":"{} already exists",
+                    },
+                    "rmdir":{
+                        "success":"Directory {} has been deleted",
+                        "not_directory":"{} is not a directory",
+                        "not_exists":"{} not found",
                     },
                 }
             },
@@ -1505,7 +1529,7 @@ command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin gro
 # サブグループを設定
 command_group_cmd.add_command(command_group_cmd_stdin)
 
-async def is_valid_path(path):
+async def is_path_within_scope(path):
     # 絶対パスを取得
     path = os.path.abspath(path)
     # server_path 以下にあるか確認
@@ -1528,7 +1552,7 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     sys_logger.info(server_path)
     # 操作可能なパスか確認
-    if not await is_valid_path(file_path):
+    if not await is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         return
     # ファイルがリンクであれば拒否
@@ -1554,7 +1578,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
     # server_path + file_path のパスを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_valid_path(file_path):
+    if not await is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         return
     # ファイルが存在しているかを確認
@@ -1578,7 +1602,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
     # server_path + file_path 閲覧パスの生成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_valid_path(file_path):
+    if not await is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         return
     # 対象が存在するか
@@ -1619,6 +1643,45 @@ async def ls(interaction: discord.Interaction, file_path: str):
     else:
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["success"].format(file_path,formatted_files))
 
+@command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
+async def mkdir(interaction: discord.Interaction, dir_path: str):
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path のパスを作成
+    dir_path = os.path.abspath(os.path.join(server_path,dir_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        return
+    # 既に存在するか確認
+    if os.path.exists(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["exists"].format(dir_path))
+        return
+    # ディレクトリを作成
+    os.makedirs(dir_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["success"].format(dir_path))
+
+@command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
+async def rmdir(interaction: discord.Interaction, dir_path: str):
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path のパスを作成
+    dir_path = os.path.abspath(os.path.join(server_path,dir_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        return
+    # 既に存在するか確認
+    if not os.path.exists(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path))
+        return
+    # ディレクトリを削除
+    rmtree(dir_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path))
 
 # コマンドを追加
 tree.add_command(command_group_cmd)

@@ -14,7 +14,7 @@ import threading
 import asyncio
 import platform
 import os
-from shutil import copystat,Error,copy2,copytree
+from shutil import copystat,Error,copy2,copytree,rmtree
 import sys
 import logging
 import requests
