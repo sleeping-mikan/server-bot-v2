@@ -70,6 +70,12 @@ async def get_text_dat():
             "exit":"botを終了します。",
             "cmd":{
                 "serverin":"サーバーにマインクラフトコマンドを送信します。",
+                "stdin": {
+                    "main": "サーバーディレクトリ以下に対するコマンドをサーバーの外側から実行します。",
+                    "mk": "指定した相対パスを渡されたファイルまたは空にします。",
+                    "rm": "指定した相対パスに完全一致するファイルを削除します。",
+                    "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
+                },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
@@ -90,6 +96,12 @@ async def get_text_dat():
             "exit":"Exit the bot.",
             "cmd":{
                 "serverin":"Send a Minecraft command to the server.",
+                "stdin":{
+                    "main":"Execute the command in the server's directory outside the server.",
+                    "mk":"Set the file specified by the relative path from the server.",
+                    "rm":"Delete the file specified by the relative path from the server.",
+                    "ls":"Display the file specified by the relative path from the server.",
+                },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
@@ -125,6 +137,24 @@ async def get_text_dat():
                 "serverin":{
                     "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
                 },
+                "stdin":{
+                    "invalid_path": "パス{}は不正/操作不可能な領域です",
+                    "not_file": "{}はファイルではありません",
+                    "mk":{
+                        "success":"{}を作成または上書きしました",
+                        "is_link":"{}はシンボリックリンクであるため書き込めません",
+                    },
+                    "rm":{
+                        "success":"{}を削除しました",
+                        "file_not_found":"{}は見つかりません",
+                    },
+                    "ls":{
+                        "not_directory":"{}はディレクトリではありません",
+                        "file_not_found":"{}は見つかりません",
+                        "success":"{}\n```ansi\n{}```\n",
+                        "to_long": "内容が2000文字を超えたためファイルに変換します。",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -194,6 +224,24 @@ async def get_text_dat():
                 "serverin":{
                     "skipped_cmd":"The command is not found or not allowed",
                 },
+                "stdin":{
+                    "invalid_path": "{} is an invalid/operable area",
+                    "not_file": "{} is not a file",
+                    "mk":{
+                        "success":"{} has been created or overwritten",
+                        "is_link": "{} is a symbolic link and cannot be written",
+                    },
+                    "rm":{
+                        "success":"{} has been deleted",
+                        "file_not_found":"{} not found",
+                    },
+                    "ls":{
+                        "not_directory":"{} is not a directory",
+                        "file_not_found":"{} not found",
+                        "success":"{}\n```ansi\n{}```\n",
+                        "to_long": "The content is over 2000 characters and will be converted to a file.",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"Backup in progress",

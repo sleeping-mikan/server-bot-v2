@@ -27,6 +27,7 @@ import json
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
 import waitress
+import io
 #--------------------
 
 
@@ -816,6 +817,12 @@ async def get_text_dat():
             "exit":"botを終了します。",
             "cmd":{
                 "serverin":"サーバーにマインクラフトコマンドを送信します。",
+                "stdin": {
+                    "main": "サーバーディレクトリ以下に対するコマンドをサーバーの外側から実行します。",
+                    "mk": "指定した相対パスを渡されたファイルまたは空にします。",
+                    "rm": "指定した相対パスに完全一致するファイルを削除します。",
+                    "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
+                },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
@@ -836,6 +843,12 @@ async def get_text_dat():
             "exit":"Exit the bot.",
             "cmd":{
                 "serverin":"Send a Minecraft command to the server.",
+                "stdin":{
+                    "main":"Execute the command in the server's directory outside the server.",
+                    "mk":"Set the file specified by the relative path from the server.",
+                    "rm":"Delete the file specified by the relative path from the server.",
+                    "ls":"Display the file specified by the relative path from the server.",
+                },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
@@ -871,6 +884,24 @@ async def get_text_dat():
                 "serverin":{
                     "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
                 },
+                "stdin":{
+                    "invalid_path": "パス{}は不正/操作不可能な領域です",
+                    "not_file": "{}はファイルではありません",
+                    "mk":{
+                        "success":"{}を作成または上書きしました",
+                        "is_link":"{}はシンボリックリンクであるため書き込めません",
+                    },
+                    "rm":{
+                        "success":"{}を削除しました",
+                        "file_not_found":"{}は見つかりません",
+                    },
+                    "ls":{
+                        "not_directory":"{}はディレクトリではありません",
+                        "file_not_found":"{}は見つかりません",
+                        "success":"{}\n```ansi\n{}```\n",
+                        "to_long": "内容が2000文字を超えたためファイルに変換します。",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -940,6 +971,24 @@ async def get_text_dat():
                 "serverin":{
                     "skipped_cmd":"The command is not found or not allowed",
                 },
+                "stdin":{
+                    "invalid_path": "{} is an invalid/operable area",
+                    "not_file": "{} is not a file",
+                    "mk":{
+                        "success":"{} has been created or overwritten",
+                        "is_link": "{} is a symbolic link and cannot be written",
+                    },
+                    "rm":{
+                        "success":"{} has been deleted",
+                        "file_not_found":"{} not found",
+                    },
+                    "ls":{
+                        "not_directory":"{} is not a directory",
+                        "file_not_found":"{} not found",
+                        "success":"{}\n```ansi\n{}```\n",
+                        "to_long": "The content is over 2000 characters and will be converted to a file.",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"Backup in progress",
@@ -1456,12 +1505,119 @@ command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin gro
 # サブグループを設定
 command_group_cmd.add_command(command_group_cmd_stdin)
 
+async def is_valid_path(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # server_path 以下にあるか確認
+    if path.startswith(os.path.abspath(server_path)):
+        return True
+    sys_logger.info("invalid path : " + path + f"(server_path : {server_path})")
+    return False
 
+# 以下のコマンドはserver_pathを起点としてそれ以下のファイルを操作する
 # ファイル送信コマンドを追加
-@command_group_cmd_stdin.command(name="mk",description="fuke")
-async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment):
-    pass
+@command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
+async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    #サーバー起動確認
+    if await is_running_server(interaction,cmd_logger): return
+    # server_path + file_path にファイルを作成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    sys_logger.info(server_path)
+    # 操作可能なパスか確認
+    if not await is_valid_path(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        return
+    # ファイルがリンクであれば拒否
+    if os.path.islink(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
+        return
+    # ファイルをfile_pathに保存
+    if file is not None:
+        await file.save(file_path)
+    else:
+        # 空のファイルを作成
+        open(file_path,"w").close()
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
 
+@command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
+async def rm(interaction: discord.Interaction, file_path: str):
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    #サーバー起動確認
+    if await is_running_server(interaction,cmd_logger): return
+    # server_path + file_path のパスを作成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    # 操作可能なパスか確認
+    if not await is_valid_path(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        return
+    # ファイルが存在しているかを確認
+    if not os.path.exists(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["file_not_found"].format(file_path))
+        return
+    # 該当のアイテムがファイルか
+    if not os.path.isfile(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path))
+        return
+    # ファイルを削除
+    os.remove(file_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["success"].format(file_path))
+
+@command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
+async def ls(interaction: discord.Interaction, file_path: str):
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path 閲覧パスの生成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    # 操作可能なパスか確認
+    if not await is_valid_path(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        return
+    # 対象が存在するか
+    if not os.path.exists(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["file_not_found"].format(file_path))
+        return
+    # 対象がディレクトリであるか
+    if not os.path.isdir(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["not_directory"].format(file_path))
+        return
+    # lsコマンドを実行
+    files = os.listdir(file_path)
+
+    colorized_files = deque()
+    
+    for f in files:
+        full_path = os.path.join(file_path, f)
+        if os.path.isdir(full_path):
+            # ディレクトリは青色
+            colorized_files.append(f"\033[34m{f}\033[0m")
+        elif os.path.islink(full_path):
+            # シンボリックリンクは紫
+            colorized_files.append(f"\033[35m{f}\033[0m")
+        else:
+            # 通常ファイルは緑
+            colorized_files.append(f"\033[32m{f}\033[0m")
+    formatted_files = "\n".join(colorized_files)
+    if len(formatted_files) > 2000:
+            with io.StringIO() as temp_file:
+                temp_file.write("\n".join(files))
+                temp_file.seek(0)
+                # Discordファイルオブジェクトに変換して送信
+                discord_file = discord.File(temp_file, filename="directory_list.txt")
+                await interaction.response.send_message(
+                    RESPONSE_MSG["cmd"]["stdin"]["ls"]["to_long"].format(file_path),
+                    file=discord_file
+                )
+    else:
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["success"].format(file_path,formatted_files))
 
 
 # コマンドを追加
