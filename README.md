@@ -32,7 +32,8 @@ discordを用いて特定のサーバーを管理できます。
 |stop|サーバーを停止します。但しserver.pyは実行状態から遷移しないため他のコマンドを使用できます。|bot管理者/discord管理者|
 |exit|server.pyを終了します(このコマンドを利用すると次回サーバー管理者がserver.pyを起動するまでbotを利用できません)。サーバー停止中にのみ使用できます。|bot管理者/discord管理者|
 |backup|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|bot管理者/discord管理者|
-|cmd|サーバーに対してコマンドを送信します。|bot管理者/discord管理者|
+|cmd serverin|サーバーに対してコマンドを送信します。|bot管理者/discord管理者|
+|cmd stdin|ls/mk/rm/rmdir/mkdir等のサーバーディレクトリに対する操作を受け付けます。例えば`/cmd stdin mk a.txt`でサーバーディレクトリ直下にa.txtを作成します。|bot管理者/discord管理者|
 |replace|server.pyを与えられた引数に置換します。|discord管理者|
 |logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを10件表示します。|bot管理者/discord管理者|
 |lang|サーバーの言語を変更します。|bot管理者/discord管理者|
