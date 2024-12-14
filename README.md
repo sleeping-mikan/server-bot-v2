@@ -133,9 +133,9 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |discord_commands.terminal.discord|コンソールとして扱うチャンネルidを指定します。通常configを直接操作しません。指定したチャンネルではサーバー起動中の入出力が可能になります(但し、allow_mccmdで許可されている命令のみ)。|
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
 |discord_commands.stop.submit|/stopコマンドが入力された際にサーバーの標準入力へ送信するコマンドを設定します。|
-|backup_path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
+|discord_commands.backup.path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
 |discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。admin forceコマンドを用いてbot管理者を設定できます。||
-|lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
+|discord_commands.lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
 
 server.pyはサーバ本体と同じ改装に配置することを推奨します。
 
