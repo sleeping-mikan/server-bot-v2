@@ -345,7 +345,7 @@ class Formatter():
         
         # ANSI escape codes for colors
         COLORS = {
-            'MC': Color.BOLD + Color.GREEN,   # Green
+            'SERVER': Color.BOLD + Color.GREEN,   # Green
         }
         RESET = '\033[0m'  # Reset color
         BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
@@ -356,8 +356,8 @@ class Formatter():
             bold_black_asctime = f"{self.BOLD_BLACK}{record.asctime}{self.RESET}"
             
             # Apply color to the level name only
-            color = self.COLORS["MC"]
-            colored_levelname = f"{color}MC      {self.RESET}"
+            color = self.COLORS["SERVER"]
+            colored_levelname = f"{color}SERVER  {self.RESET}"
             
             # Get the formatted message
             message = record.getMessage()
@@ -437,7 +437,7 @@ class Formatter():
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
             
-            padded_levelname = "MC".ljust(Formatter.levelname_size)
+            padded_levelname = "SERVER".ljust(Formatter.levelname_size)
             
             
             # Get the formatted message
@@ -1499,7 +1499,16 @@ async def logs(interaction: discord.Interaction,filename:str = None):
         return
     # discordにログを送信
     if filename is None:
-        await interaction.response.send_message("```ansi\n" + "\n".join(log_msg[:10]) + "\n```")
+        # 2000文字こ超えない最長のログを取得
+        send_msg = []
+        send_length = 0
+        for i in log_msg:
+            send_length += len(i)
+            if send_length < 1900:
+                send_msg.append(i)
+            else:
+                break
+        await interaction.response.send_message("```ansi\n" + "\n".join(send_msg) + "\n```")
     else:
         if "/" in filename or "\\" in filename or "%" in filename:
             log_logger.error('invalid filename : ' + filename + "\n" + f"interaction user / id：{interaction.user} {interaction.user.id}")
