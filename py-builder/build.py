@@ -9,7 +9,7 @@ builder_logger.addHandler(StreamHandler())
 log_format = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 builder_logger.handlers[0].setFormatter(log_format)
 mi_file = "code.mi"
-mi = getcwd() + "/code.mi"
+mi = path.dirname(__file__) + "/code.mi"
 mi.replace("\\", "/")
 flgs = {"ignore":False}
 
@@ -44,6 +44,8 @@ def inter_code(code: list[str | list]):
                 exit(0)
             if len(item) >= 3:
                 builder_logger.error("#!open need only one argument -> #!open <filename>")
+            if item[1][0] == ".":
+                item[1] = path.dirname(__file__) + item[1]
             builder_logger.info(f"open file -> {item[1]}")
             try:
                 read = open(item[1], "r",encoding="utf-8") # ファイルを開く
@@ -63,17 +65,20 @@ def inter_code(code: list[str | list]):
 
 
 def search_files_starting_with(prefix, directory='.'):
+    builder_logger.info(f"search files -> {prefix} in {directory} {listdir(directory)}")
     items = [f for f in listdir(directory) if f.startswith(prefix)]
     if len(items) > 1:
         builder_logger.warning(f"Multiple files found -> {items}")
+    builder_logger.info(f"found files -> {items}")
     return items
 
 def main():
     try:
-        code = open(search_files_starting_with(mi_file)[0], "r",encoding="utf-8")
-        builder_logger.info(f"open file -> {search_files_starting_with(mi_file)[0]}")
-    except FileNotFoundError: 
+        code = open(path.dirname(__file__) + "/" + search_files_starting_with(mi_file,path.dirname(__file__))[0], "r",encoding="utf-8")
+        builder_logger.info(f"open file -> {search_files_starting_with(mi_file,path.dirname(__file__))[0]}")
+    except FileNotFoundError as e: 
         builder_logger.error(f"File not found -> {mi}")
+        builder_logger.error(e)
         exit(0)
     codes = code.readlines()
     code.close()
