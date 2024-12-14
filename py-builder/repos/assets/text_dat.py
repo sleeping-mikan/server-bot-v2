@@ -68,7 +68,9 @@ async def get_text_dat():
             "stop":"サーバーを停止します。",
             "start":"サーバーを起動します。",
             "exit":"botを終了します。",
-            "cmd":"サーバーにマインクラフトコマンドを送信します。",
+            "cmd":{
+                "serverin":"サーバーにマインクラフトコマンドを送信します。",
+            },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
@@ -86,7 +88,9 @@ async def get_text_dat():
             "stop":"Stop the server.",
             "start":"Start the server.",
             "exit":"Exit the bot.",
-            "cmd":"Send a Minecraft command to the server.",
+            "cmd":{
+                "serverin":"Send a Minecraft command to the server.",
+            },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
@@ -118,7 +122,9 @@ async def get_text_dat():
                 "success":"サーバーを起動します",
             },
             "cmd":{
-                "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                "serverin":{
+                    "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                },
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -185,7 +191,9 @@ async def get_text_dat():
                 "success":"The server has been started",
             },
             "cmd":{
-                "skipped_cmd":"The command is not found or not allowed",
+                "serverin":{
+                    "skipped_cmd":"The command is not found or not allowed",
+                },
             },
             "backup":{
                 "now_backup":"Backup in progress",

@@ -63,6 +63,7 @@ temp_path = None
 now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
 # 相対パス
 if now_path == "": now_path = "."
+now_path = os.path.abspath(now_path)
 #現在のファイル(server.py)
 now_file = __file__.replace("\\","/").split("/")[-1]
 WEB_TOKEN_FILE = '/mikanassets/web/usr/tokens.json'
@@ -138,7 +139,28 @@ def make_config():
             os.makedirs(default_backup_path)
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
-        config_dict = {"allow":{"ip":True},"server_path":now_path + "/","allow_mccmd":["list","whitelist","tellraw","w","tell"],"server_name":"bedrock_server.exe","log":{"server":True,"all":False},"stop":{"submit":"stop"},"backup_path": default_backup_path,"mc":True,"lang":"en","force_admin":[],"web":{"secret_key":"YOURSECRETKEY","port":80},"terminal":{"discord":False,"capacity":"inf"}}
+        config_dict = {\
+                            "allow":{"ip":True},\
+                            "server_path":now_path + "/",\
+                            
+                            "server_name":"bedrock_server.exe",\
+                            "log":{"server":True,"all":False},\
+                            
+                            "mc":True,\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "discord_commands":{\
+                                "cmd":{\
+                                    "serverin":{\
+                                        "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
+                                    }\
+                                },\
+                                "terminal":{"discord":False,"capacity":"inf"},\
+                                "stop":{"submit":"stop"},\
+                                "backup":{"path": default_backup_path,},\
+                                "admin":{"members":[]},\
+                                "lang":"en",\
+                            },\
+                        }
         json.dump(config_dict,file,indent=4)
         config_changed = True
     else:
@@ -155,8 +177,32 @@ def make_config():
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
                 cfg["server_path"] = now_path + "/"
-            if "allow_mccmd" not in cfg:
-                cfg["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "discord_commands" not in cfg:
+                cfg["discord_commands"] = {}
+            if "cmd" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["cmd"] = {}
+            if "serverin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["serverin"] = {}
+            if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
+                cfg["discord_commands"]["cmd"]["serverin"]["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "terminal" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["terminal"] = {"discord":False,"capacity":"inf"}
+            if "discord" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["discord"] = False
+            if "capacity" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["capacity"] = "inf"
+            if "stop" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["stop"] = {"submit":"stop"}
+            elif "submit" not in cfg["discord_commands"]["stop"]:
+                cfg["discord_commands"]["stop"]["submit"] = "stop"
+            if "admin" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["admin"] = {"members":[]}
+            elif "members" not in cfg["discord_commands"]["admin"]:
+                cfg["discord_commands"]["admin"]["members"] = []
+            if "lang" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["lang"] = "en"
+            if "mc" not in cfg:
+                cfg["mc"] = True
             if "server_name" not in cfg:
                 cfg["server_name"] = "bedrock_server.exe"
             if "log" not in cfg:
@@ -166,12 +212,7 @@ def make_config():
                     cfg["log"]["server"] = True
                 if "all" not in cfg["log"]:
                     cfg["log"]["all"] = False
-            if "stop" not in cfg:
-                cfg["stop"] = {"submit":"stop"}
-            else:
-                if "submit" not in cfg["stop"]:
-                    cfg["stop"]["submit"] = "stop"
-            if "backup_path" not in cfg:
+            if "backup" not in cfg["discord_commands"]:
                 try:
                     server_name = cfg["server_path"].split("/")[-2]
                 except IndexError:
@@ -180,29 +221,19 @@ def make_config():
                 if server_name == "":
                     print("server_path is broken. please check config file and try again.")
                     wait_for_keypress()
-                cfg["backup_path"] = cfg["server_path"] + "../backup/" + server_name
-                cfg["backup_path"] = os.path.realpath(cfg["backup_path"]) + "/"
-                if not os.path.exists(cfg["backup_path"]):
-                    os.makedirs(cfg["backup_path"])
+                cfg["discord_commands"]["backup"] = {}
+                cfg["discord_commands"]["backup"]["path"] = cfg["server_path"] + "../backup/" + server_name
+                cfg["discord_commands"]["backup"]["path"] = os.path.realpath(cfg["discord_commands"]["backup"]["path"]) + "/"
+                if not os.path.exists(cfg["discord_commands"]["backup"]["path"]):
+                    os.makedirs(cfg["discord_commands"]["backup"]["path"])
             if "mc" not in cfg:
                 cfg["mc"] = True
-            if "lang" not in cfg:
-                cfg["lang"] = "en"
-            if "force_admin" not in cfg:
-                cfg["force_admin"] = []
             if "web" not in cfg:
                 cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
-            if "terminal" not in cfg:
-                cfg["terminal"] = {"discord":False,"capacity":"inf"}
-            else:
-                if "discord" not in cfg["terminal"]:
-                    cfg["terminal"]["discord"] = False
-                if "capacity" not in cfg["terminal"]:
-                    cfg["terminal"]["capacity"] = "inf"
             return cfg
         if config_dict != check(config_dict.copy()):
             check(config_dict)
@@ -216,8 +247,8 @@ def make_config():
 def to_config_safe(config):
     #"force_admin"に重複があれば削除する
     save = False
-    if len(config["force_admin"]) > len(set(config["force_admin"])):
-        config["force_admin"] = list(set(config["force_admin"]))
+    if len(config["discord_commands"]["admin"]["members"]) > len(set(config["discord_commands"]["admin"]["members"])):
+        config["discord_commands"]["admin"]["members"] = list(set(config["discord_commands"]["admin"]["members"]))
         save = True
     if save:
         file = open(config_file_place,"w")
@@ -553,7 +584,7 @@ minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Col
 
 #configの読み込み
 try:
-    allow_cmd = set(config["allow_mccmd"])
+    allow_cmd = set(config["discord_commands"]["cmd"]["serverin"]["allow_mccmd"])
     server_name = config["server_name"]
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
@@ -561,17 +592,17 @@ try:
     allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
-    backup_path = config["backup_path"]
-    lang = config["lang"]
-    bot_admin = set(config["force_admin"])
+    backup_path = config["discord_commands"]["backup"]["path"]
+    lang = config["discord_commands"]["lang"]
+    bot_admin = set(config["discord_commands"]["admin"]["members"])
     flask_secret_key = config["web"]["secret_key"]
     web_port = config["web"]["port"]
-    STOP = config["stop"]["submit"]
-    where_terminal = config["terminal"]["discord"]
-    if config["terminal"]["capacity"] == "inf":
+    STOP = config["discord_commands"]["stop"]["submit"]
+    where_terminal = config["discord_commands"]["terminal"]["discord"]
+    if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
-        terminal_capacity = config["terminal"]["capacity"]
+        terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
@@ -783,7 +814,9 @@ async def get_text_dat():
             "stop":"サーバーを停止します。",
             "start":"サーバーを起動します。",
             "exit":"botを終了します。",
-            "cmd":"サーバーにマインクラフトコマンドを送信します。",
+            "cmd":{
+                "serverin":"サーバーにマインクラフトコマンドを送信します。",
+            },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
@@ -801,7 +834,9 @@ async def get_text_dat():
             "stop":"Stop the server.",
             "start":"Start the server.",
             "exit":"Exit the bot.",
-            "cmd":"Send a Minecraft command to the server.",
+            "cmd":{
+                "serverin":"Send a Minecraft command to the server.",
+            },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
@@ -833,7 +868,9 @@ async def get_text_dat():
                 "success":"サーバーを起動します",
             },
             "cmd":{
-                "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                "serverin":{
+                    "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                },
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -900,7 +937,9 @@ async def get_text_dat():
                 "success":"The server has been started",
             },
             "cmd":{
-                "skipped_cmd":"The command is not found or not allowed",
+                "serverin":{
+                    "skipped_cmd":"The command is not found or not allowed",
+                },
             },
             "backup":{
                 "now_backup":"Backup in progress",
@@ -985,7 +1024,7 @@ async def is_administrator(user: discord.User) -> bool:
 
 async def is_force_administrator(user: discord.User) -> bool:
     #user idがforce_adminに含まれないなら
-    if user.id not in config["force_admin"]:
+    if user.id not in config["discord_commands"]["admin"]["members"]:
         return False
     return True
 
@@ -1132,6 +1171,7 @@ class ServerBootException(Exception):pass
 
 
 #ローカルファイルの読み込み結果出力
+sys_logger.info("instance root -> " + now_path)
 sys_logger.info("read token file -> " + now_path + "/" +".token")
 sys_logger.info("read config file -> " + now_path + "/" +".config")
 view_config = config.copy()
@@ -1304,21 +1344,21 @@ async def admin(interaction: discord.Interaction,perm: str,mode:str,user:discord
     async def force():
         async def read_force_admin():
             global bot_admin
-            bot_admin = set(config["force_admin"])
+            bot_admin = set(config["discord_commands"]["admin"]["members"])
         if mode == "add":
-            if user.id in config["force_admin"]:
+            if user.id in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_added"])
                 return
-            config["force_admin"].append(user.id)
+            config["discord_commands"]["admin"]["members"].append(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
             await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["add_success"].format(user))
         elif mode == "remove":
-            if user.id not in config["force_admin"]:
+            if user.id not in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_removed"])
                 return
-            config["force_admin"].remove(user.id)
+            config["discord_commands"]["admin"]["members"].remove(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
@@ -1362,8 +1402,8 @@ async def language(interaction: discord.Interaction,language:str):
         await not_enough_permission(interaction,lang_logger)
         return
     #データの書き換え
-    config["lang"] = language
-    lang = config["lang"]
+    config["discord_commands"]["lang"] = language
+    lang = config["discord_commands"]["lang"]
     #configファイルを変更する
     await rewrite_config(config)
     #textデータを再構築
@@ -1371,8 +1411,18 @@ async def language(interaction: discord.Interaction,language:str):
     await interaction.response.send_message(RESPONSE_MSG["lang"]["success"].format(language))
     lang_logger.info("change lang to " + lang)
 
-#/command <mc command>
-@tree.command(name="cmd",description=COMMAND_DESCRIPTION[lang]["cmd"])
+#/cmd serverin <server command>
+#/cmd stdin 
+
+
+#--------------------
+
+
+# グループの設定
+# root
+command_group_cmd = app_commands.Group(name="cmd",description="cmd group")
+
+@command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(cmd_logger,interaction.user)
     global is_back_discord,cmd_logs
@@ -1385,7 +1435,7 @@ async def cmd(interaction: discord.Interaction,command:str):
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         cmd_logger.error('unknown command : ' + command)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["skipped_cmd"])
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"])
         return
     cmd_logger.info("run command : " + command)
     process.stdin.write(command + "\n")
@@ -1400,6 +1450,24 @@ async def cmd(interaction: discord.Interaction,command:str):
             continue
         await interaction.response.send_message(cmd_logs.popleft())
         break
+
+#サブグループstdinを作成
+command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin group")
+# サブグループを設定
+command_group_cmd.add_command(command_group_cmd_stdin)
+
+
+# ファイル送信コマンドを追加
+@command_group_cmd_stdin.command(name="mk",description="fuke")
+async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment):
+    pass
+
+
+
+# コマンドを追加
+tree.add_command(command_group_cmd)
+#--------------------
+
 
 #/backup()
 @tree.command(name="backup",description=COMMAND_DESCRIPTION[lang]["backup"])
@@ -1547,7 +1615,7 @@ def gen_web_token():
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
@@ -1574,7 +1642,7 @@ async def terminal(interaction: discord.Interaction):
         return
     #発言したチャンネルをwhere_terminalに登録
     where_terminal = interaction.channel_id
-    config["terminal"]["discord"] = where_terminal
+    config["discord_commands"]["terminal"]["discord"] = where_terminal
     terminal_logger.info(f"terminal setting -> {where_terminal}")
     #configを書き換え
     with open(now_path + "/.config","w") as f:

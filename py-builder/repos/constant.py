@@ -30,6 +30,7 @@ temp_path = None
 now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
 # 相対パス
 if now_path == "": now_path = "."
+now_path = os.path.abspath(now_path)
 #現在のファイル(server.py)
 now_file = __file__.replace("\\","/").split("/")[-1]
 WEB_TOKEN_FILE = '/mikanassets/web/usr/tokens.json'
