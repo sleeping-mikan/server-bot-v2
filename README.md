@@ -81,30 +81,40 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "allow": {
         "ip": true
     },
-    "server_path": str(path of server.py),
-    "allow_mccmd": [
-        "list",
-        "whitelist",
-        "tellraw",
-        "w",
-        "tell"
-    ],
+    "server_path": "path/to/serverdir/",
     "server_name": "bedrock_server.exe",
     "log": {
         "server": true,
         "all": false
     },
-    "backup_path": str(path of backup),
     "mc": true,
-    "lang": "en",
-    "force_admin": [],
     "web": {
-        "secret_key": "YOURSECRETKEY",
+        "secret_key": "****",
         "port": 80
     },
-    "terminal": {
-        "discord":false,
-        "capacity": "inf"
+    "discord_commands": {
+        "cmd": {
+            "serverin": {
+                "allow_mccmd": [
+                    "to server",
+                    "allow input commands",
+                ]
+            }
+        },
+        "terminal": {
+            "discord": <(optional) output to discord channel id>,
+            "capacity": "inf"
+        },
+        "stop": {
+            "submit": "stop"
+        },
+        "backup": {
+            "path": "path/to/backup/",
+        },
+        "admin": {
+            "members": []
+        },
+        "lang": "ja"
     }
 }
 ```
@@ -113,17 +123,18 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |---|---|
 |allow|各コマンドの実行を許可するかどうか。(現在は/ipにのみ実装されています)|
 |server_path|minecraft server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
-|allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
 |server_name|minecraft server本体の名前 java版の場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
-|backup_path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
-|lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
-|force_admin|サーバー内の管理者権限を操作します。通常configを直接操作しません。admin forceコマンドを用いてbot管理者を設定できます。||
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
 |web.port|webサーバーのポート番号を入力します。|
-|terminal.discord|コンソールとして扱うチャンネルidを指定します。通常configを直接操作しません。指定したチャンネルではサーバー起動中の入出力が可能になります(但し、allow_mccmdで許可されている命令のみ)。|
-|terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
+|discord_commands.cmd.serverin.allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
+|discord_commands.terminal.discord|コンソールとして扱うチャンネルidを指定します。通常configを直接操作しません。指定したチャンネルではサーバー起動中の入出力が可能になります(但し、allow_mccmdで許可されている命令のみ)。|
+|discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
+|discord_commands.stop.submit|/stopコマンドが入力された際にサーバーの標準入力へ送信するコマンドを設定します。|
+|backup_path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
+|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。admin forceコマンドを用いてbot管理者を設定できます。||
+|lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
 
 server.pyはサーバ本体と同じ改装に配置することを推奨します。
 
