@@ -101,7 +101,7 @@ COMMAND_PERMISSION = {
     "cmd stdin ls":1,
     "help":0,
     "backup":1,
-    "replace":2,
+    "replace":4,
     "ip":0,
     "logs":1,
     "permission view":0,
