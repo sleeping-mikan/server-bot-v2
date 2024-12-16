@@ -1,3 +1,13 @@
+### 2024/12/16 権限操作の変更
+
+・コマンドの変更
+ - /admin force <add|remove> <user>は本バージョンから /permission change <level> <user> に変更されました。
+   - この変更に伴って権限はdiscord/force/noneから0/1/2/3/4(level)に変更されました。
+   - discord管理者権限は4として扱われるようになりました。
+   - 各コマンド権限についてはREADME.mdを参照して下さい。
+ - /permission は本バージョンから /permission view <user> に変更されました。
+   - このコマンドはそれぞれの必要権限を表示するようになりました。
+
 ### 2024/12/14 コマンドの追加/configの破壊的変更
 
 ・コマンドの追加及び変更

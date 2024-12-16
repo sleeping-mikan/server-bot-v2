@@ -24,22 +24,22 @@ discordを用いて特定のサーバーを管理できます。
 
 プログラムに含まれるbotコマンドは以下の通りです。
 
-|コマンド|実行結果|必要権限|
+|コマンド|実行結果|必要権限レベル|
 |----|----|----|
-|help|discord上にhelpとwebリンクを表示します。webサイトへ外部からアクセスするには追加のポート開放が必要です。 |-|
-|ip|このbot(サーバー)を実行しているipアドレスを返します。|-(configにより有効にする必要あり)|
-|start|サーバーを開始します。但し、server.py起動時には自動的に開始されます。|bot管理者/discord管理者|
-|stop|サーバーを停止します。但しserver.pyは実行状態から遷移しないため他のコマンドを使用できます。|bot管理者/discord管理者|
-|exit|server.pyを終了します(このコマンドを利用すると次回サーバー管理者がserver.pyを起動するまでbotを利用できません)。サーバー停止中にのみ使用できます。|bot管理者/discord管理者|
-|backup|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|bot管理者/discord管理者|
-|cmd serverin|サーバーに対してコマンドを送信します。|bot管理者/discord管理者|
-|cmd stdin|ls/mk/rm/rmdir/mkdir等のサーバーディレクトリに対する操作を受け付けます。例えば`/cmd stdin mk a.txt`でサーバーディレクトリ直下にa.txtを作成します。|bot管理者/discord管理者|
-|replace|server.pyを与えられた引数に置換します。|discord管理者|
-|logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを10件表示します。|bot管理者/discord管理者|
-|lang|サーバーの言語を変更します。|bot管理者/discord管理者|
-|admin|サーバー内の管理者権限を操作します。admin forceを用いてbot管理者を設定できます。|discord管理者|
-|permission|プレイヤーの権限を表示します。|-|
-|tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください|discord管理者|
+|help|discord上にhelpとwebリンクを表示します。webサイトへ外部からアクセスするには追加のポート開放が必要です。 |0|
+|ip|このbot(サーバー)を実行しているipアドレスを返します。|0(configにより有効/無効)|
+|start|サーバーを開始します。但し、server.py起動時には自動的に開始されます。|1|
+|stop|サーバーを停止します。但しserver.pyは実行状態から遷移しないため他のコマンドを使用できます。|1|
+|exit|server.pyを終了します(このコマンドを利用すると次回サーバー管理者がserver.pyを起動するまでbotを利用できません)。サーバー停止中にのみ使用できます。|1|
+|backup|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
+|cmd serverin|サーバーに対してコマンドを送信します。|1|
+|cmd stdin|ls/mk/rm/rmdir/mkdir等のサーバーディレクトリに対する操作を受け付けます。例えば`/cmd stdin mk a.txt`でサーバーディレクトリ直下にa.txtを作成します。|1(一部特定ファイルの操作はdiscord管理者のみ)|
+|replace|server.pyを与えられた引数に置換します。|4|
+|logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを10件表示します。|1|
+|lang|サーバーの言語を変更します。|1|
+|permission change|サーバー内の管理者権限を操作します。admin forceを用いてbot管理者を設定できます。|4|
+|permission view|プレイヤーの権限を表示します。|0|
+|tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください|1|
 
 これらコマンドの設定等は後述の使用方法を参照してください。
 
@@ -113,7 +113,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
             "path": "path/to/backup/",
         },
         "admin": {
-            "members": []
+            "members": {}
         },
         "lang": "ja"
     }
@@ -134,7 +134,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
 |discord_commands.stop.submit|/stopコマンドが入力された際にサーバーの標準入力へ送信するコマンドを設定します。|
 |discord_commands.backup.path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
-|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。admin forceコマンドを用いてbot管理者を設定できます。||
+|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。||
 |discord_commands.lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
 
 server.pyはサーバ本体と同じ改装に配置することを推奨します。
