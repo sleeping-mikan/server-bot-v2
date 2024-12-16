@@ -17,7 +17,7 @@ try:
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
     lang = config["discord_commands"]["lang"]
-    bot_admin = set(config["discord_commands"]["admin"]["members"])
+    bot_admin = config["discord_commands"]["admin"]["members"]
     flask_secret_key = config["web"]["secret_key"]
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
