@@ -94,7 +94,7 @@ def make_config():
                     cfg["log"]["all"] = False
             if "backup" not in cfg["discord_commands"]:
                 try:
-                    server_name = cfg["server_path"].split("/")[-2]
+                    server_name = cfg["server_path"].replace("\\","/").split("/")[-2]
                 except IndexError:
                     print(f"server_path is broken. please check config file and try again.\ninput : {cfg['server_path']}")
                     wait_for_keypress()

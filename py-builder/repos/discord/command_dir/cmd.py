@@ -45,6 +45,13 @@ command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin gro
 # サブグループを設定
 command_group_cmd.add_command(command_group_cmd_stdin)
 
+
+sys_files = [".config",".token","logs","mikanassets"]
+important_bot_file = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
+] 
+
+# 操作可能なパスかを確認
 async def is_path_within_scope(path):
     # 絶対パスを取得
     path = os.path.abspath(path)
@@ -52,6 +59,16 @@ async def is_path_within_scope(path):
     if path.startswith(os.path.abspath(server_path)):
         return True
     cmd_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
+    return False
+
+# 重要ファイルでないか(最高権限要求するようなファイルかを確認)
+async def is_important_bot_file(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # 重要ファイルの場合はTrueを返す
+    for f in important_bot_file:
+        if path.startswith(f):
+            return True
     return False
 
 # 以下のコマンドはserver_pathを起点としてそれ以下のファイルを操作する
@@ -80,6 +97,11 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
     # ファイルをfile_pathに保存
     if file is not None:
         await file.save(file_path)
+    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
+    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        cmd_logger.info("permission denied -> " + file_path)
+        return
     else:
         # 空のファイルを作成
         open(file_path,"w").close()
@@ -111,6 +133,11 @@ async def rm(interaction: discord.Interaction, file_path: str):
     if not os.path.isfile(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path))
         cmd_logger.info("not file -> " + file_path)
+        return
+    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
+    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        cmd_logger.info("permission denied -> " + file_path)
         return
     # ファイルを削除
     os.remove(file_path)
@@ -214,6 +241,11 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
     if not os.path.exists(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path))
         cmd_logger.info("directory not exists -> " + dir_path)
+        return
+    # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
+    if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path))
+        cmd_logger.info("permission denied -> " + dir_path)
         return
     # ディレクトリを削除
     rmtree(dir_path)
