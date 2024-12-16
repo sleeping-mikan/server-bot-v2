@@ -62,21 +62,21 @@ async def admin(interaction: discord.Interaction,perm: str,mode:str,user:discord
     async def force():
         async def read_force_admin():
             global bot_admin
-            bot_admin = set(config["force_admin"])
+            bot_admin = set(config["discord_commands"]["admin"]["members"])
         if mode == "add":
-            if user.id in config["force_admin"]:
+            if user.id in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_added"])
                 return
-            config["force_admin"].append(user.id)
+            config["discord_commands"]["admin"]["members"].append(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
             await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["add_success"].format(user))
         elif mode == "remove":
-            if user.id not in config["force_admin"]:
+            if user.id not in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_removed"])
                 return
-            config["force_admin"].remove(user.id)
+            config["discord_commands"]["admin"]["members"].remove(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
@@ -120,8 +120,8 @@ async def language(interaction: discord.Interaction,language:str):
         await not_enough_permission(interaction,lang_logger)
         return
     #データの書き換え
-    config["lang"] = language
-    lang = config["lang"]
+    config["discord_commands"]["lang"] = language
+    lang = config["discord_commands"]["lang"]
     #configファイルを変更する
     await rewrite_config(config)
     #textデータを再構築
@@ -129,35 +129,13 @@ async def language(interaction: discord.Interaction,language:str):
     await interaction.response.send_message(RESPONSE_MSG["lang"]["success"].format(language))
     lang_logger.info("change lang to " + lang)
 
-#/command <mc command>
-@tree.command(name="cmd",description=COMMAND_DESCRIPTION[lang]["cmd"])
-async def cmd(interaction: discord.Interaction,command:str):
-    await print_user(cmd_logger,interaction.user)
-    global is_back_discord,cmd_logs
-    #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
-        await not_enough_permission(interaction,cmd_logger)
-        return
-    #サーバー起動確認
-    if await is_stopped_server(interaction,cmd_logger): return
-    #コマンドの利用許可確認
-    if command.split()[0] not in allow_cmd:
-        cmd_logger.error('unknown command : ' + command)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["skipped_cmd"])
-        return
-    cmd_logger.info("run command : " + command)
-    process.stdin.write(command + "\n")
-    process.stdin.flush()
-    #結果の返却を要求する
-    is_back_discord = True
-    #結果を送信できるまで待機
-    while True:
-        #何もなければ次を待つ
-        if len(cmd_logs) == 0:
-            await asyncio.sleep(0.1)
-            continue
-        await interaction.response.send_message(cmd_logs.popleft())
-        break
+#/cmd serverin <server command>
+#/cmd stdin 
+
+#!open ./repos/discord/command_dir/cmd.py
+#!ignore
+from .command_dir.cmd import *
+#!end-ignore
 
 #/backup()
 @tree.command(name="backup",description=COMMAND_DESCRIPTION[lang]["backup"])
@@ -305,7 +283,7 @@ def gen_web_token():
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
@@ -332,7 +310,7 @@ async def terminal(interaction: discord.Interaction):
         return
     #発言したチャンネルをwhere_terminalに登録
     where_terminal = interaction.channel_id
-    config["terminal"]["discord"] = where_terminal
+    config["discord_commands"]["terminal"]["discord"] = where_terminal
     terminal_logger.info(f"terminal setting -> {where_terminal}")
     #configを書き換え
     with open(now_path + "/.config","w") as f:

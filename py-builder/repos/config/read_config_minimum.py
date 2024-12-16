@@ -19,7 +19,28 @@ def make_config():
             os.makedirs(default_backup_path)
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
-        config_dict = {"allow":{"ip":True},"server_path":now_path + "/","allow_mccmd":["list","whitelist","tellraw","w","tell"],"server_name":"bedrock_server.exe","log":{"server":True,"all":False},"stop":{"submit":"stop"},"backup_path": default_backup_path,"mc":True,"lang":"en","force_admin":[],"web":{"secret_key":"YOURSECRETKEY","port":80},"terminal":{"discord":False,"capacity":"inf"}}
+        config_dict = {\
+                            "allow":{"ip":True},\
+                            "server_path":now_path + "/",\
+                            
+                            "server_name":"bedrock_server.exe",\
+                            "log":{"server":True,"all":False},\
+                            
+                            "mc":True,\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "discord_commands":{\
+                                "cmd":{\
+                                    "serverin":{\
+                                        "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
+                                    }\
+                                },\
+                                "terminal":{"discord":False,"capacity":"inf"},\
+                                "stop":{"submit":"stop"},\
+                                "backup":{"path": default_backup_path,},\
+                                "admin":{"members":[]},\
+                                "lang":"en",\
+                            },\
+                        }
         json.dump(config_dict,file,indent=4)
         config_changed = True
     else:
@@ -36,8 +57,32 @@ def make_config():
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
                 cfg["server_path"] = now_path + "/"
-            if "allow_mccmd" not in cfg:
-                cfg["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "discord_commands" not in cfg:
+                cfg["discord_commands"] = {}
+            if "cmd" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["cmd"] = {}
+            if "serverin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["serverin"] = {}
+            if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
+                cfg["discord_commands"]["cmd"]["serverin"]["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "terminal" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["terminal"] = {"discord":False,"capacity":"inf"}
+            if "discord" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["discord"] = False
+            if "capacity" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["capacity"] = "inf"
+            if "stop" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["stop"] = {"submit":"stop"}
+            elif "submit" not in cfg["discord_commands"]["stop"]:
+                cfg["discord_commands"]["stop"]["submit"] = "stop"
+            if "admin" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["admin"] = {"members":[]}
+            elif "members" not in cfg["discord_commands"]["admin"]:
+                cfg["discord_commands"]["admin"]["members"] = []
+            if "lang" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["lang"] = "en"
+            if "mc" not in cfg:
+                cfg["mc"] = True
             if "server_name" not in cfg:
                 cfg["server_name"] = "bedrock_server.exe"
             if "log" not in cfg:
@@ -47,43 +92,28 @@ def make_config():
                     cfg["log"]["server"] = True
                 if "all" not in cfg["log"]:
                     cfg["log"]["all"] = False
-            if "stop" not in cfg:
-                cfg["stop"] = {"submit":"stop"}
-            else:
-                if "submit" not in cfg["stop"]:
-                    cfg["stop"]["submit"] = "stop"
-            if "backup_path" not in cfg:
+            if "backup" not in cfg["discord_commands"]:
                 try:
-                    server_name = cfg["server_path"].split("/")[-2]
+                    server_name = cfg["server_path"].replace("\\","/").split("/")[-2]
                 except IndexError:
                     print(f"server_path is broken. please check config file and try again.\ninput : {cfg['server_path']}")
                     wait_for_keypress()
                 if server_name == "":
                     print("server_path is broken. please check config file and try again.")
                     wait_for_keypress()
-                cfg["backup_path"] = cfg["server_path"] + "../backup/" + server_name
-                cfg["backup_path"] = os.path.realpath(cfg["backup_path"]) + "/"
-                if not os.path.exists(cfg["backup_path"]):
-                    os.makedirs(cfg["backup_path"])
+                cfg["discord_commands"]["backup"] = {}
+                cfg["discord_commands"]["backup"]["path"] = cfg["server_path"] + "../backup/" + server_name
+                cfg["discord_commands"]["backup"]["path"] = os.path.realpath(cfg["discord_commands"]["backup"]["path"]) + "/"
+                if not os.path.exists(cfg["discord_commands"]["backup"]["path"]):
+                    os.makedirs(cfg["discord_commands"]["backup"]["path"])
             if "mc" not in cfg:
                 cfg["mc"] = True
-            if "lang" not in cfg:
-                cfg["lang"] = "en"
-            if "force_admin" not in cfg:
-                cfg["force_admin"] = []
             if "web" not in cfg:
                 cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
-            if "terminal" not in cfg:
-                cfg["terminal"] = {"discord":False,"capacity":"inf"}
-            else:
-                if "discord" not in cfg["terminal"]:
-                    cfg["terminal"]["discord"] = False
-                if "capacity" not in cfg["terminal"]:
-                    cfg["terminal"]["capacity"] = "inf"
             return cfg
         if config_dict != check(config_dict.copy()):
             check(config_dict)
@@ -97,8 +127,8 @@ def make_config():
 def to_config_safe(config):
     #"force_admin"に重複があれば削除する
     save = False
-    if len(config["force_admin"]) > len(set(config["force_admin"])):
-        config["force_admin"] = list(set(config["force_admin"]))
+    if len(config["discord_commands"]["admin"]["members"]) > len(set(config["discord_commands"]["admin"]["members"])):
+        config["discord_commands"]["admin"]["members"] = list(set(config["discord_commands"]["admin"]["members"]))
         save = True
     if save:
         file = open(config_file_place,"w")

@@ -1,5 +1,6 @@
 from os import getcwd, path, listdir
 from logging import Logger, StreamHandler, Formatter
+from json import load
 
 
 
@@ -12,6 +13,9 @@ mi_file = "code.mi"
 mi = path.dirname(__file__) + "/code.mi"
 mi.replace("\\", "/")
 flgs = {"ignore":False}
+
+config = load(open(path.dirname(__file__) + "/config.json","r",encoding="utf-8"))
+output_path = getcwd() + "/" + config["out"]
 
 def write_code(code: list[str | list],file):
     for i in range(len(code)):
@@ -83,7 +87,7 @@ def main():
     codes = code.readlines()
     code.close()
     inter_code(codes)
-    write_file = open("code.py", "w", encoding="utf-8")
+    write_file = open(output_path, "w", encoding="utf-8")
     # builder_logger.info(f"write data -> {codes}")
     write_code(codes,write_file)
     write_file.close()

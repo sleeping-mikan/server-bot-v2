@@ -17,7 +17,7 @@ COMMAND_PERMISSION = {
     "/replace    ":2,
     "/ip         ":0,
     "/logs       ":1,
-    "/force_admin":2,
+    "/admin      ":2,
     "/permission ":0,
     "/lang       ":2,
     "/tokengen   ":1,
@@ -31,34 +31,36 @@ async def get_text_dat():
 #help
     HELP_MSG = {
         "ja":{
-            "/stop       ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
-            "/start      ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
-            "/exit       ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
-            "/cmd        ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
-            "/backup     ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
-            "/replace    ":"/replace <py file> によってbotのコードを置き換えます。",
-            "/ip         ":"サーバーのIPアドレスを表示します。",
-            "/logs       ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
-            "/force_admin":"/force_admin <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
-            "/permission ":"/permission <user> で、userのbot操作権利を表示します。",
-            "/lang       ":"/lang <lang> で、botの言語を変更します。",
-            "/tokengen   ":"/tokengen で、webでログインするためのトークンを生成します。",
-            "/terminal   ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/stop        ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
+            "/start       ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
+            "/exit        ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
+            "/cmd serverin":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
+            "/backup      ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
+            "/replace     ":"/replace <py file> によってbotのコードを置き換えます。",
+            "/ip          ":"サーバーのIPアドレスを表示します。",
+            "/logs        ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
+            "/admin       ":"/admin force <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
+            "/permission  ":"/permission <user> で、userのbot操作権利を表示します。",
+            "/lang        ":"/lang <lang> で、botの言語を変更します。",
+            "/tokengen    ":"/tokengen で、webでログインするためのトークンを生成します。",
+            "/terminal    ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
         },
         "en":{
-            "/stop       ":"Stop the server. If the server is not running, an error message will be returned.",
-            "/start      ":"Start the server. If the server is running, an error message will be returned.",
-            "/exit       ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
-            "/cmd        ":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
-            "/backup     ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
-            "/replace    ":"/replace <py file> replaces the bot's code.",
-            "/ip         ":"The server's IP address will be displayed to discord.",
-            "/logs       ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
-            "/force_admin":"/force_admin <add/remove> <user> gives or removes user's bot operation rights.",
-            "/permission ":"/permission <user> displays the user's bot operation rights.",
-            "/lang       ":"/lang <lang> changes the bot's language.",
-            "/tokengen   ":"/tokengen generates a token for login to the web.",
-            "/terminal   ":"/terminal connects the server's console to a channel.",
+            "/stop        ":"Stop the server. If the server is not running, an error message will be returned.",
+            "/start       ":"Start the server. If the server is running, an error message will be returned.",
+            "/exit        ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
+            "/cmd serverin":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
+            "/backup      ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
+            "/replace     ":"/replace <py file> replaces the bot's code.",
+            "/ip          ":"The server's IP address will be displayed to discord.",
+            "/logs        ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
+            "/admin       ":"/admin force <add/remove> <user> gives or removes user's bot operation rights.",
+            "/permission  ":"/permission <user> displays the user's bot operation rights.",
+            "/lang        ":"/lang <lang> changes the bot's language.",
+            "/tokengen    ":"/tokengen generates a token for login to the web.",
+            "/terminal    ":"/terminal connects the server's console to a channel.",
         },
     }
         
@@ -68,7 +70,17 @@ async def get_text_dat():
             "stop":"サーバーを停止します。",
             "start":"サーバーを起動します。",
             "exit":"botを終了します。",
-            "cmd":"サーバーにマインクラフトコマンドを送信します。",
+            "cmd":{
+                "serverin":"サーバーにマインクラフトコマンドを送信します。",
+                "stdin": {
+                    "main": "サーバーディレクトリ以下に対するコマンドをサーバーの外側から実行します。",
+                    "mk": "指定した相対パスを渡されたファイルまたは空にします。",
+                    "rm": "指定した相対パスに完全一致するファイルを削除します。",
+                    "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
+                    "mkdir": "指定した相対パスに新しいディレクトリを作成します。",
+                    "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
+                },
+            },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
@@ -86,7 +98,17 @@ async def get_text_dat():
             "stop":"Stop the server.",
             "start":"Start the server.",
             "exit":"Exit the bot.",
-            "cmd":"Send a Minecraft command to the server.",
+            "cmd":{
+                "serverin":"Send a Minecraft command to the server.",
+                "stdin":{
+                    "main":"Execute the command in the server's directory outside the server.",
+                    "mk":"Set the file specified by the relative path from the server.",
+                    "rm":"Delete the file specified by the relative path from the server.",
+                    "ls":"Display the file specified by the relative path from the server.",
+                    "mkdir":"Create a new directory specified by the relative path from the server.",
+                    "rmdir":"Recursively delete the directory specified by the relative path from the server.",
+                },
+            },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
@@ -118,7 +140,37 @@ async def get_text_dat():
                 "success":"サーバーを起動します",
             },
             "cmd":{
-                "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                "serverin":{
+                    "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                },
+                "stdin":{
+                    "invalid_path": "パス`{}`は不正/操作不可能な領域です",
+                    "not_file": "`{}`はファイルではありません",
+                    "permission_denied":"`{}`を操作する権限がありません",
+                    "mk":{
+                        "success":"ファイル`{}`を作成または上書きしました",
+                        "is_link":"`{}`はシンボリックリンクであるため書き込めません",
+                    },
+                    "rm":{
+                        "success":"`{}`を削除しました",
+                        "file_not_found":"`{}`は見つかりません",
+                    },
+                    "ls":{
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "file_not_found":"`{}`は見つかりません",
+                        "success":"`{}`\n```ansi\n{}```\n",
+                        "to_long": "内容が2000文字を超えたためファイルに変換します。",
+                    },
+                    "mkdir":{
+                        "success":"ディレクトリ`{}`を作成しました",
+                        "exists":"`{}`は既に存在します",
+                    },
+                    "rmdir":{
+                        "success":"ディレクトリ`{}`を削除しました",
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "not_exists":"`{}`は見つかりません",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -146,8 +198,8 @@ async def get_text_dat():
             "admin":{
                 "force":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
-                    "add_success":"{}にbotの管理者権限を与えました",
-                    "remove_success":"{}からbotの管理者権限を剥奪しました",
+                    "add_success":"`{}`にbotの管理者権限を与えました",
+                    "remove_success":"`{}`からbotの管理者権限を剥奪しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
                 },
             },
@@ -185,7 +237,37 @@ async def get_text_dat():
                 "success":"The server has been started",
             },
             "cmd":{
-                "skipped_cmd":"The command is not found or not allowed",
+                "serverin":{
+                    "skipped_cmd":"The command is not found or not allowed",
+                },
+                "stdin":{
+                    "invalid_path": "`{}` is an invalid/operable area",
+                    "not_file": "`{}` is not a file",
+                    "permission_denied": "`{}` cannot be modified because it is an important file",
+                    "mk":{
+                        "success":"`{}` has been created or overwritten",
+                        "is_link": "`{}` is a symbolic link and cannot be written",
+                    },
+                    "rm":{
+                        "success":"`{}` has been deleted",
+                        "file_not_found":"`{}` not found",
+                    },
+                    "ls":{
+                        "not_directory":"`{}` is not a directory",
+                        "file_not_found":"`{}` not found",
+                        "success":"`{}`\n```ansi\n{}```\n",
+                        "to_long": "The content is over 2000 characters and will be converted to a file.",
+                    },
+                    "mkdir":{
+                        "success":"Directory `{}` has been created",
+                        "exists":"`{}` already exists",
+                    },
+                    "rmdir":{
+                        "success":"Directory `{}` has been deleted",
+                        "not_directory":"`{}` is not a directory",
+                        "not_exists":"`{}` not found",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"Backup in progress",

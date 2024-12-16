@@ -14,7 +14,7 @@ import threading
 import asyncio
 import platform
 import os
-from shutil import copystat,Error,copy2,copytree
+from shutil import copystat,Error,copy2,copytree,rmtree
 import sys
 import logging
 import requests
@@ -23,3 +23,4 @@ import json
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
 import waitress
+import io

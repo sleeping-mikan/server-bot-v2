@@ -18,7 +18,7 @@ import threading
 import asyncio
 import platform
 import os
-from shutil import copystat,Error,copy2,copytree
+from shutil import copystat,Error,copy2,copytree,rmtree
 import sys
 import logging
 import requests
@@ -27,6 +27,7 @@ import json
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
 import waitress
+import io
 #--------------------
 
 
@@ -63,6 +64,7 @@ temp_path = None
 now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
 # 相対パス
 if now_path == "": now_path = "."
+now_path = os.path.abspath(now_path)
 #現在のファイル(server.py)
 now_file = __file__.replace("\\","/").split("/")[-1]
 WEB_TOKEN_FILE = '/mikanassets/web/usr/tokens.json'
@@ -138,7 +140,28 @@ def make_config():
             os.makedirs(default_backup_path)
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
-        config_dict = {"allow":{"ip":True},"server_path":now_path + "/","allow_mccmd":["list","whitelist","tellraw","w","tell"],"server_name":"bedrock_server.exe","log":{"server":True,"all":False},"stop":{"submit":"stop"},"backup_path": default_backup_path,"mc":True,"lang":"en","force_admin":[],"web":{"secret_key":"YOURSECRETKEY","port":80},"terminal":{"discord":False,"capacity":"inf"}}
+        config_dict = {\
+                            "allow":{"ip":True},\
+                            "server_path":now_path + "/",\
+                            
+                            "server_name":"bedrock_server.exe",\
+                            "log":{"server":True,"all":False},\
+                            
+                            "mc":True,\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "discord_commands":{\
+                                "cmd":{\
+                                    "serverin":{\
+                                        "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
+                                    }\
+                                },\
+                                "terminal":{"discord":False,"capacity":"inf"},\
+                                "stop":{"submit":"stop"},\
+                                "backup":{"path": default_backup_path,},\
+                                "admin":{"members":[]},\
+                                "lang":"en",\
+                            },\
+                        }
         json.dump(config_dict,file,indent=4)
         config_changed = True
     else:
@@ -155,8 +178,32 @@ def make_config():
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
                 cfg["server_path"] = now_path + "/"
-            if "allow_mccmd" not in cfg:
-                cfg["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "discord_commands" not in cfg:
+                cfg["discord_commands"] = {}
+            if "cmd" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["cmd"] = {}
+            if "serverin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["serverin"] = {}
+            if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
+                cfg["discord_commands"]["cmd"]["serverin"]["allow_mccmd"] = ["list","whitelist","tellraw","w","tell"]
+            if "terminal" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["terminal"] = {"discord":False,"capacity":"inf"}
+            if "discord" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["discord"] = False
+            if "capacity" not in cfg["discord_commands"]["terminal"]:
+                cfg["discord_commands"]["terminal"]["capacity"] = "inf"
+            if "stop" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["stop"] = {"submit":"stop"}
+            elif "submit" not in cfg["discord_commands"]["stop"]:
+                cfg["discord_commands"]["stop"]["submit"] = "stop"
+            if "admin" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["admin"] = {"members":[]}
+            elif "members" not in cfg["discord_commands"]["admin"]:
+                cfg["discord_commands"]["admin"]["members"] = []
+            if "lang" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["lang"] = "en"
+            if "mc" not in cfg:
+                cfg["mc"] = True
             if "server_name" not in cfg:
                 cfg["server_name"] = "bedrock_server.exe"
             if "log" not in cfg:
@@ -166,43 +213,28 @@ def make_config():
                     cfg["log"]["server"] = True
                 if "all" not in cfg["log"]:
                     cfg["log"]["all"] = False
-            if "stop" not in cfg:
-                cfg["stop"] = {"submit":"stop"}
-            else:
-                if "submit" not in cfg["stop"]:
-                    cfg["stop"]["submit"] = "stop"
-            if "backup_path" not in cfg:
+            if "backup" not in cfg["discord_commands"]:
                 try:
-                    server_name = cfg["server_path"].split("/")[-2]
+                    server_name = cfg["server_path"].replace("\\","/").split("/")[-2]
                 except IndexError:
                     print(f"server_path is broken. please check config file and try again.\ninput : {cfg['server_path']}")
                     wait_for_keypress()
                 if server_name == "":
                     print("server_path is broken. please check config file and try again.")
                     wait_for_keypress()
-                cfg["backup_path"] = cfg["server_path"] + "../backup/" + server_name
-                cfg["backup_path"] = os.path.realpath(cfg["backup_path"]) + "/"
-                if not os.path.exists(cfg["backup_path"]):
-                    os.makedirs(cfg["backup_path"])
+                cfg["discord_commands"]["backup"] = {}
+                cfg["discord_commands"]["backup"]["path"] = cfg["server_path"] + "../backup/" + server_name
+                cfg["discord_commands"]["backup"]["path"] = os.path.realpath(cfg["discord_commands"]["backup"]["path"]) + "/"
+                if not os.path.exists(cfg["discord_commands"]["backup"]["path"]):
+                    os.makedirs(cfg["discord_commands"]["backup"]["path"])
             if "mc" not in cfg:
                 cfg["mc"] = True
-            if "lang" not in cfg:
-                cfg["lang"] = "en"
-            if "force_admin" not in cfg:
-                cfg["force_admin"] = []
             if "web" not in cfg:
                 cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
-            if "terminal" not in cfg:
-                cfg["terminal"] = {"discord":False,"capacity":"inf"}
-            else:
-                if "discord" not in cfg["terminal"]:
-                    cfg["terminal"]["discord"] = False
-                if "capacity" not in cfg["terminal"]:
-                    cfg["terminal"]["capacity"] = "inf"
             return cfg
         if config_dict != check(config_dict.copy()):
             check(config_dict)
@@ -216,8 +248,8 @@ def make_config():
 def to_config_safe(config):
     #"force_admin"に重複があれば削除する
     save = False
-    if len(config["force_admin"]) > len(set(config["force_admin"])):
-        config["force_admin"] = list(set(config["force_admin"]))
+    if len(config["discord_commands"]["admin"]["members"]) > len(set(config["discord_commands"]["admin"]["members"])):
+        config["discord_commands"]["admin"]["members"] = list(set(config["discord_commands"]["admin"]["members"]))
         save = True
     if save:
         file = open(config_file_place,"w")
@@ -553,7 +585,7 @@ minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Col
 
 #configの読み込み
 try:
-    allow_cmd = set(config["allow_mccmd"])
+    allow_cmd = set(config["discord_commands"]["cmd"]["serverin"]["allow_mccmd"])
     server_name = config["server_name"]
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
@@ -561,17 +593,17 @@ try:
     allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
-    backup_path = config["backup_path"]
-    lang = config["lang"]
-    bot_admin = set(config["force_admin"])
+    backup_path = config["discord_commands"]["backup"]["path"]
+    lang = config["discord_commands"]["lang"]
+    bot_admin = set(config["discord_commands"]["admin"]["members"])
     flask_secret_key = config["web"]["secret_key"]
     web_port = config["web"]["port"]
-    STOP = config["stop"]["submit"]
-    where_terminal = config["terminal"]["discord"]
-    if config["terminal"]["capacity"] == "inf":
+    STOP = config["discord_commands"]["stop"]["submit"]
+    where_terminal = config["discord_commands"]["terminal"]["discord"]
+    if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
-        terminal_capacity = config["terminal"]["capacity"]
+        terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
@@ -732,7 +764,7 @@ COMMAND_PERMISSION = {
     "/replace    ":2,
     "/ip         ":0,
     "/logs       ":1,
-    "/force_admin":2,
+    "/admin      ":2,
     "/permission ":0,
     "/lang       ":2,
     "/tokengen   ":1,
@@ -746,34 +778,36 @@ async def get_text_dat():
 #help
     HELP_MSG = {
         "ja":{
-            "/stop       ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
-            "/start      ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
-            "/exit       ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
-            "/cmd        ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
-            "/backup     ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
-            "/replace    ":"/replace <py file> によってbotのコードを置き換えます。",
-            "/ip         ":"サーバーのIPアドレスを表示します。",
-            "/logs       ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
-            "/force_admin":"/force_admin <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
-            "/permission ":"/permission <user> で、userのbot操作権利を表示します。",
-            "/lang       ":"/lang <lang> で、botの言語を変更します。",
-            "/tokengen   ":"/tokengen で、webでログインするためのトークンを生成します。",
-            "/terminal   ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/stop        ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
+            "/start       ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
+            "/exit        ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
+            "/cmd serverin":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
+            "/backup      ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
+            "/replace     ":"/replace <py file> によってbotのコードを置き換えます。",
+            "/ip          ":"サーバーのIPアドレスを表示します。",
+            "/logs        ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
+            "/admin       ":"/admin force <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
+            "/permission  ":"/permission <user> で、userのbot操作権利を表示します。",
+            "/lang        ":"/lang <lang> で、botの言語を変更します。",
+            "/tokengen    ":"/tokengen で、webでログインするためのトークンを生成します。",
+            "/terminal    ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
         },
         "en":{
-            "/stop       ":"Stop the server. If the server is not running, an error message will be returned.",
-            "/start      ":"Start the server. If the server is running, an error message will be returned.",
-            "/exit       ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
-            "/cmd        ":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
-            "/backup     ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
-            "/replace    ":"/replace <py file> replaces the bot's code.",
-            "/ip         ":"The server's IP address will be displayed to discord.",
-            "/logs       ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
-            "/force_admin":"/force_admin <add/remove> <user> gives or removes user's bot operation rights.",
-            "/permission ":"/permission <user> displays the user's bot operation rights.",
-            "/lang       ":"/lang <lang> changes the bot's language.",
-            "/tokengen   ":"/tokengen generates a token for login to the web.",
-            "/terminal   ":"/terminal connects the server's console to a channel.",
+            "/stop        ":"Stop the server. If the server is not running, an error message will be returned.",
+            "/start       ":"Start the server. If the server is running, an error message will be returned.",
+            "/exit        ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
+            "/cmd serverin":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
+            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
+            "/backup      ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
+            "/replace     ":"/replace <py file> replaces the bot's code.",
+            "/ip          ":"The server's IP address will be displayed to discord.",
+            "/logs        ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
+            "/admin       ":"/admin force <add/remove> <user> gives or removes user's bot operation rights.",
+            "/permission  ":"/permission <user> displays the user's bot operation rights.",
+            "/lang        ":"/lang <lang> changes the bot's language.",
+            "/tokengen    ":"/tokengen generates a token for login to the web.",
+            "/terminal    ":"/terminal connects the server's console to a channel.",
         },
     }
         
@@ -783,7 +817,17 @@ async def get_text_dat():
             "stop":"サーバーを停止します。",
             "start":"サーバーを起動します。",
             "exit":"botを終了します。",
-            "cmd":"サーバーにマインクラフトコマンドを送信します。",
+            "cmd":{
+                "serverin":"サーバーにマインクラフトコマンドを送信します。",
+                "stdin": {
+                    "main": "サーバーディレクトリ以下に対するコマンドをサーバーの外側から実行します。",
+                    "mk": "指定した相対パスを渡されたファイルまたは空にします。",
+                    "rm": "指定した相対パスに完全一致するファイルを削除します。",
+                    "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
+                    "mkdir": "指定した相対パスに新しいディレクトリを作成します。",
+                    "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
+                },
+            },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
             "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
@@ -801,7 +845,17 @@ async def get_text_dat():
             "stop":"Stop the server.",
             "start":"Start the server.",
             "exit":"Exit the bot.",
-            "cmd":"Send a Minecraft command to the server.",
+            "cmd":{
+                "serverin":"Send a Minecraft command to the server.",
+                "stdin":{
+                    "main":"Execute the command in the server's directory outside the server.",
+                    "mk":"Set the file specified by the relative path from the server.",
+                    "rm":"Delete the file specified by the relative path from the server.",
+                    "ls":"Display the file specified by the relative path from the server.",
+                    "mkdir":"Create a new directory specified by the relative path from the server.",
+                    "rmdir":"Recursively delete the directory specified by the relative path from the server.",
+                },
+            },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
             "replace":"Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
@@ -833,7 +887,37 @@ async def get_text_dat():
                 "success":"サーバーを起動します",
             },
             "cmd":{
-                "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                "serverin":{
+                    "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                },
+                "stdin":{
+                    "invalid_path": "パス`{}`は不正/操作不可能な領域です",
+                    "not_file": "`{}`はファイルではありません",
+                    "permission_denied":"`{}`を操作する権限がありません",
+                    "mk":{
+                        "success":"ファイル`{}`を作成または上書きしました",
+                        "is_link":"`{}`はシンボリックリンクであるため書き込めません",
+                    },
+                    "rm":{
+                        "success":"`{}`を削除しました",
+                        "file_not_found":"`{}`は見つかりません",
+                    },
+                    "ls":{
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "file_not_found":"`{}`は見つかりません",
+                        "success":"`{}`\n```ansi\n{}```\n",
+                        "to_long": "内容が2000文字を超えたためファイルに変換します。",
+                    },
+                    "mkdir":{
+                        "success":"ディレクトリ`{}`を作成しました",
+                        "exists":"`{}`は既に存在します",
+                    },
+                    "rmdir":{
+                        "success":"ディレクトリ`{}`を削除しました",
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "not_exists":"`{}`は見つかりません",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"バックアップ中・・・",
@@ -861,8 +945,8 @@ async def get_text_dat():
             "admin":{
                 "force":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
-                    "add_success":"{}にbotの管理者権限を与えました",
-                    "remove_success":"{}からbotの管理者権限を剥奪しました",
+                    "add_success":"`{}`にbotの管理者権限を与えました",
+                    "remove_success":"`{}`からbotの管理者権限を剥奪しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
                 },
             },
@@ -900,7 +984,37 @@ async def get_text_dat():
                 "success":"The server has been started",
             },
             "cmd":{
-                "skipped_cmd":"The command is not found or not allowed",
+                "serverin":{
+                    "skipped_cmd":"The command is not found or not allowed",
+                },
+                "stdin":{
+                    "invalid_path": "`{}` is an invalid/operable area",
+                    "not_file": "`{}` is not a file",
+                    "permission_denied": "`{}` cannot be modified because it is an important file",
+                    "mk":{
+                        "success":"`{}` has been created or overwritten",
+                        "is_link": "`{}` is a symbolic link and cannot be written",
+                    },
+                    "rm":{
+                        "success":"`{}` has been deleted",
+                        "file_not_found":"`{}` not found",
+                    },
+                    "ls":{
+                        "not_directory":"`{}` is not a directory",
+                        "file_not_found":"`{}` not found",
+                        "success":"`{}`\n```ansi\n{}```\n",
+                        "to_long": "The content is over 2000 characters and will be converted to a file.",
+                    },
+                    "mkdir":{
+                        "success":"Directory `{}` has been created",
+                        "exists":"`{}` already exists",
+                    },
+                    "rmdir":{
+                        "success":"Directory `{}` has been deleted",
+                        "not_directory":"`{}` is not a directory",
+                        "not_exists":"`{}` not found",
+                    },
+                }
             },
             "backup":{
                 "now_backup":"Backup in progress",
@@ -985,7 +1099,7 @@ async def is_administrator(user: discord.User) -> bool:
 
 async def is_force_administrator(user: discord.User) -> bool:
     #user idがforce_adminに含まれないなら
-    if user.id not in config["force_admin"]:
+    if user.id not in config["discord_commands"]["admin"]["members"]:
         return False
     return True
 
@@ -1132,6 +1246,7 @@ class ServerBootException(Exception):pass
 
 
 #ローカルファイルの読み込み結果出力
+sys_logger.info("instance root -> " + now_path)
 sys_logger.info("read token file -> " + now_path + "/" +".token")
 sys_logger.info("read config file -> " + now_path + "/" +".config")
 view_config = config.copy()
@@ -1304,21 +1419,21 @@ async def admin(interaction: discord.Interaction,perm: str,mode:str,user:discord
     async def force():
         async def read_force_admin():
             global bot_admin
-            bot_admin = set(config["force_admin"])
+            bot_admin = set(config["discord_commands"]["admin"]["members"])
         if mode == "add":
-            if user.id in config["force_admin"]:
+            if user.id in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_added"])
                 return
-            config["force_admin"].append(user.id)
+            config["discord_commands"]["admin"]["members"].append(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
             await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["add_success"].format(user))
         elif mode == "remove":
-            if user.id not in config["force_admin"]:
+            if user.id not in config["discord_commands"]["admin"]["members"]:
                 await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_removed"])
                 return
-            config["force_admin"].remove(user.id)
+            config["discord_commands"]["admin"]["members"].remove(user.id)
             #configファイルを変更する
             await rewrite_config(config)
             await read_force_admin()
@@ -1362,8 +1477,8 @@ async def language(interaction: discord.Interaction,language:str):
         await not_enough_permission(interaction,lang_logger)
         return
     #データの書き換え
-    config["lang"] = language
-    lang = config["lang"]
+    config["discord_commands"]["lang"] = language
+    lang = config["discord_commands"]["lang"]
     #configファイルを変更する
     await rewrite_config(config)
     #textデータを再構築
@@ -1371,8 +1486,18 @@ async def language(interaction: discord.Interaction,language:str):
     await interaction.response.send_message(RESPONSE_MSG["lang"]["success"].format(language))
     lang_logger.info("change lang to " + lang)
 
-#/command <mc command>
-@tree.command(name="cmd",description=COMMAND_DESCRIPTION[lang]["cmd"])
+#/cmd serverin <server command>
+#/cmd stdin 
+
+
+#--------------------
+
+
+# グループの設定
+# root
+command_group_cmd = app_commands.Group(name="cmd",description="cmd group")
+
+@command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(cmd_logger,interaction.user)
     global is_back_discord,cmd_logs
@@ -1385,7 +1510,7 @@ async def cmd(interaction: discord.Interaction,command:str):
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         cmd_logger.error('unknown command : ' + command)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["skipped_cmd"])
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"])
         return
     cmd_logger.info("run command : " + command)
     process.stdin.write(command + "\n")
@@ -1400,6 +1525,223 @@ async def cmd(interaction: discord.Interaction,command:str):
             continue
         await interaction.response.send_message(cmd_logs.popleft())
         break
+
+#サブグループstdinを作成
+command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin group")
+# サブグループを設定
+command_group_cmd.add_command(command_group_cmd_stdin)
+
+
+sys_files = [".config",".token","logs","mikanassets"]
+important_bot_file = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
+] 
+
+# 操作可能なパスかを確認
+async def is_path_within_scope(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # server_path 以下にあるか確認
+    if path.startswith(os.path.abspath(server_path)):
+        return True
+    cmd_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
+    return False
+
+# 重要ファイルでないか(最高権限要求するようなファイルかを確認)
+async def is_important_bot_file(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # 重要ファイルの場合はTrueを返す
+    for f in important_bot_file:
+        if path.startswith(f):
+            return True
+    return False
+
+# 以下のコマンドはserver_pathを起点としてそれ以下のファイルを操作する
+# ファイル送信コマンドを追加
+@command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
+async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
+    await print_user(cmd_logger,interaction.user)
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    #サーバー起動確認
+    if await is_running_server(interaction,cmd_logger): return
+    # server_path + file_path にファイルを作成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        cmd_logger.info("invalid path -> " + file_path)
+        return
+    # ファイルがリンクであれば拒否
+    if os.path.islink(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
+        cmd_logger.info("file is link -> " + file_path)
+        return
+    # ファイルをfile_pathに保存
+    if file is not None:
+        await file.save(file_path)
+    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
+    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        cmd_logger.info("permission denied -> " + file_path)
+        return
+    else:
+        # 空のファイルを作成
+        open(file_path,"w").close()
+    cmd_logger.info("create file -> " + file_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
+
+@command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
+async def rm(interaction: discord.Interaction, file_path: str):
+    await print_user(cmd_logger,interaction.user)
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    #サーバー起動確認
+    if await is_running_server(interaction,cmd_logger): return
+    # server_path + file_path のパスを作成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        cmd_logger.info("invalid path -> " + file_path)
+        return
+    # ファイルが存在しているかを確認
+    if not os.path.exists(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["file_not_found"].format(file_path))
+        cmd_logger.info("file not found -> " + file_path)
+        return
+    # 該当のアイテムがファイルか
+    if not os.path.isfile(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path))
+        cmd_logger.info("not file -> " + file_path)
+        return
+    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
+    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        cmd_logger.info("permission denied -> " + file_path)
+        return
+    # ファイルを削除
+    os.remove(file_path)
+    cmd_logger.info("remove file -> " + file_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["success"].format(file_path))
+
+@command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
+async def ls(interaction: discord.Interaction, file_path: str):
+    await print_user(cmd_logger,interaction.user)
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path 閲覧パスの生成
+    file_path = os.path.abspath(os.path.join(server_path,file_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        cmd_logger.info("invalid path -> " + file_path)
+        return
+    # 対象が存在するか
+    if not os.path.exists(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["file_not_found"].format(file_path))
+        cmd_logger.info("file not found -> " + file_path)
+        return
+    # 対象がディレクトリであるか
+    if not os.path.isdir(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["not_directory"].format(file_path))
+        cmd_logger.info("not directory -> " + file_path)
+        return
+    # lsコマンドを実行
+    files = os.listdir(file_path)
+
+    colorized_files = deque()
+    
+    for f in files:
+        full_path = os.path.join(file_path, f)
+        if os.path.isdir(full_path):
+            # ディレクトリは青色
+            colorized_files.append(f"\033[34m{f}\033[0m")
+        elif os.path.islink(full_path):
+            # シンボリックリンクは紫
+            colorized_files.append(f"\033[35m{f}\033[0m")
+        else:
+            # 通常ファイルは緑
+            colorized_files.append(f"\033[32m{f}\033[0m")
+    formatted_files = "\n".join(colorized_files)
+    cmd_logger.info("list directory -> " + file_path)
+    if len(formatted_files) > 2000:
+            with io.StringIO() as temp_file:
+                temp_file.write("\n".join(files))
+                temp_file.seek(0)
+                # Discordファイルオブジェクトに変換して送信
+                discord_file = discord.File(temp_file, filename="directory_list.txt")
+                await interaction.response.send_message(
+                    RESPONSE_MSG["cmd"]["stdin"]["ls"]["to_long"].format(file_path),
+                    file=discord_file
+                )
+    else:
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["success"].format(file_path,formatted_files))
+
+@command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
+async def mkdir(interaction: discord.Interaction, dir_path: str):
+    await print_user(cmd_logger,interaction.user)
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path のパスを作成
+    dir_path = os.path.abspath(os.path.join(server_path,dir_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        cmd_logger.info("invalid path -> " + dir_path)
+        return
+    # 既に存在するか確認
+    if os.path.exists(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["exists"].format(dir_path))
+        cmd_logger.info("directory already exists -> " + dir_path)
+        return
+    # ディレクトリを作成
+    os.makedirs(dir_path)
+    cmd_logger.info("create directory -> " + dir_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["success"].format(dir_path))
+
+@command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
+async def rmdir(interaction: discord.Interaction, dir_path: str):
+    await print_user(cmd_logger,interaction.user)
+    # 管理者権限を要求
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # server_path + file_path のパスを作成
+    dir_path = os.path.abspath(os.path.join(server_path,dir_path))
+    # 操作可能なパスか確認
+    if not await is_path_within_scope(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        cmd_logger.info("invalid path -> " + dir_path)
+        return
+    # 既に存在するか確認
+    if not os.path.exists(dir_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path))
+        cmd_logger.info("directory not exists -> " + dir_path)
+        return
+    # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
+    if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path))
+        cmd_logger.info("permission denied -> " + dir_path)
+        return
+    # ディレクトリを削除
+    rmtree(dir_path)
+    cmd_logger.info("remove directory -> " + dir_path)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path))
+
+# コマンドを追加
+tree.add_command(command_group_cmd)
+#--------------------
+
 
 #/backup()
 @tree.command(name="backup",description=COMMAND_DESCRIPTION[lang]["backup"])
@@ -1547,7 +1889,7 @@ def gen_web_token():
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
@@ -1574,7 +1916,7 @@ async def terminal(interaction: discord.Interaction):
         return
     #発言したチャンネルをwhere_terminalに登録
     where_terminal = interaction.channel_id
-    config["terminal"]["discord"] = where_terminal
+    config["discord_commands"]["terminal"]["discord"] = where_terminal
     terminal_logger.info(f"terminal setting -> {where_terminal}")
     #configを書き換え
     with open(now_path + "/.config","w") as f:

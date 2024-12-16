@@ -17,7 +17,7 @@ async def is_administrator(user: discord.User) -> bool:
 
 async def is_force_administrator(user: discord.User) -> bool:
     #user idがforce_adminに含まれないなら
-    if user.id not in config["force_admin"]:
+    if user.id not in config["discord_commands"]["admin"]["members"]:
         return False
     return True
 
