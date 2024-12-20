@@ -5,6 +5,8 @@
 from .imports import *
 #!end-ignore
 
+__version__ = "2.1.0"
+
 
 intents = discord.Intents.default() 
 intents.message_content = True
@@ -47,3 +49,29 @@ status_lock = threading.Lock()
 discord_terminal_item = deque()
 discord_terminal_send_length = 0
 discord_loop_is_run = False
+
+USER_PERMISSION_MAX = 4
+
+
+# 権限データ
+COMMAND_PERMISSION = {
+    "stop":1,
+    "start":1,
+    "exit":2,
+    "cmd serverin":1,
+    "cmd stdin mk":3,
+    "cmd stdin rm":2,
+    "cmd stdin mkdir":2,
+    "cmd stdin rmdir":2,
+    "cmd stdin ls":2,
+    "help":0,
+    "backup":1,
+    "replace":4,
+    "ip":0,
+    "logs":1,
+    "permission view":0,
+    "permission change":4,
+    "lang":2,
+    "tokengen":1,
+    "terminal":1,
+}

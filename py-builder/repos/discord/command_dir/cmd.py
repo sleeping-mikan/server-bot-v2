@@ -16,7 +16,7 @@ async def cmd(interaction: discord.Interaction,command:str):
     await print_user(cmd_logger,interaction.user)
     global is_back_discord,cmd_logs
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -77,7 +77,7 @@ async def is_important_bot_file(path):
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -112,7 +112,7 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
 async def rm(interaction: discord.Interaction, file_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -148,7 +148,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
 async def ls(interaction: discord.Interaction, file_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path 閲覧パスの生成
@@ -203,7 +203,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
 async def mkdir(interaction: discord.Interaction, dir_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path のパスを作成
@@ -227,7 +227,7 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
 async def rmdir(interaction: discord.Interaction, dir_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path のパスを作成

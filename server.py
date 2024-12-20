@@ -23,6 +23,7 @@ import sys
 import logging
 import requests
 import json
+from copy import deepcopy
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
@@ -38,6 +39,8 @@ import io
 """
 処理に必要な定数を宣言する
 """
+
+__version__ = "2.1.0"
 
 
 intents = discord.Intents.default() 
@@ -81,6 +84,32 @@ status_lock = threading.Lock()
 discord_terminal_item = deque()
 discord_terminal_send_length = 0
 discord_loop_is_run = False
+
+USER_PERMISSION_MAX = 4
+
+
+# 権限データ
+COMMAND_PERMISSION = {
+    "stop":1,
+    "start":1,
+    "exit":1,
+    "cmd serverin":1,
+    "cmd stdin mk":1,
+    "cmd stdin rm":1,
+    "cmd stdin cp":1,
+    "cmd stdin rmdir":1,
+    "cmd stdin ls":1,
+    "help":0,
+    "backup":1,
+    "replace":4,
+    "ip":0,
+    "logs":1,
+    "permission view":0,
+    "permission change":4,
+    "lang":2,
+    "tokengen":1,
+    "terminal":1,
+}
 #--------------------
 
 
@@ -158,7 +187,7 @@ def make_config():
                                 "terminal":{"discord":False,"capacity":"inf"},\
                                 "stop":{"submit":"stop"},\
                                 "backup":{"path": default_backup_path,},\
-                                "admin":{"members":[]},\
+                                "admin":{"members":{}},\
                                 "lang":"en",\
                             },\
                         }
@@ -197,9 +226,9 @@ def make_config():
             elif "submit" not in cfg["discord_commands"]["stop"]:
                 cfg["discord_commands"]["stop"]["submit"] = "stop"
             if "admin" not in cfg["discord_commands"]:
-                cfg["discord_commands"]["admin"] = {"members":[]}
+                cfg["discord_commands"]["admin"] = {"members":{}}
             elif "members" not in cfg["discord_commands"]["admin"]:
-                cfg["discord_commands"]["admin"]["members"] = []
+                cfg["discord_commands"]["admin"]["members"] = {}
             if "lang" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["lang"] = "en"
             if "mc" not in cfg:
@@ -235,22 +264,29 @@ def make_config():
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            # バージョン移行処理
+            # v2.0.0までは、admin.membersがlistで管理されていた(当時の権限レベルは現在の1に該当する。)
+            if type(cfg["discord_commands"]["admin"]["members"]) == list:
+                users = {}
+                for user in cfg["discord_commands"]["admin"]["members"]:
+                    users[str(user)] = 1
+                cfg["discord_commands"]["admin"]["members"] = users
+                print("admin.members is list. format changed to dict.(this version isv2.1.0 or later)")
             return cfg
-        if config_dict != check(config_dict.copy()):
-            check(config_dict)
+        checked_config = check(deepcopy(config_dict))
+        if config_dict != checked_config:
+            config_dict = checked_config
             file = open(now_path + "/"  + ".config","w")
             #ログ
             config_changed = True
             json.dump(config_dict,file,indent=4)
             file.close()
+            print("config file is changed.")
         else: config_changed = False
     return config_dict,config_changed
 def to_config_safe(config):
     #"force_admin"に重複があれば削除する
     save = False
-    if len(config["discord_commands"]["admin"]["members"]) > len(set(config["discord_commands"]["admin"]["members"])):
-        config["discord_commands"]["admin"]["members"] = list(set(config["discord_commands"]["admin"]["members"]))
-        save = True
     if save:
         file = open(config_file_place,"w")
         json.dump(config,file,indent=4)
@@ -595,7 +631,7 @@ try:
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
     lang = config["discord_commands"]["lang"]
-    bot_admin = set(config["discord_commands"]["admin"]["members"])
+    bot_admin = config["discord_commands"]["admin"]["members"]
     flask_secret_key = config["web"]["secret_key"]
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
@@ -753,23 +789,6 @@ use_stop = False
 #--------------------
 
 
-# 権限データ
-COMMAND_PERMISSION = {
-    "/stop       ":1,
-    "/start      ":1,
-    "/exit       ":1,
-    "/cmd        ":1,
-    "/help       ":0,
-    "/backup     ":1,
-    "/replace    ":2,
-    "/ip         ":0,
-    "/logs       ":1,
-    "/admin      ":2,
-    "/permission ":0,
-    "/lang       ":2,
-    "/tokengen   ":1,
-    "/terminal   ":1,
-}
 
 async def get_text_dat():
     global HELP_MSG, COMMAND_DESCRIPTION, send_help, RESPONSE_MSG, ACTIVITY_NAME 
@@ -778,36 +797,36 @@ async def get_text_dat():
 #help
     HELP_MSG = {
         "ja":{
-            "/stop        ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
-            "/start       ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
-            "/exit        ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
-            "/cmd serverin":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
-            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
-            "/backup      ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
-            "/replace     ":"/replace <py file> によってbotのコードを置き換えます。",
-            "/ip          ":"サーバーのIPアドレスを表示します。",
-            "/logs        ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
-            "/admin       ":"/admin force <add/remove> <user> で、userのbot操作権利を付与/剥奪することができます。",
-            "/permission  ":"/permission <user> で、userのbot操作権利を表示します。",
-            "/lang        ":"/lang <lang> で、botの言語を変更します。",
-            "/tokengen    ":"/tokengen で、webでログインするためのトークンを生成します。",
-            "/terminal    ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/stop             ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
+            "/start            ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
+            "/exit             ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
+            "/cmd serverin     ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
+            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
+            "/backup           ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
+            "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
+            "/ip               ":"サーバーのIPアドレスを表示します。",
+            "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
+            "/permission change":"/permission change <level> <user> で、userのbot操作権利を変更できます。必要な権限レベルは/permission viewで確認できます。",
+            "/permission view  ":"/permission view <user> で、userのbot操作権利を表示します。",
+            "/lang             ":"/lang <lang> で、botの言語を変更します。",
+            "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
+            "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
         },
         "en":{
-            "/stop        ":"Stop the server. If the server is not running, an error message will be returned.",
-            "/start       ":"Start the server. If the server is running, an error message will be returned.",
-            "/exit        ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
-            "/cmd serverin":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
-            "/cmd stdin   ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
-            "/backup      ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
-            "/replace     ":"/replace <py file> replaces the bot's code.",
-            "/ip          ":"The server's IP address will be displayed to discord.",
-            "/logs        ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
-            "/admin       ":"/admin force <add/remove> <user> gives or removes user's bot operation rights.",
-            "/permission  ":"/permission <user> displays the user's bot operation rights.",
-            "/lang        ":"/lang <lang> changes the bot's language.",
-            "/tokengen    ":"/tokengen generates a token for login to the web.",
-            "/terminal    ":"/terminal connects the server's console to a channel.",
+            "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
+            "/start            ":"Start the server. If the server is running, an error message will be returned.",
+            "/exit             ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
+            "/cmd serverin     ":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
+            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
+            "/backup           ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
+            "/replace          ":"/replace <py file> replaces the bot's code.",
+            "/ip               ":"The server's IP address will be displayed to discord.",
+            "/logs             ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
+            "/permission change":"/permission change <level> <user> changes the user's bot operation rights. The required permission level can be checked by /permission view.",
+            "/permission view  ":"/permission view <user> displays the user's bot operation rights.",
+            "/lang             ":"/lang <lang> changes the bot's language.",
+            "/tokengen         ":"/tokengen generates a token for login to the web.",
+            "/terminal         ":"/terminal connects the server's console to a channel.",
         },
     }
         
@@ -833,10 +852,10 @@ async def get_text_dat():
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
-            "admin":{
-                "force":"選択したユーザに対してbotをdiscord管理者と同等の権限で操作できるようにします。",
+            "permission":{
+                "change":"選択したユーザに対してbotをdiscord管理者と同等の権限で操作できるようにします。",
+                "view":"選択したユーザに対してbot操作権限を表示します。",
             },
-            "permission":"選択したユーザに対してbot操作権限を表示します。",
             "lang":"botの言語を変更します。引数には言語コードを指定します。",
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
@@ -861,10 +880,10 @@ async def get_text_dat():
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
-            "admin":{
-                "force":"Force the selected user to have the same permissions as the bot, as discord administrator.",
+            "permission":{
+                "view": "Display the bot operation rights of the selected user.",
+                "change":"Force the selected user to have the same permissions as the bot, as discord administrator.",
             },
-            "permission":"Display the bot operation rights of the selected user.",
             "lang":"Change the bot's language. With an argument, specify the language code.",
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
@@ -942,16 +961,15 @@ async def get_text_dat():
             "error":{
                 "error_base":"エラーが発生しました。\n",
             },
-            "admin":{
-                "force":{
+            "permission":{
+                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
                     "remove_success":"`{}`からbotの管理者権限を剥奪しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
+                    "invalid_level":"権限レベルには削除(0)または1-{}の整数を指定してください。(指定された値 : `{}`)",
                 },
-            },
-            "permission":{
-                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
             },
             "lang":{
                 "success":"言語を{}に変更しました",
@@ -1039,16 +1057,15 @@ async def get_text_dat():
             "error":{
                 "error_base":"An error has occurred.\n",
             },
-            "admin":{
-                "force":{
+            "permission":{
+                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
+                "change":{
                     "already_added":"The user has already been added as an administrator",
                     "add_success":"Added as an administrator to {}",
                     "already_removed":"The user has already been removed as an administrator",
                     "remove_success":"Removed as an administrator from {}",
+                    "invalid_level":"Please specify an integer between 0 and {} for the permission level. (specified value : `{}`)",
                 },
-            },
-            "permission":{
-                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
             },
             "lang":{
                 "success":"Language changed to {}",
@@ -1237,6 +1254,14 @@ async def print_user(logger: logging.Logger,user: discord.user):
 
 class ServerBootException(Exception):pass
 
+async def user_permission(user:discord.User):
+    # ユーザが管理者なら
+    if await is_administrator(user):
+        return USER_PERMISSION_MAX
+    # configに権限が書かれていないなら
+    if str(user.id) not in config["discord_commands"]["admin"]["members"]:
+        return 0
+    return config["discord_commands"]["admin"]["members"][str(user.id)]
 #--------------------
 
 
@@ -1369,6 +1394,9 @@ async def on_ready():
 @tree.command(name="start",description=COMMAND_DESCRIPTION[lang]["start"])
 async def start(interaction: discord.Interaction):
     await print_user(start_logger,interaction.user)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["start"]: 
+        await not_enough_permission(interaction,start_logger)
+        return
     global process
     if await is_running_server(interaction,start_logger): return
     start_logger.info('server starting')
@@ -1384,7 +1412,7 @@ async def stop(interaction: discord.Interaction):
     await print_user(stop_logger,interaction.user)
     global process
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["stop"]: 
         #両方not(権限がないなら)
         await not_enough_permission(interaction,stop_logger)
         return
@@ -1403,58 +1431,68 @@ async def stop(interaction: discord.Interaction):
             break
         await asyncio.sleep(1)
 
+
+#--------------------
+
+
+# グループの設定
+# root
+command_group_permission = app_commands.Group(name="permission",description="permission group")
+
 #/admin force <add/remove>
-@tree.command(name="admin",description=COMMAND_DESCRIPTION[lang]["admin"]["force"])
-@app_commands.choices(
-    mode = [
-        app_commands.Choice(name="add",value="add"),
-        app_commands.Choice(name="remove",value="remove"),
-    ],
-    perm = [
-        app_commands.Choice(name="force",value="force"),
-    ]
-)
-async def admin(interaction: discord.Interaction,perm: str,mode:str,user:discord.User):
+@command_group_permission.command(name="change",description=COMMAND_DESCRIPTION[lang]["permission"]["change"])
+async def change(interaction: discord.Interaction,level: int,user:discord.User):
     await print_user(admin_logger,interaction.user)
-    async def force():
-        async def read_force_admin():
-            global bot_admin
-            bot_admin = set(config["discord_commands"]["admin"]["members"])
-        if mode == "add":
-            if user.id in config["discord_commands"]["admin"]["members"]:
-                await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_added"])
-                return
-            config["discord_commands"]["admin"]["members"].append(user.id)
-            #configファイルを変更する
-            await rewrite_config(config)
-            await read_force_admin()
-            await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["add_success"].format(user))
-        elif mode == "remove":
-            if user.id not in config["discord_commands"]["admin"]["members"]:
-                await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_removed"])
-                return
-            config["discord_commands"]["admin"]["members"].remove(user.id)
-            #configファイルを変更する
-            await rewrite_config(config)
-            await read_force_admin()
-            await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["remove_success"].format(user))
-        admin_logger.info(f"exec force admin {mode} {user}")
-    if perm == "force": await force()
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["permission change"]:
+        await not_enough_permission(interaction,lang_logger)
+        return
+    async def read_force_admin():
+        global bot_admin
+        bot_admin = config["discord_commands"]["admin"]["members"]
+    # 権限レベル1~4を付与
+    if level >= 1 and level <= USER_PERMISSION_MAX:
+        if user.id in config["discord_commands"]["admin"]["members"]:
+            await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["already_added"])
+            return
+        config["discord_commands"]["admin"]["members"][str(user.id)] = level
+        #configファイルを変更する
+        await rewrite_config(config)
+        await read_force_admin()
+        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["add_success"].format(user))
+        admin_logger.info(f"exec force admin add {user}")
+    elif level == 0:
+        if user.id not in config["discord_commands"]["admin"]["members"]:
+            await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["already_removed"])
+            return
+        config["discord_commands"]["admin"]["members"].pop(str(user.id))
+        #configファイルを変更する
+        await rewrite_config(config)
+        await read_force_admin()
+        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["remove_success"].format(user))
+        admin_logger.info(f"exec force admin remove {user}")
+    else:
+        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["invalid_level"].format(USER_PERMISSION_MAX,level))
+        admin_logger.info("invalid level")
 
 #/permission <user>
-@tree.command(name="permission",description=COMMAND_DESCRIPTION[lang]["permission"])
-async def permission(interaction: discord.Interaction,user:discord.User,detail:bool):
+@command_group_permission.command(name="view",description=COMMAND_DESCRIPTION[lang]["permission"]["view"])
+async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
     value = {"admin":"☐","force_admin":"☐"}
-    if await is_administrator(user): value["admin"] = "☑"
-    if await is_force_administrator(user): value["force_admin"] = "☑"
+    if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
+    value["force_admin"] = await user_permission(user)
     if detail:
-        my_perm_level = 0 if value["admin"] == "☐" and value["force_admin"] == "☐" else 1 if value["admin"] == "☐" else 2
-        can_use_cmd = {f"{key}":"☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐" for key in COMMAND_PERMISSION}
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
+        my_perm_level = await user_permission(user)
+        can_use_cmd = {f"{key}":("☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐") + f"({COMMAND_PERMISSION[key]})" for key in COMMAND_PERMISSION}
+        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(20)} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
     else:
         await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]))
     permission_logger.info("send permission info : " + str(user.id) + f"({user})")
+
+tree.add_command(command_group_permission)
+#--------------------
+
+
 
 #/lang <lang>
 @tree.command(name="lang",description=COMMAND_DESCRIPTION[lang]["lang"])
@@ -1473,7 +1511,7 @@ async def language(interaction: discord.Interaction,language:str):
     await print_user(lang_logger,interaction.user)
     global lang
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["lang"]:
         await not_enough_permission(interaction,lang_logger)
         return
     #データの書き換え
@@ -1502,7 +1540,7 @@ async def cmd(interaction: discord.Interaction,command:str):
     await print_user(cmd_logger,interaction.user)
     global is_back_discord,cmd_logs
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -1563,7 +1601,7 @@ async def is_important_bot_file(path):
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -1598,7 +1636,7 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
 async def rm(interaction: discord.Interaction, file_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
@@ -1634,7 +1672,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
 async def ls(interaction: discord.Interaction, file_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path 閲覧パスの生成
@@ -1689,7 +1727,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
 async def mkdir(interaction: discord.Interaction, dir_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path のパスを作成
@@ -1713,7 +1751,7 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
 async def rmdir(interaction: discord.Interaction, dir_path: str):
     await print_user(cmd_logger,interaction.user)
     # 管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
     # server_path + file_path のパスを作成
@@ -1749,7 +1787,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
@@ -1770,7 +1808,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
@@ -1794,6 +1832,9 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
 async def ip(interaction: discord.Interaction):
     await print_user(ip_logger,interaction.user)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["ip"]:
+        await not_enough_permission(interaction,ip_logger)
+        return
     if not allow["ip"]:
         await interaction.response.send_message(RESPONSE_MSG["ip"]["not_allow"])
         ip_logger.error('ip is not allowed')
@@ -1836,7 +1877,7 @@ async def get_log_files_choice_format(interaction: discord.Interaction, current:
 async def logs(interaction: discord.Interaction,filename:str = None):
     await print_user(log_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["logs"]: 
         await not_enough_permission(interaction,log_logger)
         return
     # discordにログを送信
@@ -1888,8 +1929,8 @@ def gen_web_token():
 @tree.command(name="tokengen",description=COMMAND_DESCRIPTION[lang]["tokengen"])
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
-    #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    #権限レベルを確認
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["tokengen"]:
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
@@ -1910,8 +1951,8 @@ async def tokengen(interaction: discord.Interaction):
 async def terminal(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_logger,interaction.user)
-    #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    # 権限レベルが足りていないなら
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
         await not_enough_permission(interaction,terminal_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
@@ -1936,7 +1977,7 @@ async def help(interaction: discord.Interaction):
 async def exit(interaction: discord.Interaction):
     await print_user(exit_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["exit"]: 
         await not_enough_permission(interaction,exit_logger)
         return
     #サーバが動いているなら終了

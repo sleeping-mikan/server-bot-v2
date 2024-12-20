@@ -12,6 +12,9 @@ from ..files.create import *
 @tree.command(name="start",description=COMMAND_DESCRIPTION[lang]["start"])
 async def start(interaction: discord.Interaction):
     await print_user(start_logger,interaction.user)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["start"]: 
+        await not_enough_permission(interaction,start_logger)
+        return
     global process
     if await is_running_server(interaction,start_logger): return
     start_logger.info('server starting')
@@ -27,7 +30,7 @@ async def stop(interaction: discord.Interaction):
     await print_user(stop_logger,interaction.user)
     global process
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["stop"]: 
         #両方not(権限がないなら)
         await not_enough_permission(interaction,stop_logger)
         return
@@ -46,58 +49,11 @@ async def stop(interaction: discord.Interaction):
             break
         await asyncio.sleep(1)
 
-#/admin force <add/remove>
-@tree.command(name="admin",description=COMMAND_DESCRIPTION[lang]["admin"]["force"])
-@app_commands.choices(
-    mode = [
-        app_commands.Choice(name="add",value="add"),
-        app_commands.Choice(name="remove",value="remove"),
-    ],
-    perm = [
-        app_commands.Choice(name="force",value="force"),
-    ]
-)
-async def admin(interaction: discord.Interaction,perm: str,mode:str,user:discord.User):
-    await print_user(admin_logger,interaction.user)
-    async def force():
-        async def read_force_admin():
-            global bot_admin
-            bot_admin = set(config["discord_commands"]["admin"]["members"])
-        if mode == "add":
-            if user.id in config["discord_commands"]["admin"]["members"]:
-                await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_added"])
-                return
-            config["discord_commands"]["admin"]["members"].append(user.id)
-            #configファイルを変更する
-            await rewrite_config(config)
-            await read_force_admin()
-            await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["add_success"].format(user))
-        elif mode == "remove":
-            if user.id not in config["discord_commands"]["admin"]["members"]:
-                await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["already_removed"])
-                return
-            config["discord_commands"]["admin"]["members"].remove(user.id)
-            #configファイルを変更する
-            await rewrite_config(config)
-            await read_force_admin()
-            await interaction.response.send_message(RESPONSE_MSG["admin"]["force"]["remove_success"].format(user))
-        admin_logger.info(f"exec force admin {mode} {user}")
-    if perm == "force": await force()
+#!open ./repos/discord/command_dir/permission.py
+#!ignore
+from .command_dir.permission import *
+#!end-ignore
 
-#/permission <user>
-@tree.command(name="permission",description=COMMAND_DESCRIPTION[lang]["permission"])
-async def permission(interaction: discord.Interaction,user:discord.User,detail:bool):
-    await print_user(permission_logger,interaction.user)
-    value = {"admin":"☐","force_admin":"☐"}
-    if await is_administrator(user): value["admin"] = "☑"
-    if await is_force_administrator(user): value["force_admin"] = "☑"
-    if detail:
-        my_perm_level = 0 if value["admin"] == "☐" and value["force_admin"] == "☐" else 1 if value["admin"] == "☐" else 2
-        can_use_cmd = {f"{key}":"☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐" for key in COMMAND_PERMISSION}
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
-    else:
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]))
-    permission_logger.info("send permission info : " + str(user.id) + f"({user})")
 
 #/lang <lang>
 @tree.command(name="lang",description=COMMAND_DESCRIPTION[lang]["lang"])
@@ -116,7 +72,7 @@ async def language(interaction: discord.Interaction,language:str):
     await print_user(lang_logger,interaction.user)
     global lang
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["lang"]:
         await not_enough_permission(interaction,lang_logger)
         return
     #データの書き換え
@@ -143,7 +99,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
@@ -164,7 +120,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user):
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
@@ -188,6 +144,9 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
 async def ip(interaction: discord.Interaction):
     await print_user(ip_logger,interaction.user)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["ip"]:
+        await not_enough_permission(interaction,ip_logger)
+        return
     if not allow["ip"]:
         await interaction.response.send_message(RESPONSE_MSG["ip"]["not_allow"])
         ip_logger.error('ip is not allowed')
@@ -230,7 +189,7 @@ async def get_log_files_choice_format(interaction: discord.Interaction, current:
 async def logs(interaction: discord.Interaction,filename:str = None):
     await print_user(log_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["logs"]: 
         await not_enough_permission(interaction,log_logger)
         return
     # discordにログを送信
@@ -282,8 +241,8 @@ def gen_web_token():
 @tree.command(name="tokengen",description=COMMAND_DESCRIPTION[lang]["tokengen"])
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
-    #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user):
+    #権限レベルを確認
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["tokengen"]:
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
@@ -304,8 +263,8 @@ async def tokengen(interaction: discord.Interaction):
 async def terminal(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_logger,interaction.user)
-    #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    # 権限レベルが足りていないなら
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
         await not_enough_permission(interaction,terminal_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
@@ -330,7 +289,7 @@ async def help(interaction: discord.Interaction):
 async def exit(interaction: discord.Interaction):
     await print_user(exit_logger,interaction.user)
     #管理者権限を要求
-    if not await is_administrator(interaction.user) and not await is_force_administrator(interaction.user): 
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["exit"]: 
         await not_enough_permission(interaction,exit_logger)
         return
     #サーバが動いているなら終了

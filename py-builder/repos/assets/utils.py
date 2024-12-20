@@ -154,3 +154,12 @@ async def print_user(logger: logging.Logger,user: discord.user):
     logger.info('command used by ' + str(user))
 
 class ServerBootException(Exception):pass
+
+async def user_permission(user:discord.User):
+    # ユーザが管理者なら
+    if await is_administrator(user):
+        return USER_PERMISSION_MAX
+    # configに権限が書かれていないなら
+    if str(user.id) not in config["discord_commands"]["admin"]["members"]:
+        return 0
+    return config["discord_commands"]["admin"]["members"][str(user.id)]

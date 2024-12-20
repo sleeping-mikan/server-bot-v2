@@ -37,7 +37,7 @@ def make_config():
                                 "terminal":{"discord":False,"capacity":"inf"},\
                                 "stop":{"submit":"stop"},\
                                 "backup":{"path": default_backup_path,},\
-                                "admin":{"members":[]},\
+                                "admin":{"members":{}},\
                                 "lang":"en",\
                             },\
                         }
@@ -76,9 +76,9 @@ def make_config():
             elif "submit" not in cfg["discord_commands"]["stop"]:
                 cfg["discord_commands"]["stop"]["submit"] = "stop"
             if "admin" not in cfg["discord_commands"]:
-                cfg["discord_commands"]["admin"] = {"members":[]}
+                cfg["discord_commands"]["admin"] = {"members":{}}
             elif "members" not in cfg["discord_commands"]["admin"]:
-                cfg["discord_commands"]["admin"]["members"] = []
+                cfg["discord_commands"]["admin"]["members"] = {}
             if "lang" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["lang"] = "en"
             if "mc" not in cfg:
@@ -114,22 +114,29 @@ def make_config():
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            # バージョン移行処理
+            # v2.0.0までは、admin.membersがlistで管理されていた(当時の権限レベルは現在の1に該当する。)
+            if type(cfg["discord_commands"]["admin"]["members"]) == list:
+                users = {}
+                for user in cfg["discord_commands"]["admin"]["members"]:
+                    users[str(user)] = 1
+                cfg["discord_commands"]["admin"]["members"] = users
+                print("admin.members is list. format changed to dict.(this version isv2.1.0 or later)")
             return cfg
-        if config_dict != check(config_dict.copy()):
-            check(config_dict)
+        checked_config = check(deepcopy(config_dict))
+        if config_dict != checked_config:
+            config_dict = checked_config
             file = open(now_path + "/"  + ".config","w")
             #ログ
             config_changed = True
             json.dump(config_dict,file,indent=4)
             file.close()
+            print("config file is changed.")
         else: config_changed = False
     return config_dict,config_changed
 def to_config_safe(config):
     #"force_admin"に重複があれば削除する
     save = False
-    if len(config["discord_commands"]["admin"]["members"]) > len(set(config["discord_commands"]["admin"]["members"])):
-        config["discord_commands"]["admin"]["members"] = list(set(config["discord_commands"]["admin"]["members"]))
-        save = True
     if save:
         file = open(config_file_place,"w")
         json.dump(config,file,indent=4)
