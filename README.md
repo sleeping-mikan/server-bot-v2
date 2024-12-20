@@ -62,13 +62,14 @@ discordを用いて特定のサーバーを管理できます。
 
 server.pyを任意の場所に配置します。(推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。)
 
-ただしserver.exeやserver.jar本体が存在する階層はrootでない必要があります。(何かのディレクトリの中に入れてください)これは初期状態では、`../backup/`内にbackupが生成されるためです。
+> [!note]
+> ただしserver.exeやserver.jar本体が存在する階層はroot(windowsの場合c:/直下など)でない必要があります。(何かのディレクトリの中に入れてください)これは初期状態では、`../backup/`内にbackupが生成されるためです。
 
 ### 実行
 
 server.pyを起動するとserver.pyと同じ階層に`.config`と`.token`が生成されます。
 
-> [!info]
+> [!note]
 > この際.tokenが生成されない場合、.config内のserver_path+server_nameが存在していないので、サーバーが存在するパス+拡張子を含むサーバーの名前に変更してください
 
 ### 初期設定
