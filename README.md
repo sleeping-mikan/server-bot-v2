@@ -37,7 +37,7 @@ discordを用いて特定のサーバーを管理できます。
 |replace|server.pyを与えられた引数に置換します。|4|
 |logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを10件表示します。|1|
 |lang|サーバーの言語を変更します。|2|
-|permission change|サーバー内の管理者権限を操作します。admin forceを用いてbot管理者を設定できます。|4|
+|permission change|ユーザーのbot利用権限を操作します。|4|
 |permission view|プレイヤーの権限を表示します。|0|
 |tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください|1|
 
