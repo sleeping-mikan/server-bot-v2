@@ -92,13 +92,13 @@ USER_PERMISSION_MAX = 4
 COMMAND_PERMISSION = {
     "stop":1,
     "start":1,
-    "exit":1,
+    "exit":2,
     "cmd serverin":1,
-    "cmd stdin mk":1,
-    "cmd stdin rm":1,
-    "cmd stdin cp":1,
-    "cmd stdin rmdir":1,
-    "cmd stdin ls":1,
+    "cmd stdin mk":3,
+    "cmd stdin rm":2,
+    "cmd stdin mkdir":2,
+    "cmd stdin rmdir":2,
+    "cmd stdin ls":2,
     "help":0,
     "backup":1,
     "replace":4,
@@ -570,7 +570,7 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
             self.deque.append(log_entry)
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    console = logging.StreamHandler()
+    console = logging.StreamHandler(sys.stdout)
     console.setLevel(logging.DEBUG)
     console.setFormatter(console_formatter)
     logger.addHandler(console)

@@ -30,7 +30,7 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
             self.deque.append(log_entry)
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    console = logging.StreamHandler()
+    console = logging.StreamHandler(sys.stdout)
     console.setLevel(logging.DEBUG)
     console.setFormatter(console_formatter)
     logger.addHandler(console)
