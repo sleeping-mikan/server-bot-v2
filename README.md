@@ -58,17 +58,26 @@ discordを用いて特定のサーバーを管理できます。
 
 (読みたくない方へ：サーバーソフトウェアのrootディレクトリにserver.pyを配置して実行して進めれば何とかなるかも・・・？)
 
+### 配置
+
 server.pyを任意の場所に配置します。(推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。)
 
 ただしserver.exeやserver.jar本体が存在する階層はrootでない必要があります。(何かのディレクトリの中に入れてください)これは初期状態では、`../backup/`内にbackupが生成されるためです。
 
-後にserver.pyを起動するとserver.pyと同じ階層に`.token`と`.config`が生成されます。
+### 実行
 
-.tokenにbotのtokenを記述してください。
+server.pyを起動するとserver.pyと同じ階層に`.config`と`.token`が生成されます。
 
-.configについては後述します。
+> [!info]
+> この際.tokenが生成されない場合、.config内のserver_path+server_nameが存在していないので、サーバーが存在するパス+拡張子を含むサーバーの名前に変更してください
 
-このとき同時に`update.py`が生成されますが、これは`/repalce`を実行するために必要なファイルです。
+### 初期設定
+
+.tokenにdiscord botのtokenを記述してください。
+
+.configの操作は必須ではないので後述します。
+
+このとき同時に`mikanassets`が生成されますが、これは`/repalce`を実行する際やwebにアクセスするために必要なファイルです。
 
 tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するファイル)]へのパスを記述後に再度server.pyを起動すると正常に起動するはずです。このプログラムはserver.pyがサーバー本体を呼び出すためserver.[exe/jar/bat]を自身で起動する必要はありません。
 
