@@ -50,6 +50,8 @@ discordを用いて特定のサーバーを管理できます。
 > [!WARNING]
 > [discord developers](https://discord.com/developers/applications)にて該当のbotからSettings>Bot>Privileged Gateway Intents>Message Content Intentを許可してください。
 
+言語：python3.12.x
+
 ライブラリ：requirements.txtを参照
 
 ## 使用方法
