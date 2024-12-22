@@ -1,11 +1,11 @@
 #!ignore
-from ..imports import *
-from ..constant import *
-from ..logger.logger_create import *
-from ..assets.text_dat import *
-from ..assets.utils import *
-from ..minecraft.read_properties import *
-from ..files.create import *
+from ...imports import *
+from ...constant import *
+from ...logger.logger_create import *
+from ...assets.text_dat import *
+from ...assets.utils import *
+from ...minecraft.read_properties import *
+from ...files.create import *
 #!end-ignore
 
 #start
@@ -49,9 +49,9 @@ async def stop(interaction: discord.Interaction):
             break
         await asyncio.sleep(1)
 
-#!open ./repos/discord/command_dir/permission.py
+#!open ./repos/discord/command/permission.py
 #!ignore
-from .command_dir.permission import *
+from .permission import *
 #!end-ignore
 
 
@@ -88,9 +88,9 @@ async def language(interaction: discord.Interaction,language:str):
 #/cmd serverin <server command>
 #/cmd stdin 
 
-#!open ./repos/discord/command_dir/cmd.py
+#!open ./repos/discord/command/cmd.py
 #!ignore
-from .command_dir.cmd import *
+from .cmd import *
 #!end-ignore
 
 #/backup()

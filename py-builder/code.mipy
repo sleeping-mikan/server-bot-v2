@@ -42,7 +42,7 @@
 #!open ./repos/discord/start_funcs.py
 
 # スラッシュコマンドを定義
-#!open ./repos/discord/commands.py
+#!open ./repos/discord/command/_header.py
 
 # flask関連コードの読み込み
 #!open ./repos/web/main.py
