@@ -75,3 +75,6 @@ COMMAND_PERMISSION = {
     "tokengen":1,
     "terminal":1,
 }
+
+
+unti_GC_obj = deque()

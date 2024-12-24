@@ -24,6 +24,7 @@ import logging
 import requests
 import json
 from copy import deepcopy
+import importlib
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
@@ -110,6 +111,8 @@ COMMAND_PERMISSION = {
     "tokengen":1,
     "terminal":1,
 }
+
+unti_GC_obj = deque()
 #--------------------
 
 
@@ -1989,6 +1992,28 @@ async def exit(interaction: discord.Interaction):
     #waitressサーバーを終了
 
     sys.exit()
+
+
+extension_commands_group = None
+def read_extension_commands():
+    global extension_commands_group
+    extension_commands_groups = deque()
+    # 拡張moduleが存在すればするだけ読み込む
+    for file in os.listdir(now_path + "/mikanassets/extension"):
+        if os.path.isdir(now_path + "/mikanassets/extension/" + file):
+            if os.path.exists(now_path + "/mikanassets/extension/" + file + "/commands.py"):
+                # <拡張名>コマンドグループを作成(もしつかっって損害が出ても他人が作ったものなので知らない
+                extension_commands_group = app_commands.Group(name=file,description="This commands group is extention.\nUse this code at your own risk." + file)
+                extension_commands_groups.append(extension_commands_group)
+                # 拡張moduleが/mikanassets/extension/<拡張名>/commans.pyにある場合は読み込む
+                module = importlib.import_module("mikanassets.extension." + file + ".commands")
+                # コマンドを追加
+                tree.add_command(extension_commands_group)
+
+    unti_GC_obj.append(extension_commands_groups)
+read_extension_commands()
+del extension_commands_group
+
 
 #コマンドがエラーの場合
 @tree.error
