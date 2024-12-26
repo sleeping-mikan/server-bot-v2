@@ -15,6 +15,10 @@ for i in args:
         do_init = True
         # pass
 
+# mikanassets/extensionフォルダを作成
+if not os.path.exists(now_path + "/mikanassets/extension"):
+    os.makedirs(now_path + "/mikanassets/extension")
+
 #updateプログラムが存在しなければdropboxから./update.pyにコピーする
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")

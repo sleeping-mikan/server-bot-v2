@@ -667,6 +667,10 @@ for i in args:
         do_init = True
         # pass
 
+# mikanassets/extensionフォルダを作成
+if not os.path.exists(now_path + "/mikanassets/extension"):
+    os.makedirs(now_path + "/mikanassets/extension")
+
 #updateプログラムが存在しなければdropboxから./update.pyにコピーする
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
@@ -1999,7 +2003,7 @@ async def exit(interaction: discord.Interaction):
 
 #--------------------
 
-base_extension_logger.info("read extension commands")
+base_extension_logger.info("search extension commands")
 extension_commands_group = None
 extension_logger = None
 def read_extension_commands():
@@ -2011,7 +2015,7 @@ def read_extension_commands():
         if os.path.isdir(now_path + "/mikanassets/extension/" + file):
             sys_logger.info("read extension commands ->" + now_path + "/mikanassets/extension/" + file)
             if os.path.exists(now_path + "/mikanassets/extension/" + file + "/commands.py"):
-                # <拡張名>コマンドグループを作成(もしつかっって損害が出ても他人が作ったものなので知らない
+                # <拡張名>コマンドグループを作成
                 extension_commands_group = app_commands.Group(name=file,description="This commands group is extention.\nUse this code at your own risk." + file)
                 extension_commands_groups.append(extension_commands_group)
                 # 拡張moduleが/mikanassets/extension/<拡張名>/commans.pyにある場合は読み込む
@@ -2029,7 +2033,14 @@ def read_extension_commands():
             sys_logger.info("not directory -> " + now_path + "/mikanassets/extension/" + file)
 
     unti_GC_obj.append(extension_commands_groups)
-read_extension_commands()
+
+# mikanassets/extension/<extension_dir>にディレクトリが存在すれば
+if os.path.exists(now_path + "/mikanassets/extension"):
+    if len(os.listdir(now_path + "/mikanassets/extension")) > 0:
+        # 拡張コマンドを読み込む
+        read_extension_commands()
+    else:
+        sys_logger.info("no extension commands in " + now_path + "/mikanassets/extension")
 del extension_commands_group
 
 
