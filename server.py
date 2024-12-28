@@ -1391,7 +1391,7 @@ async def on_ready():
         # スラッシュコマンドを同期 
         await tree.sync()
     except Exception as e:
-        sys_logger.error("error on ready -> ",e)
+        sys_logger.error(f"error on ready -> {e}")
 #--------------------
 
 
@@ -2016,7 +2016,7 @@ def read_extension_commands():
             sys_logger.info("read extension commands ->" + now_path + "/mikanassets/extension/" + file)
             if os.path.exists(now_path + "/mikanassets/extension/" + file + "/commands.py"):
                 # <拡張名>コマンドグループを作成
-                extension_commands_group = app_commands.Group(name=file,description="This commands group is extention.\nUse this code at your own risk." + file)
+                extension_commands_group = app_commands.Group(name="extension-" + file,description="This commands group is extention.\nUse this code at your own risk." + file)
                 extension_commands_groups.append(extension_commands_group)
                 # 拡張moduleが/mikanassets/extension/<拡張名>/commans.pyにある場合は読み込む
                 try:

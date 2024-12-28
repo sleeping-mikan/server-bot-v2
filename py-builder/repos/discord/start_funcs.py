@@ -102,4 +102,4 @@ async def on_ready():
         # スラッシュコマンドを同期 
         await tree.sync()
     except Exception as e:
-        sys_logger.error("error on ready -> ",e)
+        sys_logger.error(f"error on ready -> {e}")
