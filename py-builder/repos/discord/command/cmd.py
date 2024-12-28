@@ -20,7 +20,9 @@ async def cmd(interaction: discord.Interaction,command:str):
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_stopped_server(interaction,cmd_logger): return
+    if is_stopped_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        return
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         cmd_logger.error('unknown command : ' + command)
@@ -51,15 +53,7 @@ important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
 ] 
 
-# 操作可能なパスかを確認
-async def is_path_within_scope(path):
-    # 絶対パスを取得
-    path = os.path.abspath(path)
-    # server_path 以下にあるか確認
-    if path.startswith(os.path.abspath(server_path)):
-        return True
-    cmd_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
-    return False
+
 
 # 重要ファイルでないか(最高権限要求するようなファイルかを確認)
 async def is_important_bot_file(path):
@@ -81,11 +75,13 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,cmd_logger): return
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path にファイルを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -116,11 +112,13 @@ async def rm(interaction: discord.Interaction, file_path: str):
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,cmd_logger): return
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path のパスを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -154,7 +152,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
     # server_path + file_path 閲覧パスの生成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -209,7 +207,7 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(dir_path):
+    if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
         cmd_logger.info("invalid path -> " + dir_path)
         return
@@ -230,10 +228,14 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
+    #サーバー起動確認
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(dir_path):
+    if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
         cmd_logger.info("invalid path -> " + dir_path)
         return

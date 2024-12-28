@@ -6,6 +6,7 @@ from ..config.read_config_minimum import *
 from ..config.read_config_all import *
 from ..assets.utils import *
 from ..files.create import *
+from ..assets.core._header import *
 #!end-ignore
 
 
@@ -142,14 +143,10 @@ def flask_start_server():
         # ログアウト
         session["logout_reason"] = "This token has expired. create new token."
         return jsonify({"redirect": url_for('logout')})
-    global process
-    if process is not None:
-        start_logger.info("server is already running")
-        return jsonify("server is already running")
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
-    start_logger.info("started server")
-    threading.Thread(target=server_logger,args=(process,deque())).start()
-    return jsonify("started server!!")
+    result = core_start()
+    if result == RESPONSE_MSG["other"]["is_running"]:
+        return jsonify(RESPONSE_MSG["other"]["is_running"])
+    return jsonify(result)
 
 @app.route('/flask_backup_server', methods=['POST'])
 def flask_backup_server():
@@ -159,7 +156,7 @@ def flask_backup_server():
         return jsonify({"redirect": url_for('logout')})
     world_name = request.form['fileName']
     if "\\" in world_name or "/" in world_name:
-        return jsonify(RESPONSE_MSG["backup"]["invalid_filename"])
+        return jsonify(RESPONSE_MSG["backup"]["not_allowed_path"] + ":" + server_path + world_name)
     if process is None:
         if os.path.exists(server_path + world_name):
             backup_logger.info("backup server")
@@ -171,7 +168,7 @@ def flask_backup_server():
             backup_logger.info('data not found : ' + server_path + world_name)
             return jsonify(RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name)
     else:
-        return jsonify("server is already running")
+        return jsonify(RESPONSE_MSG["other"]["is_running"])
 
 @app.route('/submit_data', methods=['POST'])
 def submit_data():

@@ -159,6 +159,7 @@ async def get_text_dat():
                 "now_backup":"バックアップ中・・・",
                 "data_not_found":"データが見つかりません",
                 "success":"バックアップが完了しました！",
+                "path_not_allowed":"不正なパス",
             },
             "replace":{
                 "progress":"更新プログラムの適応中・・・",
@@ -255,6 +256,7 @@ async def get_text_dat():
                 "now_backup":"Backup in progress",
                 "data_not_found":"Data not found",
                 "success":"Backup complete!",
+                "path_not_allowed":"Path not allowed",
             },
             "replace":{
                 "progress":"Applying update program",

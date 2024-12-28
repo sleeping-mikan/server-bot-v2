@@ -6,6 +6,7 @@ from ...assets.text_dat import *
 from ...assets.utils import *
 from ...minecraft.read_properties import *
 from ...files.create import *
+from ...assets.core._header import *
 #!end-ignore
 
 #start
@@ -15,12 +16,11 @@ async def start(interaction: discord.Interaction):
     if await user_permission(interaction.user) < COMMAND_PERMISSION["start"]: 
         await not_enough_permission(interaction,start_logger)
         return
-    global process
-    if await is_running_server(interaction,start_logger): return
-    start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
-    await interaction.response.send_message(RESPONSE_MSG["start"]["success"])
-    threading.Thread(target=server_logger,args=(process,deque())).start()
+    result = core_start()
+    if result == RESPONSE_MSG["other"]["is_running"]:
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
+    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
 
 #/stop
@@ -34,13 +34,11 @@ async def stop(interaction: discord.Interaction):
         #両方not(権限がないなら)
         await not_enough_permission(interaction,stop_logger)
         return
-    #サーバー起動確認
-    if await is_stopped_server(interaction,stop_logger): return
-    use_stop = True
-    stop_logger.info('server stopping')
-    await interaction.response.send_message(RESPONSE_MSG["stop"]["success"])
-    process.stdin.write(STOP + "\n")
-    process.stdin.flush()
+    result = core_stop()
+    if result == RESPONSE_MSG["other"]["is_not_running"]:
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        return
+    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["ending"])) 
     while True:
         #終了するまで待つ
@@ -103,7 +101,14 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
-    if await is_running_server(interaction,backup_logger): return
+    if is_running_server(backup_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
+    # 操作可能パスかを判定
+    if not is_path_within_scope(server_path + world_name):
+        backup_logger.error("path not allowed : " + server_path + world_name)
+        await interaction.response.send_message(RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name)
+        return
     backup_logger.info('backup started')
     #server_path + world_namの存在確認
     if os.path.exists(server_path + world_name):
@@ -124,7 +129,9 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,replace_logger): return
+    if is_running_server(replace_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     replace_logger.info('replace started')
     # ファイルをすべて読み込む
     with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
@@ -293,7 +300,9 @@ async def exit(interaction: discord.Interaction):
         await not_enough_permission(interaction,exit_logger)
         return
     #サーバが動いているなら終了
-    if await is_running_server(interaction,exit_logger): return
+    if is_running_server(exit_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     await interaction.response.send_message(RESPONSE_MSG["exit"]["success"])
     exit_logger.info('exit')
     await client.close()

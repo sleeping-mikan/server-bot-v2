@@ -41,6 +41,9 @@
 # 読み込み時関数/ループ関数/メッセージ受信時関数を定義
 #!open ./repos/discord/start_funcs.py
 
+# 機能関数読み込み
+#!open ./repos/assets/core/_header.py
+
 # スラッシュコマンドを定義
 #!open ./repos/discord/command/_header.py
 

@@ -951,6 +951,7 @@ async def get_text_dat():
                 "now_backup":"バックアップ中・・・",
                 "data_not_found":"データが見つかりません",
                 "success":"バックアップが完了しました！",
+                "path_not_allowed":"不正なパス",
             },
             "replace":{
                 "progress":"更新プログラムの適応中・・・",
@@ -1047,6 +1048,7 @@ async def get_text_dat():
                 "now_backup":"Backup in progress",
                 "data_not_found":"Data not found",
                 "success":"Backup complete!",
+                "path_not_allowed":"Path not allowed",
             },
             "replace":{
                 "progress":"Applying update program",
@@ -1130,20 +1132,18 @@ async def is_force_administrator(user: discord.User) -> bool:
     return True
 
 #既にサーバが起動しているか
-async def is_running_server(interaction: discord.Interaction,logger: logging.Logger) -> bool:
+def is_running_server(logger: logging.Logger) -> bool:
     global process
     if process is not None:
         logger.error('server is still running')
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"],ephemeral = True)
         return True
     return False
 
 #サーバーが閉まっている状態か
-async def is_stopped_server(interaction: discord.Interaction,logger: logging.Logger) -> bool:
+def is_stopped_server(logger: logging.Logger) -> bool:
     global process
     if process is None:
         logger.error('server is not running')
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"],ephemeral = True)
         return True
     return False
 
@@ -1271,6 +1271,16 @@ async def user_permission(user:discord.User):
     if str(user.id) not in config["discord_commands"]["admin"]["members"]:
         return 0
     return config["discord_commands"]["admin"]["members"][str(user.id)]
+
+# 操作可能なパスかを確認
+def is_path_within_scope(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # server_path 以下にあるか確認
+    if path.startswith(os.path.abspath(server_path)):
+        return True
+    sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
+    return False
 #--------------------
 
 
@@ -1395,6 +1405,43 @@ async def on_ready():
 #--------------------
 
 
+# 機能関数読み込み
+
+#--------------------
+
+
+
+#--------------------
+
+
+
+
+
+def core_stop() -> str:
+    global process,use_stop
+    if is_stopped_server(stop_logger):
+        return RESPONSE_MSG["other"]["is_not_running"]
+    use_stop = True
+    stop_logger.info('server stopping')
+    process.stdin.write(STOP + "\n")
+    process.stdin.flush()
+    return RESPONSE_MSG["stop"]["success"]
+
+def core_start() -> str:
+    global process,use_stop
+    if is_running_server(start_logger):
+        return RESPONSE_MSG["other"]["is_running"]
+    start_logger.info('server starting')
+    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+    threading.Thread(target=server_logger,args=(process,deque())).start()
+    return RESPONSE_MSG["start"]["success"]
+
+#--------------------
+
+
+#--------------------
+
+
 # スラッシュコマンドを定義
 
 #--------------------
@@ -1407,12 +1454,11 @@ async def start(interaction: discord.Interaction):
     if await user_permission(interaction.user) < COMMAND_PERMISSION["start"]: 
         await not_enough_permission(interaction,start_logger)
         return
-    global process
-    if await is_running_server(interaction,start_logger): return
-    start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
-    await interaction.response.send_message(RESPONSE_MSG["start"]["success"])
-    threading.Thread(target=server_logger,args=(process,deque())).start()
+    result = core_start()
+    if result == RESPONSE_MSG["other"]["is_running"]:
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
+    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
 
 #/stop
@@ -1426,13 +1472,11 @@ async def stop(interaction: discord.Interaction):
         #両方not(権限がないなら)
         await not_enough_permission(interaction,stop_logger)
         return
-    #サーバー起動確認
-    if await is_stopped_server(interaction,stop_logger): return
-    use_stop = True
-    stop_logger.info('server stopping')
-    await interaction.response.send_message(RESPONSE_MSG["stop"]["success"])
-    process.stdin.write(STOP + "\n")
-    process.stdin.flush()
+    result = core_stop()
+    if result == RESPONSE_MSG["other"]["is_not_running"]:
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        return
+    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["ending"])) 
     while True:
         #終了するまで待つ
@@ -1554,7 +1598,9 @@ async def cmd(interaction: discord.Interaction,command:str):
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_stopped_server(interaction,cmd_logger): return
+    if is_stopped_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        return
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         cmd_logger.error('unknown command : ' + command)
@@ -1585,15 +1631,7 @@ important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
 ] 
 
-# 操作可能なパスかを確認
-async def is_path_within_scope(path):
-    # 絶対パスを取得
-    path = os.path.abspath(path)
-    # server_path 以下にあるか確認
-    if path.startswith(os.path.abspath(server_path)):
-        return True
-    cmd_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
-    return False
+
 
 # 重要ファイルでないか(最高権限要求するようなファイルかを確認)
 async def is_important_bot_file(path):
@@ -1615,11 +1653,13 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,cmd_logger): return
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path にファイルを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -1650,11 +1690,13 @@ async def rm(interaction: discord.Interaction, file_path: str):
         await not_enough_permission(interaction,cmd_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,cmd_logger): return
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path のパスを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -1688,7 +1730,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
     # server_path + file_path 閲覧パスの生成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(file_path):
+    if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         cmd_logger.info("invalid path -> " + file_path)
         return
@@ -1743,7 +1785,7 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(dir_path):
+    if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
         cmd_logger.info("invalid path -> " + dir_path)
         return
@@ -1764,10 +1806,14 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,cmd_logger)
         return
+    #サーバー起動確認
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
-    if not await is_path_within_scope(dir_path):
+    if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
         cmd_logger.info("invalid path -> " + dir_path)
         return
@@ -1801,7 +1847,14 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
-    if await is_running_server(interaction,backup_logger): return
+    if is_running_server(backup_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
+    # 操作可能パスかを判定
+    if not is_path_within_scope(server_path + world_name):
+        backup_logger.error("path not allowed : " + server_path + world_name)
+        await interaction.response.send_message(RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name)
+        return
     backup_logger.info('backup started')
     #server_path + world_namの存在確認
     if os.path.exists(server_path + world_name):
@@ -1822,7 +1875,9 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
-    if await is_running_server(interaction,replace_logger): return
+    if is_running_server(replace_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     replace_logger.info('replace started')
     # ファイルをすべて読み込む
     with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
@@ -1991,7 +2046,9 @@ async def exit(interaction: discord.Interaction):
         await not_enough_permission(interaction,exit_logger)
         return
     #サーバが動いているなら終了
-    if await is_running_server(interaction,exit_logger): return
+    if is_running_server(exit_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
     await interaction.response.send_message(RESPONSE_MSG["exit"]["success"])
     exit_logger.info('exit')
     await client.close()
@@ -2197,14 +2254,10 @@ def flask_start_server():
         # ログアウト
         session["logout_reason"] = "This token has expired. create new token."
         return jsonify({"redirect": url_for('logout')})
-    global process
-    if process is not None:
-        start_logger.info("server is already running")
-        return jsonify("server is already running")
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
-    start_logger.info("started server")
-    threading.Thread(target=server_logger,args=(process,deque())).start()
-    return jsonify("started server!!")
+    result = core_start()
+    if result == RESPONSE_MSG["other"]["is_running"]:
+        return jsonify(RESPONSE_MSG["other"]["is_running"])
+    return jsonify(result)
 
 @app.route('/flask_backup_server', methods=['POST'])
 def flask_backup_server():
@@ -2214,7 +2267,7 @@ def flask_backup_server():
         return jsonify({"redirect": url_for('logout')})
     world_name = request.form['fileName']
     if "\\" in world_name or "/" in world_name:
-        return jsonify(RESPONSE_MSG["backup"]["invalid_filename"])
+        return jsonify(RESPONSE_MSG["backup"]["not_allowed_path"] + ":" + server_path + world_name)
     if process is None:
         if os.path.exists(server_path + world_name):
             backup_logger.info("backup server")
@@ -2226,7 +2279,7 @@ def flask_backup_server():
             backup_logger.info('data not found : ' + server_path + world_name)
             return jsonify(RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name)
     else:
-        return jsonify("server is already running")
+        return jsonify(RESPONSE_MSG["other"]["is_running"])
 
 @app.route('/submit_data', methods=['POST'])
 def submit_data():
