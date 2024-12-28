@@ -301,6 +301,11 @@ async def exit(interaction: discord.Interaction):
 
     sys.exit()
 
+# 拡張コマンドを読み込む
+#!open ./repos/discord/command/extension/read.py
+
+
+
 #コマンドがエラーの場合
 @tree.error
 async def on_error(interaction: discord.Interaction, error: Exception):
