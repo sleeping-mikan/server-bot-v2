@@ -167,15 +167,22 @@ server.pyはサーバ本体と同じ改装に配置することを推奨しま�
 
 現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
-## 動作確認
+## 動作確認済み環境(必要環境)
 
-|確認バージョン|日時|確認時のOS|
-|----|----|----|
-|Java vanilla 1.9.4|2024/06/26|Windows 11|
-|Java vanilla 1.19|2024/06/26|Windows 11|
-|Java vanilla 1.19.4|2024/07/31|Windows 11|
-|Java fabric 1.20.1|2024/06/26|Windows 11|
-|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|
+|確認バージョン|日時|確認時のOS|python|
+|----|----|----|----|
+|Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|
+|Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|
+|Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|
+|Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|
+|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
+
+ - 想定環境
+   - os : ubuntu(wsl2) / windows11 / windows10
+   - python : 3.12.x
+   - server : 任意
+
+なおテストを行ったわけではありませんが、python3.8台、python3.10台での動作も確認済みです。ただし、3.8を利用する場合configの相対パスは絶対パスに置き換えてください。
 
 java版serverをWindowsで起動する際一般に利用されるような以下の内容のbatをconfigのserver_nameに設定しています。noguiオプションが無い場合現在/stop等が利用できません。(fabric : start.bat , forge : run.bat)
 
@@ -184,13 +191,13 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 
 `java -Xmx4048M -Xms1024M -Dfile.encoding=UTF-8 -jar server.jar nogui`
 
-### 確認済み環境
+## 拡張機能
 
-windows 11 version 23H2  / python3.12.2&3.10.2
+拡張機能を追加する場合server.pyと同じディレクトリのmikanassets/extensionに配置してください。
 
-ubuntu(wsl2) / python3.8.10 (古いバージョンのPythonを利用する場合は、configの初期設定が相対パスになります。絶対パスに直してから実行してください)
+拡張機能の実装仕様は![](https://github.com/sleeping-mikan/server-bot-extensions)で確認できます。
 
-### 動作状態
+### 動作画面
 
 以下の動画はダウンロード後のserver.pyを起動し、コマンドを実行する動画です。
 
@@ -199,12 +206,6 @@ ubuntu(wsl2) / python3.8.10 (古いバージョンのPythonを利用する場合
 以下の画像は、webアクセス時の画面です。(PC/スマホ)
 
 ![PCサイズ](https://github.com/user-attachments/assets/a1b09ad4-9fde-4df9-abd8-cb6628589a67)![スマホサイズ](https://github.com/user-attachments/assets/6b59139f-363d-4a92-b7c8-398ed9d03d78)
-
-### /cmd
-
-このコマンドで利用できるコマンドは`allow_cmd`により定義されています。他に使いたいコマンドが存在する場合はlistを追加してください。
-
-コマンド使用例としてwhitelistへの追加は/cmd `command:whitelist add <mcid>`のようにして実行できます。
 
 ## 免責事項
 
