@@ -168,7 +168,7 @@ def make_config():
     if not os.path.exists(config_file_place):
         file = open(config_file_place,"w")
         server_path = now_path
-        default_backup_path = server_path + "/../backup/" + server_path.split("/")[-1]
+        default_backup_path = server_path + "/../backup/" + server_path.replace("\\","/").split("/")[-1]
         if not os.path.exists(default_backup_path):
             os.makedirs(default_backup_path)
         default_backup_path = os.path.realpath(default_backup_path) + "/"
