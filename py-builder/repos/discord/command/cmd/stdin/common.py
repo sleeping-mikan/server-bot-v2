@@ -17,7 +17,9 @@ command_group_cmd.add_command(command_group_cmd_stdin)
 sys_files = [".config",".token","logs","mikanassets"]
 important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
-] 
+] + [
+    os.path.join(server_path,i) for i in sys_files
+]
 
 
 

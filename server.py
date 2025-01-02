@@ -18,10 +18,11 @@ import threading
 import asyncio
 import platform
 import os
-from shutil import copystat,Error,copy2,copytree,rmtree
+from shutil import copystat,Error,copy2,copytree,rmtree,move as shutil_move
 import sys
 import logging
 import requests
+import aiohttp
 import json
 from copy import deepcopy
 import importlib
@@ -100,6 +101,8 @@ COMMAND_PERMISSION = {
     "cmd stdin mkdir":2,
     "cmd stdin rmdir":2,
     "cmd stdin ls":2,
+    "cmd stdin mv":3,
+    "cmd stdin send-discord":2,
     "help":0,
     "backup":1,
     "replace":4,
@@ -854,6 +857,8 @@ async def get_text_dat():
                     "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
                     "mkdir": "指定した相対パスに新しいディレクトリを作成します。",
                     "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
+                    "mv": "指定したパスにあるファイルを別のパスに移動します。",
+                    "send-discord": "discordにファイルを送信します。",
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
@@ -882,6 +887,8 @@ async def get_text_dat():
                     "ls":"Display the file specified by the relative path from the server.",
                     "mkdir":"Create a new directory specified by the relative path from the server.",
                     "rmdir":"Recursively delete the directory specified by the relative path from the server.",
+                    "mv":"Move the file specified by the path to another path.",
+                    "send-discord":"Send a file to discord.",
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
@@ -922,6 +929,7 @@ async def get_text_dat():
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
                     "not_file": "`{}`はファイルではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
+                    "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
@@ -944,6 +952,16 @@ async def get_text_dat():
                         "success":"ディレクトリ`{}`を削除しました",
                         "not_directory":"`{}`はディレクトリではありません",
                         "not_exists":"`{}`は見つかりません",
+                    },
+                    "mv":{
+                        "success":"`{}`を`{}`に移動しました",
+                        "not_exists":"`{}`は見つかりません",
+                    },
+                    "send-discord":{
+                        "success":"<@{}> {} にファイルを送信しました",
+                        "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
+                        "file_not_found":"`{}`は見つかりません",
+                        "not_file":"`{}`はファイルではありません",
                     },
                 }
             },
@@ -1019,6 +1037,7 @@ async def get_text_dat():
                     "invalid_path": "`{}` is an invalid/operable area",
                     "not_file": "`{}` is not a file",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
+                    "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
@@ -1041,6 +1060,16 @@ async def get_text_dat():
                         "success":"Directory `{}` has been deleted",
                         "not_directory":"`{}` is not a directory",
                         "not_exists":"`{}` not found",
+                    },
+                    "mv":{
+                        "success":"`{}` has been moved to `{}`",
+                        "file_not_found":"`{}` not found",
+                    },
+                    "send-discord":{
+                        "success":"<@{}> Sent to {} a file",
+                        "file_io_error":"<@{}> File.io upload failed",
+                        "not_file":"`{}` is not a file",
+                        "file_not_found":"`{}` not found",
                     },
                 }
             },
@@ -1650,7 +1679,9 @@ command_group_cmd.add_command(command_group_cmd_stdin)
 sys_files = [".config",".token","logs","mikanassets"]
 important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
-] 
+] + [
+    os.path.join(server_path,i) for i in sys_files
+]
 
 
 
@@ -1756,9 +1787,6 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
         cmd_logger.info("file is link -> " + file_path)
         return
-    # ファイルをfile_pathに保存
-    if file is not None:
-        await file.save(file_path)
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
@@ -1767,6 +1795,9 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
     else:
         # 空のファイルを作成
         open(file_path,"w").close()
+        # ファイルをfile_pathに保存
+        if file is not None:
+            await file.save(file_path)
     cmd_logger.info("create file -> " + file_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
 
@@ -1883,6 +1914,103 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
     cmd_logger.info("remove directory -> " + dir_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path))
 
+#--------------------
+
+
+#--------------------
+
+
+@command_group_cmd_stdin.command(name="mv",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mv"])
+async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
+    await print_user(cmd_logger,interaction.user)
+    # 権限を要求
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mv"]:
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    #サーバー起動確認
+    if is_running_server(cmd_logger): 
+        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        return
+    # server_path + path のパスを作成
+    path = os.path.abspath(os.path.join(server_path,path))
+    # server_path + dest のパスを作成
+    dest = os.path.abspath(os.path.join(server_path,dest))
+    # 操作可能なパスか確認
+    if not is_path_within_scope(path) or not is_path_within_scope(dest):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(path,dest))
+        cmd_logger.info("invalid path -> " + path + " or " + dest)
+        return
+    # ファイルが存在しているかを確認
+    if not os.path.exists(path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path))
+        cmd_logger.info("file not found -> " + path)
+        return
+    # 該当のアイテムがファイルか
+    if not os.path.isfile(path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path))
+        cmd_logger.info("not file -> " + path)
+        return
+    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
+    if not await is_administrator(interaction.user) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path))
+        cmd_logger.info("permission denied -> " + path + " or " + dest)
+        return
+    # ファイルを移動
+    shutil_move(path,dest)
+    cmd_logger.info("move file -> " + path + " -> " + dest)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["success"].format(path,dest))
+#--------------------
+
+
+#--------------------
+
+
+@command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
+async def send_discord(interaction: discord.Interaction, path: str):
+    await print_user(cmd_logger,interaction.user)
+    file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
+    file_size_limit = 9 * 1024 * 1024  # 9MB
+    # 権限を要求
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin send-discord"]:
+        await not_enough_permission(interaction,cmd_logger)
+        return
+    # ファイルが存在しているかを確認
+    if not os.path.exists(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
+        cmd_logger.info("file not found -> " + file_path)
+        return
+    # 該当のアイテムがファイルか
+    if not os.path.isfile(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["not_file"].format(file_path))
+        cmd_logger.info("not file -> " + file_path)
+        return
+    # 操作可能なパスか確認
+    if not is_path_within_scope(file_path):
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        cmd_logger.info("invalid path -> " + file_path)
+        return
+
+    # ファイルサイズをチェック
+    file_size = os.path.getsize(file_path)
+    if file_size > file_size_limit:
+        cmd_logger.info("file size over limit -> " + file_path + " : " + str(file_size))
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+
+        # file.ioにアップロード
+        async with aiohttp.ClientSession() as session:
+            async with session.post("https://file.io", data={"file": open(file_path, 'rb')}) as response:
+                if response.status == 200:
+                    response_json = await response.json()
+                    download_link = response_json.get("link")
+                    cmd_logger.info("upload to file.io -> " + file_path + " : " + download_link)
+                    await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
+                else:
+                    cmd_logger.info("upload to file.io failed -> " + file_path)
+                    await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id))
+    else:
+        # Discordで直接送信
+        cmd_logger.info("send to discord -> " + file_path)
+        await interaction.response.send_message(file=discord.File(file_path))
 #--------------------
 
 

@@ -27,9 +27,6 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
         cmd_logger.info("file is link -> " + file_path)
         return
-    # ファイルをfile_pathに保存
-    if file is not None:
-        await file.save(file_path)
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
@@ -38,5 +35,8 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
     else:
         # 空のファイルを作成
         open(file_path,"w").close()
+        # ファイルをfile_pathに保存
+        if file is not None:
+            await file.save(file_path)
     cmd_logger.info("create file -> " + file_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
