@@ -86,7 +86,7 @@ async def language(interaction: discord.Interaction,language:str):
 #/cmd serverin <server command>
 #/cmd stdin 
 
-#!open ./repos/discord/command/cmd.py
+#!open ./repos/discord/command/cmd/_header.mipy
 #!ignore
 from .cmd import *
 #!end-ignore

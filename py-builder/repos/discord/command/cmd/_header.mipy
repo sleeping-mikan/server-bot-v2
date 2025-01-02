@@ -1,0 +1,16 @@
+
+
+
+#!open ./repos/discord/command/cmd/common.py
+
+#!open ./repos/discord/command/cmd/serverin.py
+
+
+#!open ./repos/discord/command/cmd/stdin/common.py
+#!open ./repos/discord/command/cmd/stdin/ls.py
+#!open ./repos/discord/command/cmd/stdin/mk.py
+#!open ./repos/discord/command/cmd/stdin/rm.py
+#!open ./repos/discord/command/cmd/stdin/mkdir.py
+#!open ./repos/discord/command/cmd/stdin/rmdir.py
+
+#!open ./repos/discord/command/cmd/_append.py
