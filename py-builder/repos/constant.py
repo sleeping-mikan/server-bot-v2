@@ -66,6 +66,7 @@ COMMAND_PERMISSION = {
     "cmd stdin ls":2,
     "cmd stdin mv":3,
     "cmd stdin send-discord":2,
+    "cmd stdin wget":3,
     "help":0,
     "backup":1,
     "replace":4,

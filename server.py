@@ -103,6 +103,7 @@ COMMAND_PERMISSION = {
     "cmd stdin ls":2,
     "cmd stdin mv":3,
     "cmd stdin send-discord":2,
+    "cmd stdin wget":3,
     "help":0,
     "backup":1,
     "replace":4,
@@ -859,6 +860,7 @@ async def get_text_dat():
                     "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
                     "mv": "指定したパスにあるファイルを別のパスに移動します。",
                     "send-discord": "discordにファイルを送信します。",
+                    "wget": "urlからファイルをダウンロードします。",
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
@@ -889,6 +891,7 @@ async def get_text_dat():
                     "rmdir":"Recursively delete the directory specified by the relative path from the server.",
                     "mv":"Move the file specified by the path to another path.",
                     "send-discord":"Send a file to discord.",
+                    "wget":"Download a file from a url.",
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
@@ -962,6 +965,11 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
                         "file_not_found":"`{}`は見つかりません",
                         "not_file":"`{}`はファイルではありません",
+                    },
+                    "wget":{
+                        "download_failed":"`{}`からファイルをダウンロードできません",
+                        "download_success":"`{}`からファイルを{}にダウンロードしました",
+                        "already_exists":"`{}`は既に存在します",
                     },
                 }
             },
@@ -1071,6 +1079,11 @@ async def get_text_dat():
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
                     },
+                    "wget":{
+                        "download_failed":"Download failed url:{}",
+                        "download_success":"Download complete url:{} path:{}",
+                        "already_exists":"`{}` already exists",
+                    }
                 }
             },
             "backup":{
@@ -1623,6 +1636,8 @@ async def language(interaction: discord.Interaction,language:str):
 # グループの設定
 # root
 command_group_cmd = app_commands.Group(name="cmd",description="cmd group")
+
+serverin_logger = cmd_logger.getChild("serverin")
 #--------------------
 
 
@@ -1634,22 +1649,22 @@ command_group_cmd = app_commands.Group(name="cmd",description="cmd group")
 
 @command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(serverin_logger,interaction.user)
     global is_back_discord,cmd_logs
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,serverin_logger)
         return
     #サーバー起動確認
-    if is_stopped_server(cmd_logger): 
+    if is_stopped_server(serverin_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
         return
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
-        cmd_logger.error('unknown command : ' + command)
+        serverin_logger.error('unknown command : ' + command)
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"])
         return
-    cmd_logger.info("run command : " + command)
+    serverin_logger.info("run command : " + command)
     process.stdin.write(command + "\n")
     process.stdin.flush()
     #結果の返却を要求する
@@ -1669,6 +1684,8 @@ async def cmd(interaction: discord.Interaction,command:str):
 
 #--------------------
 
+
+stdin_logger = cmd_logger.getChild("stdin")
 
 #サブグループstdinを作成
 command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin group")
@@ -1701,29 +1718,30 @@ async def is_important_bot_file(path):
 
 
 
+stdin_ls_logger = stdin_logger.getChild("ls")
 @command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
 async def ls(interaction: discord.Interaction, file_path: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_ls_logger,interaction.user)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_ls_logger)
         return
     # server_path + file_path 閲覧パスの生成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
-        cmd_logger.info("invalid path -> " + file_path)
+        stdin_ls_logger.info("invalid path -> " + file_path)
         return
     # 対象が存在するか
     if not os.path.exists(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["file_not_found"].format(file_path))
-        cmd_logger.info("file not found -> " + file_path)
+        stdin_ls_logger.info("file not found -> " + file_path)
         return
     # 対象がディレクトリであるか
     if not os.path.isdir(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["not_directory"].format(file_path))
-        cmd_logger.info("not directory -> " + file_path)
+        stdin_ls_logger.info("not directory -> " + file_path)
         return
     # lsコマンドを実行
     files = os.listdir(file_path)
@@ -1742,7 +1760,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
             # 通常ファイルは緑
             colorized_files.append(f"\033[32m{f}\033[0m")
     formatted_files = "\n".join(colorized_files)
-    cmd_logger.info("list directory -> " + file_path)
+    stdin_ls_logger.info("list directory -> " + file_path)
     if len(formatted_files) > 2000:
             with io.StringIO() as temp_file:
                 temp_file.write("\n".join(files))
@@ -1762,17 +1780,19 @@ async def ls(interaction: discord.Interaction, file_path: str):
 #--------------------
 
 
+stdin_mk_logger = stdin_logger.getChild("mk")
+
 # 以下のコマンドはserver_pathを起点としてそれ以下のファイルを操作する
 # ファイル送信コマンドを追加
 @command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_mk_logger,interaction.user)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_mk_logger)
         return
     #サーバー起動確認
-    if is_running_server(cmd_logger): 
+    if is_running_server(stdin_mk_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
     # server_path + file_path にファイルを作成
@@ -1780,17 +1800,17 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
-        cmd_logger.info("invalid path -> " + file_path)
+        stdin_mk_logger.info("invalid path -> " + file_path)
         return
     # ファイルがリンクであれば拒否
     if os.path.islink(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
-        cmd_logger.info("file is link -> " + file_path)
+        stdin_mk_logger.info("file is link -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
-        cmd_logger.info("permission denied -> " + file_path)
+        stdin_mk_logger.info("permission denied -> " + file_path)
         return
     else:
         # 空のファイルを作成
@@ -1798,7 +1818,7 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         # ファイルをfile_pathに保存
         if file is not None:
             await file.save(file_path)
-    cmd_logger.info("create file -> " + file_path)
+    stdin_mk_logger.info("create file -> " + file_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
 
 #--------------------
@@ -1807,15 +1827,17 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
 #--------------------
 
 
+stdin_rm_logger = stdin_logger.getChild("rm")
+
 @command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
 async def rm(interaction: discord.Interaction, file_path: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_rm_logger,interaction.user)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_rm_logger)
         return
     #サーバー起動確認
-    if is_running_server(cmd_logger): 
+    if is_running_server(stdin_rm_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
     # server_path + file_path のパスを作成
@@ -1823,26 +1845,26 @@ async def rm(interaction: discord.Interaction, file_path: str):
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
-        cmd_logger.info("invalid path -> " + file_path)
+        stdin_rm_logger.info("invalid path -> " + file_path)
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["file_not_found"].format(file_path))
-        cmd_logger.info("file not found -> " + file_path)
+        stdin_rm_logger.info("file not found -> " + file_path)
         return
     # 該当のアイテムがファイルか
     if not os.path.isfile(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path))
-        cmd_logger.info("not file -> " + file_path)
+        stdin_rm_logger.info("not file -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
-        cmd_logger.info("permission denied -> " + file_path)
+        stdin_rm_logger.info("permission denied -> " + file_path)
         return
     # ファイルを削除
     os.remove(file_path)
-    cmd_logger.info("remove file -> " + file_path)
+    stdin_rm_logger.info("remove file -> " + file_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["success"].format(file_path))
 
 #--------------------
@@ -1851,28 +1873,30 @@ async def rm(interaction: discord.Interaction, file_path: str):
 #--------------------
 
 
+stdin_mkdir_logger = stdin_logger.getChild("mkdir")
+
 @command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
 async def mkdir(interaction: discord.Interaction, dir_path: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_mkdir_logger,interaction.user)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_mkdir_logger)
         return
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
-        cmd_logger.info("invalid path -> " + dir_path)
+        stdin_mkdir_logger.info("invalid path -> " + dir_path)
         return
     # 既に存在するか確認
     if os.path.exists(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["exists"].format(dir_path))
-        cmd_logger.info("directory already exists -> " + dir_path)
+        stdin_mkdir_logger.info("directory already exists -> " + dir_path)
         return
     # ディレクトリを作成
     os.makedirs(dir_path)
-    cmd_logger.info("create directory -> " + dir_path)
+    stdin_mkdir_logger.info("create directory -> " + dir_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["success"].format(dir_path))
 
 #--------------------
@@ -1881,15 +1905,17 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
 #--------------------
 
 
+stdin_rmdir_logger = stdin_logger.getChild("rmdir")
+
 @command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
 async def rmdir(interaction: discord.Interaction, dir_path: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_rmdir_logger,interaction.user)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_rmdir_logger)
         return
     #サーバー起動確認
-    if is_running_server(cmd_logger): 
+    if is_running_server(stdin_rmdir_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
     # server_path + file_path のパスを作成
@@ -1897,21 +1923,21 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
     # 操作可能なパスか確認
     if not is_path_within_scope(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
-        cmd_logger.info("invalid path -> " + dir_path)
+        stdin_rmdir_logger.info("invalid path -> " + dir_path)
         return
     # 既に存在するか確認
     if not os.path.exists(dir_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path))
-        cmd_logger.info("directory not exists -> " + dir_path)
+        stdin_rmdir_logger.info("directory not exists -> " + dir_path)
         return
     # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
     if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path))
-        cmd_logger.info("permission denied -> " + dir_path)
+        stdin_rmdir_logger.info("permission denied -> " + dir_path)
         return
     # ディレクトリを削除
     rmtree(dir_path)
-    cmd_logger.info("remove directory -> " + dir_path)
+    stdin_rmdir_logger.info("remove directory -> " + dir_path)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path))
 
 #--------------------
@@ -1920,16 +1946,19 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
 #--------------------
 
 
+stdin_mv_logger = stdin_logger.getChild("mv")
+
 @command_group_cmd_stdin.command(name="mv",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mv"])
 async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_mv_logger,interaction.user)
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mv"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_mv_logger)
         return
     #サーバー起動確認
-    if is_running_server(cmd_logger): 
+    if is_running_server(stdin_mv_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        stdin_mv_logger.info("server is running")
         return
     # server_path + path のパスを作成
     path = os.path.abspath(os.path.join(server_path,path))
@@ -1938,26 +1967,26 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     # 操作可能なパスか確認
     if not is_path_within_scope(path) or not is_path_within_scope(dest):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(path,dest))
-        cmd_logger.info("invalid path -> " + path + " or " + dest)
+        stdin_mv_logger.info("invalid path -> " + path + " or " + dest)
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path))
-        cmd_logger.info("file not found -> " + path)
+        stdin_mv_logger.info("file not found -> " + path)
         return
     # 該当のアイテムがファイルか
     if not os.path.isfile(path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path))
-        cmd_logger.info("not file -> " + path)
+        stdin_mv_logger.info("not file -> " + path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path))
-        cmd_logger.info("permission denied -> " + path + " or " + dest)
+        stdin_mv_logger.info("permission denied -> " + path + " or " + dest)
         return
     # ファイルを移動
     shutil_move(path,dest)
-    cmd_logger.info("move file -> " + path + " -> " + dest)
+    stdin_mv_logger.info("move file -> " + path + " -> " + dest)
     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["success"].format(path,dest))
 #--------------------
 
@@ -1965,35 +1994,37 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
 #--------------------
 
 
+stdin_send_discord_logger = stdin_logger.getChild("send-discord")
+
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
-    await print_user(cmd_logger,interaction.user)
+    await print_user(stdin_send_discord_logger,interaction.user)
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_size_limit = 9 * 1024 * 1024  # 9MB
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin send-discord"]:
-        await not_enough_permission(interaction,cmd_logger)
+        await not_enough_permission(interaction,stdin_send_discord_logger)
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
-        cmd_logger.info("file not found -> " + file_path)
+        stdin_send_discord_logger.info("file not found -> " + file_path)
         return
     # 該当のアイテムがファイルか
     if not os.path.isfile(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["not_file"].format(file_path))
-        cmd_logger.info("not file -> " + file_path)
+        stdin_send_discord_logger.info("not file -> " + file_path)
         return
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
-        cmd_logger.info("invalid path -> " + file_path)
+        stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
 
     # ファイルサイズをチェック
     file_size = os.path.getsize(file_path)
     if file_size > file_size_limit:
-        cmd_logger.info("file size over limit -> " + file_path + " : " + str(file_size))
+        stdin_send_discord_logger.info("file size over limit -> " + file_path + " : " + str(file_size))
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
 
         # file.ioにアップロード
@@ -2002,15 +2033,58 @@ async def send_discord(interaction: discord.Interaction, path: str):
                 if response.status == 200:
                     response_json = await response.json()
                     download_link = response_json.get("link")
-                    cmd_logger.info("upload to file.io -> " + file_path + " : " + download_link)
+                    stdin_send_discord_logger.info("upload to file.io -> " + file_path + " : " + download_link)
                     await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
                 else:
-                    cmd_logger.info("upload to file.io failed -> " + file_path)
+                    stdin_send_discord_logger.info("upload to file.io failed -> " + file_path)
                     await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id))
     else:
         # Discordで直接送信
-        cmd_logger.info("send to discord -> " + file_path)
+        stdin_send_discord_logger.info("send to discord -> " + file_path)
         await interaction.response.send_message(file=discord.File(file_path))
+#--------------------
+
+
+#--------------------
+
+
+stdin_wget_logger = stdin_logger.getChild("wget")
+
+@command_group_cmd_stdin.command(name="wget",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["wget"])
+async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.tmp"):
+    await print_user(stdin_wget_logger,interaction.user)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin wget"]: 
+        await not_enough_permission(interaction,stdin_wget_logger)
+        return
+    save_path = os.path.abspath(os.path.join(server_path,path))
+    # 既にファイルが存在しているか確認
+    if os.path.exists(save_path):
+        stdin_wget_logger.info("file already exists -> " + save_path)
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["already_exists"].format(path))
+        return
+    # pathが操作可能か確認
+    if not is_path_within_scope(save_path):
+        stdin_wget_logger.info("invalid path -> " + save_path)
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(save_path))
+        return
+    # 管理者権限を持っていなくて、重要ファイルをダウンロードする場合は拒否
+    if not await is_administrator(interaction.user) and await is_important_bot_file(save_path):
+        stdin_wget_logger.info("permission denied -> " + save_path)
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path))
+        return
+    # URLからファイルをダウンロード
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                stdin_wget_logger.info("download failed -> " + url)
+                await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_failed"].format(url))
+                return
+
+            # ファイルを保存
+            with open(save_path, 'wb') as file:
+                file.write(await response.read())
+    stdin_wget_logger.info("download success -> " + url)
+    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_success"].format(url,save_path))
 #--------------------
 
 

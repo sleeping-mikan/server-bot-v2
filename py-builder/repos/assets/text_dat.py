@@ -64,6 +64,7 @@ async def get_text_dat():
                     "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
                     "mv": "指定したパスにあるファイルを別のパスに移動します。",
                     "send-discord": "discordにファイルを送信します。",
+                    "wget": "urlからファイルをダウンロードします。",
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
@@ -94,6 +95,7 @@ async def get_text_dat():
                     "rmdir":"Recursively delete the directory specified by the relative path from the server.",
                     "mv":"Move the file specified by the path to another path.",
                     "send-discord":"Send a file to discord.",
+                    "wget":"Download a file from a url.",
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
@@ -167,6 +169,11 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
                         "file_not_found":"`{}`は見つかりません",
                         "not_file":"`{}`はファイルではありません",
+                    },
+                    "wget":{
+                        "download_failed":"`{}`からファイルをダウンロードできません",
+                        "download_success":"`{}`からファイルを{}にダウンロードしました",
+                        "already_exists":"`{}`は既に存在します",
                     },
                 }
             },
@@ -276,6 +283,11 @@ async def get_text_dat():
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
                     },
+                    "wget":{
+                        "download_failed":"Download failed url:{}",
+                        "download_success":"Download complete url:{} path:{}",
+                        "already_exists":"`{}` already exists",
+                    }
                 }
             },
             "backup":{

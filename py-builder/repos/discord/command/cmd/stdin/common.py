@@ -8,6 +8,8 @@ from .....assets.utils import *
 from ..common import *
 #!end-ignore
 
+stdin_logger = cmd_logger.getChild("stdin")
+
 #サブグループstdinを作成
 command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin group")
 # サブグループを設定
