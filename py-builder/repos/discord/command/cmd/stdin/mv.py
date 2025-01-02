@@ -12,6 +12,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     #サーバー起動確認
     if is_running_server(cmd_logger): 
         await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        cmd_logger.info("server is running")
         return
     # server_path + path のパスを作成
     path = os.path.abspath(os.path.join(server_path,path))
