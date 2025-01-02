@@ -22,20 +22,18 @@ async def is_force_administrator(user: discord.User) -> bool:
     return True
 
 #既にサーバが起動しているか
-async def is_running_server(interaction: discord.Interaction,logger: logging.Logger) -> bool:
+def is_running_server(logger: logging.Logger) -> bool:
     global process
     if process is not None:
         logger.error('server is still running')
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"],ephemeral = True)
         return True
     return False
 
 #サーバーが閉まっている状態か
-async def is_stopped_server(interaction: discord.Interaction,logger: logging.Logger) -> bool:
+def is_stopped_server(logger: logging.Logger) -> bool:
     global process
     if process is None:
         logger.error('server is not running')
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"],ephemeral = True)
         return True
     return False
 
@@ -163,3 +161,13 @@ async def user_permission(user:discord.User):
     if str(user.id) not in config["discord_commands"]["admin"]["members"]:
         return 0
     return config["discord_commands"]["admin"]["members"][str(user.id)]
+
+# 操作可能なパスかを確認
+def is_path_within_scope(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    # server_path 以下にあるか確認
+    if path.startswith(os.path.abspath(server_path)):
+        return True
+    sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
+    return False
