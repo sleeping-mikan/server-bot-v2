@@ -1081,7 +1081,7 @@ async def get_text_dat():
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
-                        "file_io_error":"<@{}> File.io upload failed",
+                        "file_io_error":"<@{}> File.io upload failed status -> `{}` , reason -> `{}` :: `{}`",
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
                         "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
@@ -2088,8 +2088,8 @@ async def send_discord(interaction: discord.Interaction, path: str):
                         stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
                         await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
                     else:
-                        stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path))
-                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,timeout_sec))
+                        stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path) + ",reason -> " + str(response.reason) + "::" + str(response.text))
+                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,str(response.status),str(response.reason),str(response.text)))
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             stdin_send_discord_logger.info("upload to file.io failed (timeout) -> " + str(file_path))
             await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id))

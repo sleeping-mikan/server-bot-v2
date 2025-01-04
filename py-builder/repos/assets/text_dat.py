@@ -284,7 +284,7 @@ async def get_text_dat():
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
-                        "file_io_error":"<@{}> File.io upload failed",
+                        "file_io_error":"<@{}> File.io upload failed status -> `{}` , reason -> `{}` :: `{}`",
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
                         "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
