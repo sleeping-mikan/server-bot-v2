@@ -313,10 +313,11 @@ async def exit(interaction: discord.Interaction):
 # 拡張コマンドを読み込む
 #!open ./repos/discord/command/extension/read.py
 
-
+import traceback
 
 #コマンドがエラーの場合
 @tree.error
 async def on_error(interaction: discord.Interaction, error: Exception):
     sys_logger.error(error)
+    sys_logger.error(traceback.format_exc())
     await interaction.response.send_message(RESPONSE_MSG["error"]["error_base"] + str(error))

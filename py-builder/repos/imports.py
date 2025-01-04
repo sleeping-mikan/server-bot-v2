@@ -27,3 +27,4 @@ from flask import Flask, render_template, jsonify, request, session, redirect, u
 from ansi2html import Ansi2HTMLConverter
 import waitress
 import io
+import zipfile

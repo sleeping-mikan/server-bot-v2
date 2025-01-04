@@ -18,35 +18,48 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
-    # 該当のアイテムがファイルか
-    if not os.path.isfile(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["not_file"].format(file_path))
-        stdin_send_discord_logger.info("not file -> " + file_path)
-        return
-    # 操作可能なパスか確認
+    # # 該当のアイテムがファイルか
+    # if not os.path.isfile(file_path):
+    #     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["not_file"].format(file_path))
+    #     stdin_send_discord_logger.info("not file -> " + file_path)
+    #     return
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
-
-    # ファイルサイズをチェック
-    file_size = os.path.getsize(file_path)
+    # 該当のアイテムがディレクトリならzip圧縮をする
+    if os.path.isdir(file_path):
+        base_file_path = file_path
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(file_path):
+                for file in files:
+                    full_file_path = os.path.join(root, file)
+                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
+        zip_buffer.seek(0)
+        file_path = zip_buffer
+        file_size = zip_buffer.getbuffer().nbytes
+        file_path.seek(0)
+        stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size))
+    else:
+        # ファイルサイズをチェック
+        file_size = os.path.getsize(file_path)
     if file_size > file_size_limit:
-        stdin_send_discord_logger.info("file size over limit -> " + file_path + " : " + str(file_size))
+        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
 
         # file.ioにアップロード
         async with aiohttp.ClientSession() as session:
-            async with session.post("https://file.io", data={"file": open(file_path, 'rb')}) as response:
+            async with session.post("https://file.io", data={"file": open(file_path, 'rb') if isinstance(file_path, str) else file_path}) as response:
                 if response.status == 200:
                     response_json = await response.json()
                     download_link = response_json.get("link")
-                    stdin_send_discord_logger.info("upload to file.io -> " + file_path + " : " + download_link)
+                    stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
                     await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
                 else:
-                    stdin_send_discord_logger.info("upload to file.io failed -> " + file_path)
+                    stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path))
                     await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id))
     else:
         # Discordで直接送信
-        stdin_send_discord_logger.info("send to discord -> " + file_path)
+        stdin_send_discord_logger.info("send to discord -> " + str(file_path))
         await interaction.response.send_message(file=discord.File(file_path))
