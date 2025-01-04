@@ -137,6 +137,7 @@ async def get_text_dat():
                     "not_file": "`{}`はファイルではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
                     "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
+                    "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
@@ -169,6 +170,9 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
                         "file_not_found":"`{}`は見つかりません",
                         "not_file":"`{}`はファイルではありません",
+                        "is_zip":"`{}`はディレクトリであるためzipで圧縮します",
+                        "is_file":"`{}`はファイルであるため送信します",
+                        "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -250,6 +254,7 @@ async def get_text_dat():
                     "not_file": "`{}` is not a file",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
                     "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
+                    "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
@@ -282,6 +287,8 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.io upload failed",
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
+                        "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
+                        "is_file":"`{}` is a file, so it will be sent to discord",
                     },
                     "wget":{
                         "download_failed":"Download failed url:{}",

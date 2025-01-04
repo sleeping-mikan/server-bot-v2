@@ -934,6 +934,7 @@ async def get_text_dat():
                     "not_file": "`{}`はファイルではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
                     "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
+                    "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
@@ -966,6 +967,9 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
                         "file_not_found":"`{}`は見つかりません",
                         "not_file":"`{}`はファイルではありません",
+                        "is_zip":"`{}`はディレクトリであるためzipで圧縮します",
+                        "is_file":"`{}`はファイルであるため送信します",
+                        "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -1047,6 +1051,7 @@ async def get_text_dat():
                     "not_file": "`{}` is not a file",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
                     "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
+                    "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
@@ -1079,6 +1084,8 @@ async def get_text_dat():
                         "file_io_error":"<@{}> File.io upload failed",
                         "not_file":"`{}` is not a file",
                         "file_not_found":"`{}` not found",
+                        "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
+                        "is_file":"`{}` is a file, so it will be sent to discord",
                     },
                     "wget":{
                         "download_failed":"Download failed url:{}",
@@ -1324,6 +1331,31 @@ def is_path_within_scope(path):
         return True
     sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
     return False
+
+async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
+    """ディレクトリをZIP化し、非同期的に返す関数"""
+    loop = asyncio.get_event_loop()
+    zip_buffer = io.BytesIO()
+
+    def zip_task():
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zipf:
+            for root, dirs, files in os.walk(file_path):
+                for file in files:
+                    full_file_path = os.path.join(root, file)
+                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
+        zip_buffer.seek(0)
+        return zip_buffer
+
+    # 非同期スレッドでZIP作成を実行
+    zip_buffer = await loop.run_in_executor(None, zip_task)
+    file_size = zip_buffer.getbuffer().nbytes
+    return zip_buffer, file_size
+
+async def send_discord_message_or_followup(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING):
+    if interaction.response.is_done():
+        await interaction.followup.send(message, file=file)
+    else:
+        await interaction.response.send_message(message, file=file)
 #--------------------
 
 
@@ -2001,7 +2033,9 @@ stdin_send_discord_logger = stdin_logger.getChild("send-discord")
 async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
+    file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
+    file_size_limit_web = 2 * 1024 * 1024 * 1024  # 2GBを超えた場合file.ioでも無理なのでエラー
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin send-discord"]:
         await not_enough_permission(interaction,stdin_send_discord_logger)
@@ -2022,40 +2056,46 @@ async def send_discord(interaction: discord.Interaction, path: str):
         return
     # 該当のアイテムがディレクトリならzip圧縮をする
     if os.path.isdir(file_path):
+        # とりあえずdiscordに送っておく
+        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path))
+        stdin_send_discord_logger.info("make zip -> " + str(file_path))
+        zip_buffer,file_size = await create_zip_async(file_path)
         base_file_path = file_path
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(file_path):
-                for file in files:
-                    full_file_path = os.path.join(root, file)
-                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
-        zip_buffer.seek(0)
         file_path = zip_buffer
-        file_size = zip_buffer.getbuffer().nbytes
-        file_path.seek(0)
-        stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size) + "bytes")
+        stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size))
+        file_name = file_name + ".zip"
     else:
+        # await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_file"].format(file_path))
         # ファイルサイズをチェック
         file_size = os.path.getsize(file_path)
+        stdin_send_discord_logger.info("file -> " + str(file_path))
+    if file_size > file_size_limit_web:
+        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
+        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
     if file_size > file_size_limit:
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size) + "bytes")
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
+        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
 
         # file.ioにアップロード
-        async with aiohttp.ClientSession() as session:
-            async with session.post("https://file.io", data={"file": open(file_path, 'rb') if isinstance(file_path, str) else file_path}) as response:
-                if response.status == 200:
-                    response_json = await response.json()
-                    download_link = response_json.get("link")
-                    stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
-                    await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
-                else:
-                    stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path))
-                    await interaction.followup.send(content=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id))
+        try:
+            timeout_sec = 600
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
+                async with session.post("https://file.io", data={"file": open(file_path, 'rb') if isinstance(file_path, str) else file_path, "name": file_name}) as response:
+                    if response.status == 200:
+                        response_json = await response.json()
+                        download_link = response_json.get("link")
+                        stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
+                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
+                    else:
+                        stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path))
+                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,timeout_sec))
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            stdin_send_discord_logger.info("upload to file.io failed (timeout) -> " + str(file_path))
+            await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id))
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await interaction.response.send_message(file=discord.File(file_path))
+        await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path))
 #--------------------
 
 

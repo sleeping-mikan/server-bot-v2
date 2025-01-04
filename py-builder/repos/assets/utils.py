@@ -171,3 +171,28 @@ def is_path_within_scope(path):
         return True
     sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
     return False
+
+async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
+    """ディレクトリをZIP化し、非同期的に返す関数"""
+    loop = asyncio.get_event_loop()
+    zip_buffer = io.BytesIO()
+
+    def zip_task():
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zipf:
+            for root, dirs, files in os.walk(file_path):
+                for file in files:
+                    full_file_path = os.path.join(root, file)
+                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
+        zip_buffer.seek(0)
+        return zip_buffer
+
+    # 非同期スレッドでZIP作成を実行
+    zip_buffer = await loop.run_in_executor(None, zip_task)
+    file_size = zip_buffer.getbuffer().nbytes
+    return zip_buffer, file_size
+
+async def send_discord_message_or_followup(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING):
+    if interaction.response.is_done():
+        await interaction.followup.send(message, file=file)
+    else:
+        await interaction.response.send_message(message, file=file)
