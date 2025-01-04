@@ -53,7 +53,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
 
         # file.ioにアップロード
         try:
-            timeout_sec = 600
+            timeout_sec = 1500
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
                 async with session.post("https://file.io", data={"file": open(file_path, 'rb') if isinstance(file_path, str) else file_path, "name": file_name}) as response:
                     if response.status == 200:
