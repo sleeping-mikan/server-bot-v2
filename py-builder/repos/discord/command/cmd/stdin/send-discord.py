@@ -44,29 +44,57 @@ async def send_discord(interaction: discord.Interaction, path: str):
         # ファイルサイズをチェック
         file_size = os.path.getsize(file_path)
         stdin_send_discord_logger.info("file -> " + str(file_path))
-    if file_size > file_size_limit_web:
+    # if file_size > file_size_limit_web:
+    #     stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
+    #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
+    if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
-    if file_size > file_size_limit:
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit))
+        # stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
+        # await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
 
-        # file.ioにアップロード
-        try:
-            timeout_sec = 1500
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
-                async with session.post("https://file.io", data={"file": open(file_path, 'rb') if isinstance(file_path, str) else file_path, "name": file_name}) as response:
-                    if response.status == 200:
-                        response_json = await response.json()
-                        download_link = response_json.get("link")
-                        stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
-                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
-                    else:
-                        stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path) + ",reason -> " + str(response.reason) + "::" + str(response.text))
-                        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,str(response.status),str(response.reason),str(response.text)))
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            stdin_send_discord_logger.info("upload to file.io failed (timeout) -> " + str(file_path))
-            await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id))
+        # # file.ioにアップロード
+        # try:
+        #     timeout_sec = 1500
+        #     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
+        #         file_obj = open(file_path, 'rb') if isinstance(file_path, str) else file_path
+        #         async with session.post("https://www.file.io/", data={"file": file_obj, "name": file_name}) as response:
+        #             # HTTP 200以外の場合にエラー処理
+        #             # if response.status != 200:
+        #             #     # HTTPエラーの処理
+        #             #     error_text = await response.text()
+        #             #     stdin_send_discord_logger.error(f"Upload failed. Status: {response.status}, Response: {error_text}")
+        #             #     await send_discord_message_or_followup(interaction, message="Upload failed with status: {response.status}. Please try again later.")
+        #             #     session.close()
+        #             #     return
+        #             # if response.status == 200:
+        #             #     response_json = await response.json()
+        #             #     download_link = response_json.get("link")
+        #             #     stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
+        #             #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
+        #             # 何もしないで見る
+        #             sys_logger.info(response.status)
+        #             # else:
+        #             #     response_json = await response.json()
+        #             #     if not isinstance(file_obj, io.BytesIO):
+        #             #         file_obj.close()
+        #             #     # aiohttpに関するオブジェクトを正しく閉じる
+        #             #     await session.close()
+        #             #     stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path) + ",reason -> " + str(response.reason) + "::" + await response.text())
+        #             #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,str(response.status),str(response.reason),await response.text()))
+        #             #     raise Exception("upload to file.io failed")
+        # except Exception as e:
+        #     if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
+        #         stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
+        #         await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id))
+        #     else:
+        #         import traceback
+        #         stdin_send_discord_logger.error(traceback.format_exc())
+        #         stdin_send_discord_logger.error("raise upload to file.io failed")
+        #     exit()
+        # finally:
+        #     stdin_send_discord_logger.info("close file -> " + str(file_path))
+        #     file_obj.close() if isinstance(file_path, str) else None
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))

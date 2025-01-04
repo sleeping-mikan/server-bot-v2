@@ -167,7 +167,7 @@ async def get_text_dat():
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
-                        "file_io_error":"<@{}> File.ioへのアップロードに失敗しました",
+                        "file_io_error":"<@{}> File.ioへのアップロードに失敗しました status -> `{}` , reason -> `{}` :: `{}`",
                         "file_not_found":"`{}`は見つかりません",
                         "not_file":"`{}`はファイルではありません",
                         "is_zip":"`{}`はディレクトリであるためzipで圧縮します",
