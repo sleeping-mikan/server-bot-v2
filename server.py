@@ -26,6 +26,7 @@ import aiohttp
 import json
 from copy import deepcopy
 import importlib
+import uuid
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
@@ -970,6 +971,7 @@ async def get_text_dat():
                         "is_zip":"`{}`はディレクトリであるためzipで圧縮します",
                         "is_file":"`{}`はファイルであるため送信します",
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
+                        "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -2030,6 +2032,15 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
 
 stdin_send_discord_logger = stdin_logger.getChild("send-discord")
 
+
+discord_multi_thread_return_dict = {}
+def send_file_io(_id, file_obj, file_name) -> requests.Response:
+    response = requests.post("https://file.io/", files={"file": (file_name, file_obj)})
+    discord_multi_thread_return_dict[_id] = response
+    
+
+send_discord_timeout_sec = 60 * 25
+
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
@@ -2046,11 +2057,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
-    # # 該当のアイテムがファイルか
-    # if not os.path.isfile(file_path):
-    #     await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["not_file"].format(file_path))
-    #     stdin_send_discord_logger.info("not file -> " + file_path)
-    #     return
+    # パスが許可されているかを確認
     if not is_path_within_scope(file_path):
         await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
         stdin_send_discord_logger.info("invalid path -> " + file_path)
@@ -2063,68 +2070,62 @@ async def send_discord(interaction: discord.Interaction, path: str):
         zip_buffer,file_size = await create_zip_async(file_path)
         base_file_path = file_path
         file_path = zip_buffer
+        file_path.seek(0)
         stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size))
         file_name = file_name + ".zip"
+        file_obj = file_path
     else:
-        # await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_file"].format(file_path))
         # ファイルサイズをチェック
         file_size = os.path.getsize(file_path)
         stdin_send_discord_logger.info("file -> " + str(file_path))
-    # if file_size > file_size_limit_web:
-    #     stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-    #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
+        # ファイルを開く
+        file_obj = open(file_path, "rb")
+    if file_size > file_size_limit_web:
+        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
+        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
     if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit))
-        # stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        # await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
-
-        # # file.ioにアップロード
-        # try:
-        #     timeout_sec = 1500
-        #     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_sec)) as session:
-        #         file_obj = open(file_path, 'rb') if isinstance(file_path, str) else file_path
-        #         async with session.post("https://www.file.io/", data={"file": file_obj, "name": file_name}) as response:
-        #             # HTTP 200以外の場合にエラー処理
-        #             # if response.status != 200:
-        #             #     # HTTPエラーの処理
-        #             #     error_text = await response.text()
-        #             #     stdin_send_discord_logger.error(f"Upload failed. Status: {response.status}, Response: {error_text}")
-        #             #     await send_discord_message_or_followup(interaction, message="Upload failed with status: {response.status}. Please try again later.")
-        #             #     session.close()
-        #             #     return
-        #             # if response.status == 200:
-        #             #     response_json = await response.json()
-        #             #     download_link = response_json.get("link")
-        #             #     stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
-        #             #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
-        #             # 何もしないで見る
-        #             sys_logger.info(response.status)
-        #             # else:
-        #             #     response_json = await response.json()
-        #             #     if not isinstance(file_obj, io.BytesIO):
-        #             #         file_obj.close()
-        #             #     # aiohttpに関するオブジェクトを正しく閉じる
-        #             #     await session.close()
-        #             #     stdin_send_discord_logger.info("upload to file.io failed -> " + str(file_path) + ",reason -> " + str(response.reason) + "::" + await response.text())
-        #             #     await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,str(response.status),str(response.reason),await response.text()))
-        #             #     raise Exception("upload to file.io failed")
-        # except Exception as e:
-        #     if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
-        #         stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
-        #         await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id))
-        #     else:
-        #         import traceback
-        #         stdin_send_discord_logger.error(traceback.format_exc())
-        #         stdin_send_discord_logger.error("raise upload to file.io failed")
-        #     exit()
-        # finally:
-        #     stdin_send_discord_logger.info("close file -> " + str(file_path))
-        #     file_obj.close() if isinstance(file_path, str) else None
+        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+        # file.ioにアップロード
+        try:
+            timeout_sec = send_discord_timeout_sec
+            discord_dict_id = uuid.uuid4()
+            io_thread = threading.Thread(target=send_file_io,args=(discord_dict_id,file_obj,file_name),daemon=True)
+            io_thread.start()
+            # discord_multi_thread_return_dict[discord_dict_id]が存在するまで繰り返し
+            while discord_dict_id not in discord_multi_thread_return_dict:
+                await asyncio.sleep(1)
+                timeout_sec -= 1
+                if timeout_sec <= 0:
+                    raise asyncio.TimeoutError
+            if discord_multi_thread_return_dict[discord_dict_id].status_code != 200:
+                status = discord_multi_thread_return_dict[discord_dict_id].status_code
+                reason = discord_multi_thread_return_dict[discord_dict_id].reason
+                text = discord_multi_thread_return_dict[discord_dict_id].text
+                stdin_send_discord_logger.error("upload to file.io failed -> " + str(file_path) + " ,status -> " + str(status) + " , " + str(reason) + " :: " + str(text))
+                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text))
+                return
+            response = discord_multi_thread_return_dict[discord_dict_id]
+            link = response.json()["link"]
+            stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
+            await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link))
+        except Exception as e:
+            if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
+                stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
+                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec))
+            else:
+                import traceback
+                stdin_send_discord_logger.error(traceback.format_exc())
+                stdin_send_discord_logger.error("raise upload to file.io failed")
+                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()))
+        finally:
+            stdin_send_discord_logger.info("close file -> " + str(file_path))
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))
         await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path))
+
+
 #--------------------
 
 
