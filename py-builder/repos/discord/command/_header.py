@@ -206,10 +206,13 @@ async def logs(interaction: discord.Interaction,filename:str = None):
         send_length = 0
         for i in log_msg:
             send_length += len(i)
-            if send_length < 1900:
-                send_msg.append(i)
-            else:
-                break
+            send_msg.append(i)
+            while True:
+                if send_length > 2000:
+                    delete = send_msg.pop(0)
+                    send_length -= len(delete)
+                else:
+                    break
         await interaction.response.send_message("```ansi\n" + "\n".join(send_msg) + "\n```")
     else:
         if "/" in filename or "\\" in filename or "%" in filename:
