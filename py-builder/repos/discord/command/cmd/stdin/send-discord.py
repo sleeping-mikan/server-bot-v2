@@ -61,10 +61,11 @@ async def send_discord(interaction: discord.Interaction, path: str):
         # file.ioにアップロード
         try:
             timeout_sec = send_discord_timeout_sec
+            # uuidを使って、POSTするスレッドの戻り値を待機する
             discord_dict_id = uuid.uuid4()
             io_thread = threading.Thread(target=send_file_io,args=(discord_dict_id,file_obj,file_name),daemon=True)
             io_thread.start()
-            # discord_multi_thread_return_dict[discord_dict_id]が存在するまで繰り返し
+            # discord_multi_thread_return_dict[discord_dict_id]にPOSTスレッドがresponseをセットするまで繰り返し
             while discord_dict_id not in discord_multi_thread_return_dict:
                 await asyncio.sleep(1)
                 timeout_sec -= 1
@@ -91,6 +92,8 @@ async def send_discord(interaction: discord.Interaction, path: str):
                 stdin_send_discord_logger.error("raise upload to file.io failed")
                 await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()))
         finally:
+            # file_objが開いていたら閉じる(file_objはopen() or io.BytesIO()で開いたもの)
+            file_obj.close()
             stdin_send_discord_logger.info("close file -> " + str(file_path))
     else:
         # Discordで直接送信
