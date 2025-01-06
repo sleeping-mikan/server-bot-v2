@@ -17,10 +17,11 @@ async def start(interaction: discord.Interaction):
         await not_enough_permission(interaction,start_logger)
         return
     result = core_start()
+    embed = discord.Embed(title = result, color=bot_color)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
 
 #/stop
@@ -35,10 +36,12 @@ async def stop(interaction: discord.Interaction):
         await not_enough_permission(interaction,stop_logger)
         return
     result = core_stop()
+    embed = discord.Embed(title = result, color=bot_color)
+    embed.set_image(url = embed_under_line_url)
+
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_not_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["ending"])) 
     while True:
         #終了するまで待つ

@@ -917,7 +917,7 @@ async def get_text_dat():
 
     #今後も大きくなることが予想されるので、ここで条件分岐する
     if lang == "ja":
-        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/mikatan-mikan/server-bot-v2/blob/main/README.md>\n"
+        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"管理者権限を持っていないため実行できません",
@@ -1035,7 +1035,7 @@ async def get_text_dat():
             "ended":"さーばーとじてる",
         }
     elif lang == "en":
-        send_help = "Details on the help can be found here\n<https://github.com/mikatan-mikan/server-bot-v2/blob/main/README.md>\n"
+        send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"Permission denied",
@@ -1538,10 +1538,11 @@ async def start(interaction: discord.Interaction):
         await not_enough_permission(interaction,start_logger)
         return
     result = core_start()
+    embed = discord.Embed(title = result, color=bot_color)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
 
 #/stop
@@ -1556,10 +1557,12 @@ async def stop(interaction: discord.Interaction):
         await not_enough_permission(interaction,stop_logger)
         return
     result = core_stop()
+    embed = discord.Embed(title = result, color=bot_color)
+    embed.set_image(url = embed_under_line_url)
+
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_not_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["ending"])) 
     while True:
         #終了するまで待つ
