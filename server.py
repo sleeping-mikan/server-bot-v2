@@ -1662,7 +1662,9 @@ async def language(interaction: discord.Interaction,language:str):
     await rewrite_config(config)
     #textデータを再構築
     await get_text_dat()
-    await interaction.response.send_message(RESPONSE_MSG["lang"]["success"].format(language))
+    embed = discord.Embed(title = RESPONSE_MSG["lang"]["success"].format(language), color=bot_color)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed=embed)
     lang_logger.info("change lang to " + lang)
 
 #/cmd serverin <server command>
