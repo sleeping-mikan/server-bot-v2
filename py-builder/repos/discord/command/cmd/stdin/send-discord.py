@@ -16,6 +16,8 @@ send_discord_timeout_sec = 60 * 25
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin send-discord {path}")
+    embed.set_image(url = embed_under_line_url)
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
@@ -26,18 +28,21 @@ async def send_discord(interaction: discord.Interaction, path: str):
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
     # パスが許可されているかを確認
     if not is_path_within_scope(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
     # 該当のアイテムがディレクトリならzip圧縮をする
     if os.path.isdir(file_path):
         # とりあえずdiscordに送っておく
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed,ephemeral=True)
         stdin_send_discord_logger.info("make zip -> " + str(file_path))
         zip_buffer,file_size = await create_zip_async(file_path)
         base_file_path = file_path
@@ -54,10 +59,12 @@ async def send_discord(interaction: discord.Interaction, path: str):
         file_obj = open(file_path, "rb")
     if file_size > file_size_limit_web:
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web),inline=False)
+        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
     if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit),inline=False)
+        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
         # file.ioにアップロード
         try:
             timeout_sec = send_discord_timeout_sec
@@ -76,21 +83,25 @@ async def send_discord(interaction: discord.Interaction, path: str):
                 reason = discord_multi_thread_return_dict[discord_dict_id].reason
                 text = discord_multi_thread_return_dict[discord_dict_id].text
                 stdin_send_discord_logger.error("upload to file.io failed -> " + str(file_path) + " ,status -> " + str(status) + " , " + str(reason) + " :: " + str(text))
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
                 return
             response = discord_multi_thread_return_dict[discord_dict_id]
             link = response.json()["link"]
             stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
-            await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link))
+            embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link),inline=False)
+            await send_discord_message_or_edit(interaction=interaction,embed=embed)
         except Exception as e:
             if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
                 stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
             else:
                 import traceback
                 stdin_send_discord_logger.error(traceback.format_exc())
                 stdin_send_discord_logger.error("raise upload to file.io failed")
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
         finally:
             # file_objが開いていたら閉じる(file_objはopen() or io.BytesIO()で開いたもの)
             file_obj.close()
@@ -98,7 +109,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path))
+        await send_discord_message_or_edit(interaction=interaction,file=discord.File(file_path,filename=file_name),embed=embed,ephemeral=True)
 
 #!ignore
 
@@ -108,6 +119,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
+    stdin_send_discord_logger.info("get abs file path -> " + str(file_path))
     file_size_limit = 9 * 1024 * 1024  # 9MB
     file_size_limit_web = 2 * 1024 * 1024 * 1024  # 2GBを超えた場合file.ioでも無理なのでエラー
     # 権限を要求
@@ -171,6 +183,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
                         download_link = response_json.get("link")
                         stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + download_link)
                         await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,download_link))
+                        await interaction.followup.send(content=f"<@{interaction.user.id}>")
                     else:
                         response_json = await response.json()
                         if not isinstance(file_obj, io.BytesIO):
@@ -195,5 +208,5 @@ async def send_discord(interaction: discord.Interaction, path: str):
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path))
+        await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path,filename=file_name))
 #!end-ignore

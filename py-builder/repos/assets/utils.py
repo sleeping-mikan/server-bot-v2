@@ -200,3 +200,9 @@ async def send_discord_message_or_followup(interaction: discord.Interaction, mes
         await interaction.followup.send(message, file=file)
     else:
         await interaction.response.send_message(message, file=file)
+
+async def send_discord_message_or_edit(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING, embed = discord.utils.MISSING, ephemeral = False):
+    if interaction.response.is_done():
+        await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
+    else:
+        await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
