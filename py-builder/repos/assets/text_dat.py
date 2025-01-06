@@ -62,6 +62,9 @@ async def get_text_dat():
                     "ls": "指定したサーバーからの相対パスに存在するファイルを表示します。",
                     "mkdir": "指定した相対パスに新しいディレクトリを作成します。",
                     "rmdir": "指定した相対パスのディレクトリを再帰的に削除します。",
+                    "mv": "指定したパスにあるファイルを別のパスに移動します。",
+                    "send-discord": "discordにファイルを送信します。",
+                    "wget": "urlからファイルをダウンロードします。",
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
@@ -90,6 +93,9 @@ async def get_text_dat():
                     "ls":"Display the file specified by the relative path from the server.",
                     "mkdir":"Create a new directory specified by the relative path from the server.",
                     "rmdir":"Recursively delete the directory specified by the relative path from the server.",
+                    "mv":"Move the file specified by the path to another path.",
+                    "send-discord":"Send a file to discord.",
+                    "wget":"Download a file from a url.",
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
@@ -130,6 +136,8 @@ async def get_text_dat():
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
                     "not_file": "`{}`はファイルではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
+                    "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
+                    "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
@@ -152,6 +160,25 @@ async def get_text_dat():
                         "success":"ディレクトリ`{}`を削除しました",
                         "not_directory":"`{}`はディレクトリではありません",
                         "not_exists":"`{}`は見つかりません",
+                    },
+                    "mv":{
+                        "success":"`{}`を`{}`に移動しました",
+                        "not_exists":"`{}`は見つかりません",
+                    },
+                    "send-discord":{
+                        "success":"<@{}> {} にファイルを送信しました",
+                        "file_io_error":"<@{}> File.ioへのアップロードに失敗しました status -> `{}` , reason -> `{}` :: `{}`",
+                        "file_not_found":"`{}`は見つかりません",
+                        "not_file":"`{}`はファイルではありません",
+                        "is_zip":"`{}`はディレクトリであるためzipで圧縮します",
+                        "is_file":"`{}`はファイルであるため送信します",
+                        "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
+                        "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
+                    },
+                    "wget":{
+                        "download_failed":"`{}`からファイルをダウンロードできません",
+                        "download_success":"`{}`からファイルを{}にダウンロードしました",
+                        "already_exists":"`{}`は既に存在します",
                     },
                 }
             },
@@ -227,6 +254,8 @@ async def get_text_dat():
                     "invalid_path": "`{}` is an invalid/operable area",
                     "not_file": "`{}` is not a file",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
+                    "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
+                    "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
@@ -250,6 +279,23 @@ async def get_text_dat():
                         "not_directory":"`{}` is not a directory",
                         "not_exists":"`{}` not found",
                     },
+                    "mv":{
+                        "success":"`{}` has been moved to `{}`",
+                        "file_not_found":"`{}` not found",
+                    },
+                    "send-discord":{
+                        "success":"<@{}> Sent to {} a file",
+                        "file_io_error":"<@{}> File.io upload failed status -> `{}` , reason -> `{}` :: `{}`",
+                        "not_file":"`{}` is not a file",
+                        "file_not_found":"`{}` not found",
+                        "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
+                        "is_file":"`{}` is a file, so it will be sent to discord",
+                    },
+                    "wget":{
+                        "download_failed":"Download failed url:{}",
+                        "download_success":"Download complete url:{} path:{}",
+                        "already_exists":"`{}` already exists",
+                    }
                 }
             },
             "backup":{

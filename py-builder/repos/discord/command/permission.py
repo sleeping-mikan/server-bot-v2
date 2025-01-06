@@ -50,13 +50,14 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
 @command_group_permission.command(name="view",description=COMMAND_DESCRIPTION[lang]["permission"]["view"])
 async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
+    COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
     value["force_admin"] = await user_permission(user)
     if detail:
         my_perm_level = await user_permission(user)
         can_use_cmd = {f"{key}":("☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐") + f"({COMMAND_PERMISSION[key]})" for key in COMMAND_PERMISSION}
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(20)} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
+        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
     else:
         await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]))
     permission_logger.info("send permission info : " + str(user.id) + f"({user})")

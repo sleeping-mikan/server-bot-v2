@@ -12,5 +12,8 @@
 #!open ./repos/discord/command/cmd/stdin/rm.py
 #!open ./repos/discord/command/cmd/stdin/mkdir.py
 #!open ./repos/discord/command/cmd/stdin/rmdir.py
+#!open ./repos/discord/command/cmd/stdin/mv.py
+#!open ./repos/discord/command/cmd/stdin/send-discord.py
+#!open ./repos/discord/command/cmd/stdin/wget.py
 
 #!open ./repos/discord/command/cmd/_append.py

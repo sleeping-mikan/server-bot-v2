@@ -8,6 +8,8 @@ from .....assets.utils import *
 from ..common import *
 #!end-ignore
 
+stdin_logger = cmd_logger.getChild("stdin")
+
 #サブグループstdinを作成
 command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin group")
 # サブグループを設定
@@ -17,7 +19,9 @@ command_group_cmd.add_command(command_group_cmd_stdin)
 sys_files = [".config",".token","logs","mikanassets"]
 important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
-] 
+] + [
+    os.path.join(server_path,i) for i in sys_files
+]
 
 
 
