@@ -7,7 +7,9 @@ from .text_dat import *
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
     logger.error('permission denied')
-    await interaction.response.send_message(RESPONSE_MSG["other"]["no_permission"],ephemeral = True)
+    embed = discord.Embed(title=RESPONSE_MSG["other"]["no_permission"], color=0xff0000)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed = embed,ephemeral = True)
 
 
 async def is_administrator(user: discord.User) -> bool:
