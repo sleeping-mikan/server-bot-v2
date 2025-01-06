@@ -291,7 +291,7 @@ async def terminal(interaction: discord.Interaction):
 @tree.command(name="help",description=COMMAND_DESCRIPTION[lang]["help"])
 async def help(interaction: discord.Interaction):
     await print_user(help_logger,interaction.user)
-    await interaction.response.send_message(send_help)
+    await interaction.response.send_message(embed=send_help)
     help_logger.info('help sent')
 
 #/exit

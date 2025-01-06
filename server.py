@@ -89,6 +89,10 @@ discord_terminal_item = deque()
 discord_terminal_send_length = 0
 discord_loop_is_run = False
 
+# 濃い目の黄色
+bot_color = discord.Color.from_rgb(255, 200, 0)
+embed_under_line_url = "https://www.dropbox.com/scl/fi/70b9ckjwrfilds65gbs11/gradient_bar.png?rlkey=922kwpi4t17lk0ju4ztbq6ofc&st=wbjfev70&dl=1"
+
 USER_PERMISSION_MAX = 4
 
 
@@ -913,7 +917,7 @@ async def get_text_dat():
 
     #今後も大きくなることが予想されるので、ここで条件分岐する
     if lang == "ja":
-        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/mikatan-mikan/server-bot/blob/main/README.md#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E4%B8%80%E8%A6%A7>\n"
+        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/mikatan-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"管理者権限を持っていないため実行できません",
@@ -1031,7 +1035,7 @@ async def get_text_dat():
             "ended":"さーばーとじてる",
         }
     elif lang == "en":
-        send_help = "Details on the help can be found here\n<https://github.com/mikatan-mikan/server-bot/blob/main/README.md#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E4%B8%80%E8%A6%A7>\n"
+        send_help = "Details on the help can be found here\n<https://github.com/mikatan-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"Permission denied",
@@ -1149,10 +1153,12 @@ async def get_text_dat():
     def make_send_help():
         global send_help
         send_help += f"web : http://{requests.get('https://api.ipify.org').text}:{web_port}\n" 
-        send_help += "```"
+        embed = discord.Embed(title="How to use this bot",color=bot_color)
         for key in HELP_MSG[lang]:
-            send_help += key + " " + HELP_MSG[lang][key] + "\n"
-        send_help += "```"
+            embed.add_field(name=key,value=HELP_MSG[lang][key],inline=False)
+        embed.add_field(name="detail",value=send_help,inline=False)
+        embed.set_image(url = embed_under_line_url)
+        send_help = embed
     make_send_help()
 
 
@@ -2387,7 +2393,7 @@ async def terminal(interaction: discord.Interaction):
 @tree.command(name="help",description=COMMAND_DESCRIPTION[lang]["help"])
 async def help(interaction: discord.Interaction):
     await print_user(help_logger,interaction.user)
-    await interaction.response.send_message(send_help)
+    await interaction.response.send_message(embed=send_help)
     help_logger.info('help sent')
 
 #/exit
