@@ -13,6 +13,8 @@ from .common import *
 @command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(serverin_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd serverin {command}")
+    embed.set_image(url = embed_under_line_url)
     global is_back_discord,cmd_logs
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
@@ -20,12 +22,15 @@ async def cmd(interaction: discord.Interaction,command:str):
         return
     #サーバー起動確認
     if is_stopped_server(serverin_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        serverin_logger.info("is not running")
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_not_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         serverin_logger.error('unknown command : ' + command)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"])
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     serverin_logger.info("run command : " + command)
     process.stdin.write(command + "\n")
@@ -38,5 +43,6 @@ async def cmd(interaction: discord.Interaction,command:str):
         if len(cmd_logs) == 0:
             await asyncio.sleep(0.1)
             continue
-        await interaction.response.send_message(cmd_logs.popleft())
+        embed.add_field(name="",value=cmd_logs.popleft(),inline=False)
+        await interaction.response.send_message(embed=embed)
         break

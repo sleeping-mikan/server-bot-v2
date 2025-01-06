@@ -57,7 +57,7 @@ async def rewrite_config(config: dict) -> bool:
         return False
 
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: discord.Embed, symlinks=False) -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -96,7 +96,9 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=Fal
                         now = RESPONSE_MSG["backup"]["now_backup"]
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
-                        await interaction.edit_original_response(content=f"{now}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```")
+                        embed.clear_fields()
+                        embed.add_field(name = f"{now}",value=f"```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
             # catch the Error from the recursive copytree so that we can
