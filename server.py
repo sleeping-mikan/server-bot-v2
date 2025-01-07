@@ -2471,7 +2471,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 
 #/update
 @tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
-async def update(interaction: discord.Interaction, is_force = False):
+async def update(interaction: discord.Interaction, is_force: bool = False):
     await print_user(update_logger,interaction.user)
     embed = discord.Embed(color=bot_color,title= f"/update")
     embed.set_image(url = embed_under_line_url)
