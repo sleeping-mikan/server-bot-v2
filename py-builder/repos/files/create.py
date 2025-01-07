@@ -11,6 +11,9 @@ def get_self_commit_id():
     url = "https://api.github.com/repos/" + repos + "/commits/" + branch
 
     response = requests.get(url)
+    if response.status_code != 200:
+        sys_logger.error("github api error. status code: " + str(response.status_code))
+        return None
     commit_id = response.json()["sha"]
     return commit_id
 
@@ -139,6 +142,11 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     github_commit = get_self_commit_id()
     update_logger.info("github commit -> " + github_commit)
     update_logger.info(" local commit -> " + commit)
+    if github_commit == None:
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error", value="github response error.", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.error("github commit is None.")
     if interaction is not None and embed is not None:
         embed.add_field(name="github commit", value=github_commit, inline=False)
         embed.add_field(name="local commit", value=commit, inline=False)
