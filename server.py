@@ -46,6 +46,12 @@ import zipfile
 
 __version__ = "2.1.0"
 
+repository = {
+    "user": "sleeping-mikan",
+    "name": "server-bot-v2",
+    "branch": "14-auto-update",#TODO
+}
+
 
 intents = discord.Intents.default() 
 intents.message_content = True
@@ -119,6 +125,7 @@ COMMAND_PERMISSION = {
     "lang":2,
     "tokengen":1,
     "terminal":1,
+    "update":3,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
@@ -184,7 +191,8 @@ def make_config():
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
         config_dict = {\
-                            "allow":{"ip":True},\
+                            "allow":{"ip":True,"replace":False},\
+                            "auto_update":True,\
                             "server_path":now_path + "/",\
                             
                             "server_name":"bedrock_server.exe",\
@@ -216,7 +224,14 @@ def make_config():
         #要素がそろっているかのチェック
         def check(cfg):
             if "allow" not in cfg:
-                cfg["allow"] = {"ip":True}
+                cfg["allow"] = {"ip":True,"replace":False}
+            if "ip" not in cfg["allow"]:
+                cfg["allow"]["ip"] = True
+            if "replace" not in cfg["allow"]:
+                cfg["allow"]["replace"] = False
+
+            if "auto_update" not in cfg:
+                cfg["auto_update"] = True
             elif "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
@@ -624,6 +639,7 @@ lang_logger = create_logger("lang")
 token_logger = create_logger("token")
 terminal_logger = create_logger("terminal")
 base_extension_logger = create_logger("extension")
+update_logger = create_logger("update")
 minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.MinecraftConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
 
 #--------------------
@@ -651,6 +667,7 @@ try:
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
     where_terminal = config["discord_commands"]["terminal"]["discord"]
+    is_auto_update = config["auto_update"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
@@ -666,6 +683,14 @@ except KeyError:
 #--------------------
 
 
+def get_self_commit_id():
+    repos = f"{repository['user']}/{repository['name']}"
+    branch = repository["branch"]
+    url = "https://api.github.com/repos/" + repos + "/commits/" + branch
+
+    response = requests.get(url)
+    commit_id = response.json()["sha"]
+    return commit_id
 
 args = sys.argv[1:]
 do_init = False
@@ -677,21 +702,34 @@ for i in args:
         do_init = True
         # pass
 
+is_first_run = False
+
 # mikanassets/extensionフォルダを作成
 if not os.path.exists(now_path + "/mikanassets/extension"):
+    # 最初の起動の場合にはフラグを立てておく
+    is_first_run = True
     os.makedirs(now_path + "/mikanassets/extension")
 
 #updateプログラムが存在しなければdropboxから./update.pyにコピーする
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/gb60d7zkfi4faayubylzn/update_v2.1.py?rlkey=03a4cj1to6lid9ek56gdrv3rq&st=djbmgz5d&dl=1'
+    url='https://www.dropbox.com/scl/fi/zo824cfk88uj52sospwo6/update_v2.2.py?rlkey=vwkh78smhdbm2pnfyegyxjpgf&st=6wdv9o5w&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
 
     with open(filename ,mode='wb') as f: # wb でバイト型を書き込める
         f.write(urlData)
+def save_mikanassets_dat():
+    if not os.path.exists(now_path + "/mikanassets"):
+        os.makedirs(now_path + "/mikanassets")
+    if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
+        # 存在しなければデータファイルを作成する(現状 commit id 保管用)
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+        file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
+        file.close()
+save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")
 if not os.path.exists(now_path + "/mikanassets/web"):
     os.makedirs(now_path + "/mikanassets/web")
@@ -762,10 +800,65 @@ def make_temp():
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
+async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None):
+    # ファイルが存在しなければ作る
+    if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
+        save_mikanassets_dat()
+    file = open(os.path.join(now_path, "mikanassets", ".dat"))
+    try:
+        data = json.load(file)
+        commit = data["commit_id"]
+    except:
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error", value="json load error (mikanassets/.dat). delete file.", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.error("json load error (mikanassets/.dat). delete file.")
+    file.close()
+    github_commit = get_self_commit_id()
+    update_logger.info("github commit -> " + github_commit)
+    update_logger.info(" local commit -> " + commit)
+    if interaction is not None and embed is not None:
+        embed.add_field(name="github commit", value=github_commit, inline=False)
+        embed.add_field(name="local commit", value=commit, inline=False)
+        await sender(interaction=interaction,embed=embed)
+    if commit == github_commit: 
+        if interaction is not None and embed is not None:
+            embed.add_field(name="", value=text_pack["same"], inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.info("commit is same. no update.")
+        return
+    # ファイルにcommit id を書き込む
+    data["commit_id"] = github_commit
+    file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+    json.dump(data, file)
+    file.close()
+    if interaction is not None and embed is not None:
+        embed.add_field(name="", value=text_pack["different"], inline=False)
+        await sender(interaction=interaction,embed=embed)
+    update_logger.info("commit changed. update self.")
+    url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
+    # temp_path + "/new_source.py にダウンロード
+    response = requests.get(url)
+    with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
+        f.write(response.content.decode('utf-8').replace("\r\n","\n"))
+    # discordにコードを置き換える
+    msg_id = str(0)
+    channel_id = str(0)
+    if interaction is not None and embed is not None:
+        msg_id = str((await interaction.original_response()).id)
+        channel_id = str(interaction.channel_id)
+        embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
+        await sender(interaction=interaction,embed=embed)
+    replace_logger.info("call update.py")
+    replace_logger.info('replace args : ' + msg_id + " " + channel_id)
+    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+
+
 
 make_token_file()
 make_temp()
-
+if is_auto_update:
+    asyncio.run(update_self_if_commit_changed())
 #--------------------
 
 
@@ -870,7 +963,7 @@ async def get_text_dat():
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
-            "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
+            "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
@@ -881,6 +974,7 @@ async def get_text_dat():
             "lang":"botの言語を変更します。引数には言語コードを指定します。",
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
         },
         "en":{
             "stop":"Stop the server.",
@@ -901,7 +995,7 @@ async def get_text_dat():
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
-            "replace":"Replace the bot's code with <py file>.",
+            "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
@@ -912,6 +1006,7 @@ async def get_text_dat():
             "lang":"Change the bot's language. With an argument, specify the language code.",
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
+            "update":"Update the bot. This is a successor command of /replace.",
         },
     }
 
@@ -991,6 +1086,7 @@ async def get_text_dat():
                 "path_not_allowed":"不正なパス",
             },
             "replace":{
+                "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
                 "progress":"更新プログラムの適応中・・・",
             },
             "ip":{
@@ -1027,6 +1123,12 @@ async def get_text_dat():
             "terminal":{
                 "success":"サーバーのコンソールを{}に紐づけました",
             },
+            "update":{
+                "same":"存在するファイルは既に最新です",
+                "different":"コミットidが異なるため更新を行います",
+                "download_failed":"更新のダウンロードに失敗しました",
+                "replace":"ch_id->{} msg_id->{}",
+            }
         }
         ACTIVITY_NAME = {
             "starting":"さーばーきどう",
@@ -1107,6 +1209,7 @@ async def get_text_dat():
                 "path_not_allowed":"Path not allowed",
             },
             "replace":{
+                "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
                 "progress":"Applying update program",
             },
             "ip":{
@@ -1142,6 +1245,12 @@ async def get_text_dat():
             },
             "terminal":{
                 "success":"The terminal has been set to {}",
+            },
+            "update":{
+                "same":"The same version is already installed",
+                "different":"The commit id is different to update",
+                "download_failed":"Download failed",
+                "replace":"ch_id->{} msg_id->{}",
             },
         }
         ACTIVITY_NAME = {
@@ -1465,12 +1574,14 @@ async def on_message(message: discord.Message):
         # コマンドを処理
         cmd_list = message.content.split(" ")
         # 許可されないコマンドをはじく
-        if cmd_list[0] not in allow_cmd:
+        if message.author.bot is True: pass
+        elif cmd_list[0] not in allow_cmd:
             sys_logger.error('unknown command : ' + " ".join(cmd_list))
             await message.reply("this command is not allowed")
             return
-        process.stdin.write(message.content + "\n")
-        process.stdin.flush()
+        else:
+            process.stdin.write(message.content + "\n")
+            process.stdin.flush()
     except Exception as e:
         sys_logger.error(e)
 
@@ -2329,19 +2440,48 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
         embed.add_field(name="",value=RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name,inline=False)
         await interaction.response.send_message(embed=embed,ephemeral=True)
 
+
+#--------------------
+
+
+#/update
+@tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
+async def update(interaction: discord.Interaction):
+    await print_user(update_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/update")
+    embed.set_image(url = embed_under_line_url)
+    #サーバー起動確認
+    if is_running_server(update_logger): 
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
+    #サーバー管理者権限を要求
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["update"]: 
+        await not_enough_permission(interaction,update_logger)
+        return
+    #py_builder.pyを更新
+    await update_self_if_commit_changed(interaction=interaction,embed=embed,text_pack=RESPONSE_MSG["update"],sender=send_discord_message_or_edit)
+#--------------------
+
+
 #/replace <py file>
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
     embed = discord.Embed(color=bot_color,title= f"/replace {py_file.filename}")
     embed.set_image(url = embed_under_line_url)
+    #デフォルトでコマンドを無効に
+    if not allow["replace"]:
+        embed.add_field(name="",value=RESPONSE_MSG["replace"]["not_allow"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
     if is_running_server(replace_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["replace"]["is_running"],inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
     replace_logger.info('replace started')

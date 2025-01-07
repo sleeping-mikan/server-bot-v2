@@ -7,6 +7,12 @@ from .imports import *
 
 __version__ = "2.1.0"
 
+repository = {
+    "user": "sleeping-mikan",
+    "name": "server-bot-v2",
+    "branch": "main",
+}
+
 
 intents = discord.Intents.default() 
 intents.message_content = True
@@ -80,6 +86,7 @@ COMMAND_PERMISSION = {
     "lang":2,
     "tokengen":1,
     "terminal":1,
+    "update":3,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())

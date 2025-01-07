@@ -73,12 +73,14 @@ async def on_message(message: discord.Message):
         # コマンドを処理
         cmd_list = message.content.split(" ")
         # 許可されないコマンドをはじく
-        if cmd_list[0] not in allow_cmd:
+        if message.author.bot is True: pass
+        elif cmd_list[0] not in allow_cmd:
             sys_logger.error('unknown command : ' + " ".join(cmd_list))
             await message.reply("this command is not allowed")
             return
-        process.stdin.write(message.content + "\n")
-        process.stdin.flush()
+        else:
+            process.stdin.write(message.content + "\n")
+            process.stdin.flush()
     except Exception as e:
         sys_logger.error(e)
 
