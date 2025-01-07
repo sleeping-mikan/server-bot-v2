@@ -190,7 +190,7 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 > -Dfile.encoding=UTF-8が存在しない場合一部環境で特殊文字等が正常に表示されません。またpauseのようなコマンドを記載しないでください。(このプログラムはサーバーを制御するプログラムです。それ以外のコマンドを実行しないでください。)
 
 `java -Xmx4048M -Xms1024M -Dfile.encoding=UTF-8 -jar server.jar nogui`
-
+ 
 ## 拡張機能
 
 拡張機能を追加する場合server.pyと同じディレクトリのmikanassets/extensionに配置してください。
