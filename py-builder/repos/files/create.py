@@ -130,6 +130,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
         save_mikanassets_dat()
     file = open(os.path.join(now_path, "mikanassets", ".dat"))
+    # 現在のserver.pyのコミットidを取り出す
     try:
         data = json.load(file)
         commit = data["commit_id"]
@@ -139,33 +140,39 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
             await sender(interaction=interaction,embed=embed)
         update_logger.error("json load error (mikanassets/.dat). delete file.")
     file.close()
+    # github/mainのコミットidを取り出す
     github_commit = get_self_commit_id()
     update_logger.info("github commit -> " + github_commit)
     update_logger.info(" local commit -> " + commit)
+    # 戻り値が正常でない場合
     if github_commit == None:
         if interaction is not None and embed is not None:
             embed.add_field(name="error", value="github response error.", inline=False)
             await sender(interaction=interaction,embed=embed)
         update_logger.error("github commit is None.")
+    # コミットid出力
     if interaction is not None and embed is not None:
         embed.add_field(name="github commit", value=github_commit, inline=False)
         embed.add_field(name="local commit", value=commit, inline=False)
         await sender(interaction=interaction,embed=embed)
+    # 更新がない場合
     if commit == github_commit: 
         if interaction is not None and embed is not None:
             embed.add_field(name="", value=text_pack["same"], inline=False)
             await sender(interaction=interaction,embed=embed)
         update_logger.info("commit is same. no update.")
         return
-    # ファイルにcommit id を書き込む
+    # ファイルに新しいcommit id を書き込む
     data["commit_id"] = github_commit
     file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
     json.dump(data, file)
     file.close()
+    # ローカルとgithubのコードが違ったことを出力
     if interaction is not None and embed is not None:
         embed.add_field(name="", value=text_pack["different"], inline=False)
         await sender(interaction=interaction,embed=embed)
     update_logger.info("commit changed. update self.")
+    # コードを要求
     url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
@@ -175,6 +182,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
             embed.add_field(name="error : raw.githubusercontent.com response error", value="", inline=False)
             await sender(interaction=interaction,embed=embed)
         return
+    # temp_path + "/new_source.py に書き換え予定ファイル(新しいserver.py)を作成
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
         f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
