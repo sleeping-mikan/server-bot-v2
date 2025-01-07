@@ -7,6 +7,12 @@ from .imports import *
 
 __version__ = "2.1.0"
 
+repository = {
+    "user": "sleeping-mikan",
+    "name": "server-bot-v2",
+    "branch": "main"
+}
+
 
 intents = discord.Intents.default() 
 intents.message_content = True
