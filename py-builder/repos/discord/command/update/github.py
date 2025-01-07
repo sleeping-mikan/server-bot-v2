@@ -7,7 +7,7 @@ from ....config.read_config_all import *
 
 #/update
 @tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
-async def update(interaction: discord.Interaction):
+async def update(interaction: discord.Interaction, is_force = False):
     await print_user(update_logger,interaction.user)
     embed = discord.Embed(color=bot_color,title= f"/update")
     embed.set_image(url = embed_under_line_url)
@@ -21,4 +21,4 @@ async def update(interaction: discord.Interaction):
         await not_enough_permission(interaction,update_logger)
         return
     #py_builder.pyを更新
-    await update_self_if_commit_changed(interaction=interaction,embed=embed,text_pack=RESPONSE_MSG["update"],sender=send_discord_message_or_edit)
+    await update_self_if_commit_changed(interaction=interaction,embed=embed,text_pack=RESPONSE_MSG["update"],sender=send_discord_message_or_edit,is_force = is_force)

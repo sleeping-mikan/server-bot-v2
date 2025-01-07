@@ -122,7 +122,7 @@ def make_temp():
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None):
+async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None, is_force = False):
     # ファイルが存在しなければ作る
     if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
         save_mikanassets_dat()
@@ -153,7 +153,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         embed.add_field(name="local commit", value=commit, inline=False)
         await sender(interaction=interaction,embed=embed)
     # 更新がない場合
-    if commit == github_commit: 
+    if commit == github_commit and not is_force: 
         if interaction is not None and embed is not None:
             embed.add_field(name="", value=text_pack["same"], inline=False)
             await sender(interaction=interaction,embed=embed)
@@ -166,7 +166,10 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     file.close()
     # ローカルとgithubのコードが違ったことを出力
     if interaction is not None and embed is not None:
-        embed.add_field(name="", value=text_pack["different"], inline=False)
+        if is_force:
+            embed.add_field(name="", value=text_pack["force"], inline=False)
+        else:
+            embed.add_field(name="", value=text_pack["different"], inline=False)
         await sender(interaction=interaction,embed=embed)
     update_logger.info("commit changed. update self.")
     # コードを要求

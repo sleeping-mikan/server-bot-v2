@@ -234,6 +234,7 @@ async def get_text_dat():
                 "different":"コミットidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
                 "replace":"ch_id {}\nmsg_id {}",
+                "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
             }
         }
         ACTIVITY_NAME = {
@@ -357,6 +358,7 @@ async def get_text_dat():
                 "different":"The commit id is different to update",
                 "download_failed":"Download failed",
                 "replace":"ch_id {}\nmsg_id {}",
+                "force":"update server.py because force option is true",
             },
         }
         ACTIVITY_NAME = {
