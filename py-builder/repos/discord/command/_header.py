@@ -133,19 +133,29 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
         embed.add_field(name="",value=RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name,inline=False)
         await interaction.response.send_message(embed=embed,ephemeral=True)
 
+#!open ./repos/discord/command/update/github.py
+#!ignore
+from .update.github import *
+#!end-ignore
+
 #/replace <py file>
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
     embed = discord.Embed(color=bot_color,title= f"/replace {py_file.filename}")
     embed.set_image(url = embed_under_line_url)
+    #デフォルトでコマンドを無効に
+    if not allow["replace"]:
+        embed.add_field(name="",value=RESPONSE_MSG["replace"]["not_allow"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
     if is_running_server(replace_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["replace"]["is_running"],inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
     replace_logger.info('replace started')

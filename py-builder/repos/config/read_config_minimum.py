@@ -20,7 +20,8 @@ def make_config():
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
         config_dict = {\
-                            "allow":{"ip":True},\
+                            "allow":{"ip":True,"replace":False},\
+                            "auto_update":True,\
                             "server_path":now_path + "/",\
                             
                             "server_name":"bedrock_server.exe",\
@@ -52,7 +53,14 @@ def make_config():
         #要素がそろっているかのチェック
         def check(cfg):
             if "allow" not in cfg:
-                cfg["allow"] = {"ip":True}
+                cfg["allow"] = {"ip":True,"replace":False}
+            if "ip" not in cfg["allow"]:
+                cfg["allow"]["ip"] = True
+            if "replace" not in cfg["allow"]:
+                cfg["allow"]["replace"] = False
+
+            if "auto_update" not in cfg:
+                cfg["auto_update"] = True
             elif "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:

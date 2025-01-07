@@ -22,6 +22,7 @@ try:
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
     where_terminal = config["discord_commands"]["terminal"]["discord"]
+    is_auto_update = config["auto_update"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:

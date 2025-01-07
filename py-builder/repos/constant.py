@@ -10,7 +10,7 @@ __version__ = "2.1.0"
 repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
-    "branch": "14-auto-update",
+    "branch": "14-auto-update",#TODO
 }
 
 
@@ -86,6 +86,7 @@ COMMAND_PERMISSION = {
     "lang":2,
     "tokengen":1,
     "terminal":1,
+    "update":3,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())

@@ -69,7 +69,7 @@ async def get_text_dat():
                 },
             },
             "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
-            "replace":"このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
+            "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
@@ -80,6 +80,7 @@ async def get_text_dat():
             "lang":"botの言語を変更します。引数には言語コードを指定します。",
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
         },
         "en":{
             "stop":"Stop the server.",
@@ -100,7 +101,7 @@ async def get_text_dat():
                 },
             },
             "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
-            "replace":"Replace the bot's code with <py file>.",
+            "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
@@ -111,6 +112,7 @@ async def get_text_dat():
             "lang":"Change the bot's language. With an argument, specify the language code.",
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
+            "update":"Update the bot. This is a successor command of /replace.",
         },
     }
 
@@ -190,6 +192,7 @@ async def get_text_dat():
                 "path_not_allowed":"不正なパス",
             },
             "replace":{
+                "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
                 "progress":"更新プログラムの適応中・・・",
             },
             "ip":{
@@ -226,6 +229,11 @@ async def get_text_dat():
             "terminal":{
                 "success":"サーバーのコンソールを{}に紐づけました",
             },
+            "update":{
+                "same":"存在するファイルは既に最新です",
+                "different":"コミットidが異なるため更新を行います",
+                "download_failed":"更新のダウンロードに失敗しました",
+            }
         }
         ACTIVITY_NAME = {
             "starting":"さーばーきどう",
@@ -306,6 +314,7 @@ async def get_text_dat():
                 "path_not_allowed":"Path not allowed",
             },
             "replace":{
+                "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
                 "progress":"Applying update program",
             },
             "ip":{
@@ -341,6 +350,11 @@ async def get_text_dat():
             },
             "terminal":{
                 "success":"The terminal has been set to {}",
+            },
+            "update":{
+                "same":"The same version is already installed",
+                "different":"The commit id is different to update",
+                "download_failed":"Download failed",
             },
         }
         ACTIVITY_NAME = {

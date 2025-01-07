@@ -2,6 +2,7 @@
 from ..imports import *
 from ..constant import *
 from ..logger.logger_create import *
+from ..config.read_config_all import *
 #!end-ignore
 
 def get_self_commit_id():
@@ -42,11 +43,15 @@ if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
 
     with open(filename ,mode='wb') as f: # wb でバイト型を書き込める
         f.write(urlData)
-if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
-    # 存在しなければデータファイルを作成する(現状 commit id 保管用)
-    file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
-    file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
-    file.close()
+def save_mikanassets_dat():
+    if not os.path.exists(now_path + "/mikanassets"):
+        os.makedirs(now_path + "/mikanassets")
+    if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
+        # 存在しなければデータファイルを作成する(現状 commit id 保管用)
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+        file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
+        file.close()
+save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")
 if not os.path.exists(now_path + "/mikanassets/web"):
     os.makedirs(now_path + "/mikanassets/web")
@@ -117,31 +122,62 @@ def make_temp():
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-def update_self_if_commit_changed():
+async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None):
+    # ファイルが存在しなければ作る
+    if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
+        save_mikanassets_dat()
     file = open(os.path.join(now_path, "mikanassets", ".dat"))
     try:
         data = json.load(file)
         commit = data["commit_id"]
     except:
-        sys_logger.error("json load error (mikanassets/.dat). delete file and retry.")
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error", value="json load error (mikanassets/.dat). delete file.", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.error("json load error (mikanassets/.dat). delete file.")
     file.close()
     github_commit = get_self_commit_id()
-    sys_logger.info("github commit -> " + github_commit)
-    sys_logger.info(" local commit -> " + commit)
-    if commit == github_commit: return
-
-    sys_logger.info("commit changed. update self.")
+    update_logger.info("github commit -> " + github_commit)
+    update_logger.info(" local commit -> " + commit)
+    if interaction is not None and embed is not None:
+        embed.add_field(name="github commit", value=github_commit, inline=False)
+        embed.add_field(name="local commit", value=commit, inline=False)
+        await sender(interaction=interaction,embed=embed)
+    if commit == github_commit: 
+        if interaction is not None and embed is not None:
+            embed.add_field(name="", value=text_pack["same"], inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.info("commit is same. no update.")
+        return
+    # ファイルにcommit id を書き込む
+    data["commit_id"] = github_commit
+    file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+    json.dump(data, file)
+    file.close()
+    if interaction is not None and embed is not None:
+        embed.add_field(name="", value=text_pack["different"], inline=False)
+        await sender(interaction=interaction,embed=embed)
+    update_logger.info("commit changed. update self.")
     url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
         f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
-    replace_logger.info('replace done')
+    msg_id = 0
+    channel_id = 0
+    if interaction is not None and embed is not None:
+        msg_id = str(interaction.original_response().id)
+        channel_id = str(interaction.channel_id)
+        embed.add_field(name="", value=text_pack["replace"], inline=False)
+        await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
-    replace_logger.info('replace args : ' +  "None None")
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py","0","0",now_file])
+    replace_logger.info('replace args : ' + msg_id + " " + channel_id)
+    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+
+
 
 make_token_file()
 make_temp()
-update_self_if_commit_changed()
+if is_auto_update:
+    asyncio.run(update_self_if_commit_changed())
