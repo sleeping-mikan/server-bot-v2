@@ -793,19 +793,22 @@ def update_self_if_commit_changed():
     except:
         sys_logger.error("json load error (mikanassets/.dat). delete file and retry.")
     file.close()
-    if commit == get_self_commit_id(): return
+    github_commit = get_self_commit_id()
+    sys_logger.info("github commit -> " + github_commit)
+    sys_logger.info(" local commit -> " + commit)
+    if commit == github_commit: return
 
     sys_logger.info("commit changed. update self.")
     url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
-    with open(temp_path + "/new_source.py", "wb") as f:
-        f.write(response.content.decode("utf-8").replace("\r\n","\n"))
+    with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
+        f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
     replace_logger.info('replace done')
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' +  "None None")
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",None,None,now_file])
+    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py","0","0",now_file])
 
 make_token_file()
 make_temp()
