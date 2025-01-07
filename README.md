@@ -34,12 +34,13 @@ discordを用いて特定のサーバーを管理できます。
 |backup|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
 |cmd serverin|サーバーに対してコマンドを送信します。|1|
 |cmd stdin|ls/mk/rm/rmdir/mkdir等のサーバーディレクトリに対する操作を受け付けます。例えば`/cmd stdin mk a.txt`でサーバーディレクトリ直下にa.txtを作成します。|2/3/2/2/2(一部特定ファイルの操作はdiscord管理者のみ)|
-|replace|server.pyを与えられた引数に置換します。|4|
 |logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを10件表示します。|1|
 |lang|サーバーの言語を変更します。|2|
 |permission change|ユーザーのbot利用権限を操作します。|4|
 |permission view|プレイヤーの権限を表示します。|0|
 |tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください|1|
+|update|githubにアクセスして最新のserver.pyをダウンロードします。|3|
+|<非推奨>replace|server.pyを与えられた引数に置換します。|4|
 
 これらコマンドの設定等は後述の使用方法を参照してください。
 
@@ -92,8 +93,10 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 ```json
 {
     "allow": {
-        "ip": true
+        "ip": true,
+        "replace":false
     },
+    "auto_update": true,
     "server_path": "path/to/serverdir/",
     "server_name": "bedrock_server.exe",
     "log": {
@@ -134,7 +137,8 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 
 |項目|説明|
 |---|---|
-|allow|各コマンドの実行を許可するかどうか。(現在は/ipにのみ実装されています)|
+|allow|各コマンドの実行を許可するかどうか。(現在は/ip,/replaceにのみ実装されています)|
+|auto_update|サーバー本体を自動更新するか否か|
 |server_path|minecraft server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
 |server_name|minecraft server本体の名前 java版の場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
@@ -211,9 +215,6 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 
 本プログラムのインストール/実行/その他本プログラムが影響する挙動全てにおいて、生じた損害や不具合には作者は一切の責任を負わないものとします。
 
-## 更新履歴
-
-https://github.com/mikatan-mikan/server-bot/blob/main/PATCH.md
 
 ### 最後の破壊的変更
 
