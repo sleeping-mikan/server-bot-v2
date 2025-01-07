@@ -233,6 +233,7 @@ async def get_text_dat():
                 "same":"存在するファイルは既に最新です",
                 "different":"コミットidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
+                "replace":"ch_id->{} msg_id->{}",
             }
         }
         ACTIVITY_NAME = {
@@ -355,6 +356,7 @@ async def get_text_dat():
                 "same":"The same version is already installed",
                 "different":"The commit id is different to update",
                 "download_failed":"Download failed",
+                "replace":"ch_id->{} msg_id->{}",
             },
         }
         ACTIVITY_NAME = {

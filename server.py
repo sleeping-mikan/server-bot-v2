@@ -842,12 +842,12 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
         f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
-    msg_id = 0
-    channel_id = 0
+    msg_id = str(0)
+    channel_id = str(0)
     if interaction is not None and embed is not None:
-        msg_id = str(interaction.original_response().id)
+        msg_id = str((await interaction.original_response()).id)
         channel_id = str(interaction.channel_id)
-        embed.add_field(name="", value=text_pack["replace"], inline=False)
+        embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
         await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
@@ -1127,6 +1127,7 @@ async def get_text_dat():
                 "same":"存在するファイルは既に最新です",
                 "different":"コミットidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
+                "replace":"ch_id->{} msg_id->{}",
             }
         }
         ACTIVITY_NAME = {
@@ -1249,6 +1250,7 @@ async def get_text_dat():
                 "same":"The same version is already installed",
                 "different":"The commit id is different to update",
                 "download_failed":"Download failed",
+                "replace":"ch_id->{} msg_id->{}",
             },
         }
         ACTIVITY_NAME = {
