@@ -49,7 +49,7 @@ __version__ = "2.1.0"
 repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
-    "branch": "14-auto-update",#TODO
+    "branch": "main",
 }
 
 
@@ -657,7 +657,7 @@ try:
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
-    allow = {"ip":config["allow"]["ip"]}
+    allow = {"ip":config["allow"]["ip"],"replace":config["allow"]["replace"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
@@ -689,6 +689,9 @@ def get_self_commit_id():
     url = "https://api.github.com/repos/" + repos + "/commits/" + branch
 
     response = requests.get(url)
+    if response.status_code != 200:
+        sys_logger.error("github api error. status code: " + str(response.status_code))
+        return None
     commit_id = response.json()["sha"]
     return commit_id
 
@@ -817,6 +820,11 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     github_commit = get_self_commit_id()
     update_logger.info("github commit -> " + github_commit)
     update_logger.info(" local commit -> " + commit)
+    if github_commit == None:
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error", value="github response error.", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        update_logger.error("github commit is None.")
     if interaction is not None and embed is not None:
         embed.add_field(name="github commit", value=github_commit, inline=False)
         embed.add_field(name="local commit", value=commit, inline=False)
@@ -839,6 +847,12 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
+    if response.status_code != 200:
+        sys_logger.error("response error. status_code : " + str(response.status_code))
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error : raw.githubusercontent.com response error", value="", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        return
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
         f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
@@ -1127,7 +1141,7 @@ async def get_text_dat():
                 "same":"存在するファイルは既に最新です",
                 "different":"コミットidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
-                "replace":"ch_id->{} msg_id->{}",
+                "replace":"ch_id {}\nmsg_id {}",
             }
         }
         ACTIVITY_NAME = {
@@ -1250,7 +1264,7 @@ async def get_text_dat():
                 "same":"The same version is already installed",
                 "different":"The commit id is different to update",
                 "download_failed":"Download failed",
-                "replace":"ch_id->{} msg_id->{}",
+                "replace":"ch_id {}\nmsg_id {}",
             },
         }
         ACTIVITY_NAME = {
