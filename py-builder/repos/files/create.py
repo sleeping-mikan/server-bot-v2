@@ -161,6 +161,12 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
+    if response.status_code != 200:
+        sys_logger.error("response error. status_code : " + str(response.status_code))
+        if interaction is not None and embed is not None:
+            embed.add_field(name="error : raw.githubusercontent.com response error", value="", inline=False)
+            await sender(interaction=interaction,embed=embed)
+        return
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
         f.write(response.content.decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
