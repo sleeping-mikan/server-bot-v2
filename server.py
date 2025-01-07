@@ -49,7 +49,7 @@ __version__ = "2.1.0"
 repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
-    "branch": "main"
+    "branch": "14-auto-update",
 }
 
 
