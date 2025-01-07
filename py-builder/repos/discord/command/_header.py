@@ -146,7 +146,7 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     embed.set_image(url = embed_under_line_url)
     #デフォルトでコマンドを無効に
     if not allow["replace"]:
-        embed.add_field(name="",value=RESPONSE_MSG["replace"]["not_allow"],inline=False)
+        embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
     #管理者権限を要求
