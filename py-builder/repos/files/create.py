@@ -6,10 +6,7 @@ from ..config.read_config_all import *
 #!end-ignore
 
 def get_self_commit_id():
-    repos = f"{repository['user']}/{repository['name']}"
-    branch = repository["branch"]
-    url = "https://api.github.com/repos/" + repos + "/commits/" + branch
-
+    url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
     response = requests.get(url)
     if response.status_code != 200:
         sys_logger.error("github api error. status code: " + str(response.status_code))
@@ -173,7 +170,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         await sender(interaction=interaction,embed=embed)
     update_logger.info("commit changed. update self.")
     # コードを要求
-    url='https://raw.githubusercontent.com/' + repository['user'] + '/' + repository['name'] + '/' + repository['branch'] + "/" + "server.py"
+    url=f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
     # temp_path + "/new_source.py にダウンロード
     response = requests.get(url)
     if response.status_code != 200:
@@ -184,7 +181,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         return
     # temp_path + "/new_source.py に書き換え予定ファイル(新しいserver.py)を作成
     with open(temp_path + "/new_source.py", "w", encoding="utf-8") as f:
-        f.write(response.content.decode('utf-8').replace("\r\n","\n"))
+        f.write(base64.b64decode(response.json()["content"]).decode('utf-8').replace("\r\n","\n"))
     # discordにコードを置き換える
     msg_id = str(0)
     channel_id = str(0)

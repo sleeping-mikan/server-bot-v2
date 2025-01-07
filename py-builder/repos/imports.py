@@ -29,3 +29,4 @@ from ansi2html import Ansi2HTMLConverter
 import waitress
 import io
 import zipfile
+import base64
