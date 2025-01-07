@@ -12,7 +12,7 @@ try:
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
-    allow = {"ip":config["allow"]["ip"]}
+    allow = {"ip":config["allow"]["ip"],"replace":config["allow"]["replace"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
