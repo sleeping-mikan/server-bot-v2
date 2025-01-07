@@ -89,7 +89,10 @@ discord_terminal_item = deque()
 discord_terminal_send_length = 0
 discord_loop_is_run = False
 
-USER_PERMISSION_MAX = 4
+# 濃い目の黄色
+bot_color = discord.Color.from_rgb(255, 242, 145)
+embed_under_line_url = "https://www.dropbox.com/scl/fi/70b9ckjwrfilds65gbs11/gradient_bar.png?rlkey=922kwpi4t17lk0ju4ztbq6ofc&st=nb9saec1&dl=1"
+
 
 
 # 権限データ
@@ -118,6 +121,7 @@ COMMAND_PERMISSION = {
     "terminal":1,
 }
 
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
 #--------------------
@@ -681,7 +685,7 @@ if not os.path.exists(now_path + "/mikanassets/extension"):
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/xq48bnjifnsllsy6usvsv/update_v1.1.py?rlkey=js8z8r5j75ex4xdbp3i6xscpd&st=smcn7dnl&dl=1'
+    url='https://www.dropbox.com/scl/fi/gb60d7zkfi4faayubylzn/update_v2.1.py?rlkey=03a4cj1to6lid9ek56gdrv3rq&st=djbmgz5d&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
@@ -913,7 +917,7 @@ async def get_text_dat():
 
     #今後も大きくなることが予想されるので、ここで条件分岐する
     if lang == "ja":
-        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/mikatan-mikan/server-bot/blob/main/README.md#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E4%B8%80%E8%A6%A7>\n"
+        send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"管理者権限を持っていないため実行できません",
@@ -1031,7 +1035,7 @@ async def get_text_dat():
             "ended":"さーばーとじてる",
         }
     elif lang == "en":
-        send_help = "Details on the help can be found here\n<https://github.com/mikatan-mikan/server-bot/blob/main/README.md#%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E4%B8%80%E8%A6%A7>\n"
+        send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
                 "no_permission":"Permission denied",
@@ -1149,10 +1153,12 @@ async def get_text_dat():
     def make_send_help():
         global send_help
         send_help += f"web : http://{requests.get('https://api.ipify.org').text}:{web_port}\n" 
-        send_help += "```"
+        embed = discord.Embed(title="How to use this bot",color=bot_color)
         for key in HELP_MSG[lang]:
-            send_help += key + " " + HELP_MSG[lang][key] + "\n"
-        send_help += "```"
+            embed.add_field(name=key,value=HELP_MSG[lang][key],inline=False)
+        embed.add_field(name="detail",value=send_help,inline=False)
+        embed.set_image(url = embed_under_line_url)
+        send_help = embed
     make_send_help()
 
 
@@ -1169,7 +1175,9 @@ sys_logger.info('create text data')
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
     logger.error('permission denied')
-    await interaction.response.send_message(RESPONSE_MSG["other"]["no_permission"],ephemeral = True)
+    embed = discord.Embed(title=RESPONSE_MSG["other"]["no_permission"], color=0xff0000)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed = embed,ephemeral = True)
 
 
 async def is_administrator(user: discord.User) -> bool:
@@ -1217,7 +1225,7 @@ async def rewrite_config(config: dict) -> bool:
         return False
 
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: discord.Embed, symlinks=False) -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -1256,7 +1264,9 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=Fal
                         now = RESPONSE_MSG["backup"]["now_backup"]
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
-                        await interaction.edit_original_response(content=f"{now}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```")
+                        embed.clear_fields()
+                        embed.add_field(name = f"{now}",value=f"```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
             # catch the Error from the recursive copytree so that we can
@@ -1358,6 +1368,12 @@ async def send_discord_message_or_followup(interaction: discord.Interaction, mes
         await interaction.followup.send(message, file=file)
     else:
         await interaction.response.send_message(message, file=file)
+
+async def send_discord_message_or_edit(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING, embed = discord.utils.MISSING, ephemeral = False):
+    if interaction.response.is_done():
+        await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
+    else:
+        await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
 #--------------------
 
 
@@ -1532,10 +1548,12 @@ async def start(interaction: discord.Interaction):
         await not_enough_permission(interaction,start_logger)
         return
     result = core_start()
+    embed = discord.Embed(title = f"/start", color=bot_color)
+    embed.add_field(name="",value=result,inline=False)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
 
 #/stop
@@ -1550,10 +1568,13 @@ async def stop(interaction: discord.Interaction):
         await not_enough_permission(interaction,stop_logger)
         return
     result = core_stop()
+    embed = discord.Embed(title = f"/stop", color=bot_color)
+    embed.add_field(name="",value=result,inline=False)
+    embed.set_image(url = embed_under_line_url)
+
+    await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_not_running"]:
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
         return
-    await interaction.response.send_message(result)
     await client.change_presence(activity=discord.Game(ACTIVITY_NAME["ending"])) 
     while True:
         #終了するまで待つ
@@ -1574,6 +1595,8 @@ command_group_permission = app_commands.Group(name="permission",description="per
 @command_group_permission.command(name="change",description=COMMAND_DESCRIPTION[lang]["permission"]["change"])
 async def change(interaction: discord.Interaction,level: int,user:discord.User):
     await print_user(admin_logger,interaction.user)
+    embed = discord.Embed(title = f"/permission change {level} {user}", color=bot_color)
+    embed.set_image(url = embed_under_line_url)
     if await user_permission(interaction.user) < COMMAND_PERMISSION["permission change"]:
         await not_enough_permission(interaction,lang_logger)
         return
@@ -1583,32 +1606,39 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
     # 権限レベル1~4を付与
     if level >= 1 and level <= USER_PERMISSION_MAX:
         if user.id in config["discord_commands"]["admin"]["members"]:
-            await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["already_added"])
+            embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["already_added"],inline=False)
+            await interaction.response.send_message(embed=embed)
             return
         config["discord_commands"]["admin"]["members"][str(user.id)] = level
         #configファイルを変更する
         await rewrite_config(config)
         await read_force_admin()
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["add_success"].format(user))
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["add_success"].format(user),inline=False)
+        await interaction.response.send_message(embed=embed)
         admin_logger.info(f"exec force admin add {user}")
     elif level == 0:
         if user.id not in config["discord_commands"]["admin"]["members"]:
-            await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["already_removed"])
+            embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["already_removed"],inline=False)
+            await interaction.response.send_message(embed=embed)
             return
         config["discord_commands"]["admin"]["members"].pop(str(user.id))
         #configファイルを変更する
         await rewrite_config(config)
         await read_force_admin()
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["remove_success"].format(user))
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["remove_success"].format(user),inline=False)
+        await interaction.response.send_message(embed=embed)
         admin_logger.info(f"exec force admin remove {user}")
     else:
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["change"]["invalid_level"].format(USER_PERMISSION_MAX,level))
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["invalid_level"].format(USER_PERMISSION_MAX,level),inline=False)
+        await interaction.response.send_message(embed=embed)
         admin_logger.info("invalid level")
 
 #/permission <user>
 @command_group_permission.command(name="view",description=COMMAND_DESCRIPTION[lang]["permission"]["view"])
 async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
+    embed = discord.Embed(title = f"/permission view {user} {detail}", color=bot_color)
+    embed.set_image(url = embed_under_line_url)
     COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
@@ -1616,9 +1646,11 @@ async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     if detail:
         my_perm_level = await user_permission(user)
         can_use_cmd = {f"{key}":("☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐") + f"({COMMAND_PERMISSION[key]})" for key in COMMAND_PERMISSION}
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```")
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```",inline=False)
+        await interaction.response.send_message(embed=embed)
     else:
-        await interaction.response.send_message(RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]))
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]),inline=False)
+        await interaction.response.send_message(embed=embed)
     permission_logger.info("send permission info : " + str(user.id) + f"({user})")
 
 tree.add_command(command_group_permission)
@@ -1653,7 +1685,10 @@ async def language(interaction: discord.Interaction,language:str):
     await rewrite_config(config)
     #textデータを再構築
     await get_text_dat()
-    await interaction.response.send_message(RESPONSE_MSG["lang"]["success"].format(language))
+    embed = discord.Embed(title = f"/lang {language}", color=bot_color)
+    embed.add_field(name="",value=RESPONSE_MSG["lang"]["success"].format(language))
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed=embed)
     lang_logger.info("change lang to " + lang)
 
 #/cmd serverin <server command>
@@ -1686,6 +1721,8 @@ serverin_logger = cmd_logger.getChild("serverin")
 @command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(serverin_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd serverin {command}")
+    embed.set_image(url = embed_under_line_url)
     global is_back_discord,cmd_logs
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
@@ -1693,12 +1730,15 @@ async def cmd(interaction: discord.Interaction,command:str):
         return
     #サーバー起動確認
     if is_stopped_server(serverin_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_not_running"])
+        serverin_logger.info("is not running")
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_not_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     #コマンドの利用許可確認
     if command.split()[0] not in allow_cmd:
         serverin_logger.error('unknown command : ' + command)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"])
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["serverin"]["skipped_cmd"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     serverin_logger.info("run command : " + command)
     process.stdin.write(command + "\n")
@@ -1711,7 +1751,8 @@ async def cmd(interaction: discord.Interaction,command:str):
         if len(cmd_logs) == 0:
             await asyncio.sleep(0.1)
             continue
-        await interaction.response.send_message(cmd_logs.popleft())
+        embed.add_field(name="",value=cmd_logs.popleft(),inline=False)
+        await interaction.response.send_message(embed=embed)
         break
 #--------------------
 
@@ -1758,6 +1799,8 @@ stdin_ls_logger = stdin_logger.getChild("ls")
 @command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
 async def ls(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_ls_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin ls {file_path}")
+    embed.set_image(url = embed_under_line_url)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
         await not_enough_permission(interaction,stdin_ls_logger)
@@ -1766,17 +1809,20 @@ async def ls(interaction: discord.Interaction, file_path: str):
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_ls_logger.info("invalid path -> " + file_path)
         return
     # 対象が存在するか
     if not os.path.exists(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["file_not_found"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["ls"]["file_not_found"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_ls_logger.info("file not found -> " + file_path)
         return
     # 対象がディレクトリであるか
     if not os.path.isdir(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["not_directory"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["ls"]["not_directory"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_ls_logger.info("not directory -> " + file_path)
         return
     # lsコマンドを実行
@@ -1803,12 +1849,14 @@ async def ls(interaction: discord.Interaction, file_path: str):
                 temp_file.seek(0)
                 # Discordファイルオブジェクトに変換して送信
                 discord_file = discord.File(temp_file, filename="directory_list.txt")
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["ls"]["to_long"].format(file_path),inline=False)
                 await interaction.response.send_message(
-                    RESPONSE_MSG["cmd"]["stdin"]["ls"]["to_long"].format(file_path),
+                    embed=embed,
                     file=discord_file
                 )
     else:
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["ls"]["success"].format(file_path,formatted_files))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["ls"]["success"].format(file_path,formatted_files),inline=False)
+        await interaction.response.send_message(embed=embed)
 
 #--------------------
 
@@ -1823,29 +1871,35 @@ stdin_mk_logger = stdin_logger.getChild("mk")
 @command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
     await print_user(stdin_mk_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mk {file_path} {file.filename if file is not None else ''}")
+    embed.set_image(url = embed_under_line_url)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
         await not_enough_permission(interaction,stdin_mk_logger)
         return
     #サーバー起動確認
     if is_running_server(stdin_mk_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # server_path + file_path にファイルを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("invalid path -> " + file_path)
         return
     # ファイルがリンクであれば拒否
     if os.path.islink(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("file is link -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("permission denied -> " + file_path)
         return
     else:
@@ -1855,7 +1909,8 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         if file is not None:
             await file.save(file_path)
     stdin_mk_logger.info("create file -> " + file_path)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mk"]["success"].format(file_path),inline=False)
+    await interaction.response.send_message(embed=embed)
 
 #--------------------
 
@@ -1868,40 +1923,48 @@ stdin_rm_logger = stdin_logger.getChild("rm")
 @command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
 async def rm(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_rm_logger,interaction.user)
+    embed = discord.Embed(title=f"/cmd stdin rm {file_path}",color=bot_color)
+    embed.set_image(url = embed_under_line_url)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
         await not_enough_permission(interaction,stdin_rm_logger)
         return
     #サーバー起動確認
     if is_running_server(stdin_rm_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # server_path + file_path のパスを作成
     file_path = os.path.abspath(os.path.join(server_path,file_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("invalid path -> " + file_path)
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["file_not_found"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["rm"]["file_not_found"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("file not found -> " + file_path)
         return
     # 該当のアイテムがファイルか
     if not os.path.isfile(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("not file -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("permission denied -> " + file_path)
         return
     # ファイルを削除
     os.remove(file_path)
     stdin_rm_logger.info("remove file -> " + file_path)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rm"]["success"].format(file_path))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["rm"]["success"].format(file_path),inline=False)
+    await interaction.response.send_message(embed=embed)
 
 #--------------------
 
@@ -1914,6 +1977,8 @@ stdin_mkdir_logger = stdin_logger.getChild("mkdir")
 @command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
 async def mkdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_mkdir_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mkdir {dir_path}")
+    embed.set_image(url = embed_under_line_url)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
         await not_enough_permission(interaction,stdin_mkdir_logger)
@@ -1922,18 +1987,21 @@ async def mkdir(interaction: discord.Interaction, dir_path: str):
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(dir_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mkdir_logger.info("invalid path -> " + dir_path)
         return
     # 既に存在するか確認
     if os.path.exists(dir_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["exists"].format(dir_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["exists"].format(dir_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mkdir_logger.info("directory already exists -> " + dir_path)
         return
     # ディレクトリを作成
     os.makedirs(dir_path)
     stdin_mkdir_logger.info("create directory -> " + dir_path)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["success"].format(dir_path))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mkdir"]["success"].format(dir_path),inline=False)
+    await interaction.response.send_message(embed=embed)
 
 #--------------------
 
@@ -1946,35 +2014,42 @@ stdin_rmdir_logger = stdin_logger.getChild("rmdir")
 @command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
 async def rmdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_rmdir_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin rmdir {dir_path}")
+    embed.set_image(url = embed_under_line_url)
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,stdin_rmdir_logger)
         return
     #サーバー起動確認
     if is_running_server(stdin_rmdir_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # server_path + file_path のパスを作成
     dir_path = os.path.abspath(os.path.join(server_path,dir_path))
     # 操作可能なパスか確認
     if not is_path_within_scope(dir_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(dir_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("invalid path -> " + dir_path)
         return
     # 既に存在するか確認
     if not os.path.exists(dir_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["not_exists"].format(dir_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("directory not exists -> " + dir_path)
         return
     # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
     if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("permission denied -> " + dir_path)
         return
     # ディレクトリを削除
     rmtree(dir_path)
     stdin_rmdir_logger.info("remove directory -> " + dir_path)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["rmdir"]["success"].format(dir_path),inline=False)
+    await interaction.response.send_message(embed=embed)
 
 #--------------------
 
@@ -1987,13 +2062,16 @@ stdin_mv_logger = stdin_logger.getChild("mv")
 @command_group_cmd_stdin.command(name="mv",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mv"])
 async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     await print_user(stdin_mv_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mv {path} {dest} ")
+    embed.set_image(url = embed_under_line_url)
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mv"]:
         await not_enough_permission(interaction,stdin_mv_logger)
         return
     #サーバー起動確認
     if is_running_server(stdin_mv_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("server is running")
         return
     # server_path + path のパスを作成
@@ -2002,28 +2080,33 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     dest = os.path.abspath(os.path.join(server_path,dest))
     # 操作可能なパスか確認
     if not is_path_within_scope(path) or not is_path_within_scope(dest):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(path,dest))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(path,dest),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("invalid path -> " + path + " or " + dest)
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path))
+        embed.add_field(name="",velue=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("file not found -> " + path)
         return
     # 該当のアイテムがファイルか
     if not os.path.isfile(path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("not file -> " + path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("permission denied -> " + path + " or " + dest)
         return
     # ファイルを移動
     shutil_move(path,dest)
     stdin_mv_logger.info("move file -> " + path + " -> " + dest)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["mv"]["success"].format(path,dest))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mv"]["success"].format(path,dest),inline=False)
+    await interaction.response.send_message(embed=embed)
 #--------------------
 
 
@@ -2044,6 +2127,8 @@ send_discord_timeout_sec = 60 * 25
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin send-discord {path}")
+    embed.set_image(url = embed_under_line_url)
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
@@ -2054,18 +2139,21 @@ async def send_discord(interaction: discord.Interaction, path: str):
         return
     # ファイルが存在しているかを確認
     if not os.path.exists(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_not_found"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
     # パスが許可されているかを確認
     if not is_path_within_scope(file_path):
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
     # 該当のアイテムがディレクトリならzip圧縮をする
     if os.path.isdir(file_path):
         # とりあえずdiscordに送っておく
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed,ephemeral=True)
         stdin_send_discord_logger.info("make zip -> " + str(file_path))
         zip_buffer,file_size = await create_zip_async(file_path)
         base_file_path = file_path
@@ -2082,10 +2170,12 @@ async def send_discord(interaction: discord.Interaction, path: str):
         file_obj = open(file_path, "rb")
     if file_size > file_size_limit_web:
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web),inline=False)
+        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
     if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
         stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit),inline=False)
+        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
         # file.ioにアップロード
         try:
             timeout_sec = send_discord_timeout_sec
@@ -2104,21 +2194,25 @@ async def send_discord(interaction: discord.Interaction, path: str):
                 reason = discord_multi_thread_return_dict[discord_dict_id].reason
                 text = discord_multi_thread_return_dict[discord_dict_id].text
                 stdin_send_discord_logger.error("upload to file.io failed -> " + str(file_path) + " ,status -> " + str(status) + " , " + str(reason) + " :: " + str(text))
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
                 return
             response = discord_multi_thread_return_dict[discord_dict_id]
             link = response.json()["link"]
             stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
-            await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link))
+            embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link),inline=False)
+            await send_discord_message_or_edit(interaction=interaction,embed=embed)
         except Exception as e:
             if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
                 stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
             else:
                 import traceback
                 stdin_send_discord_logger.error(traceback.format_exc())
                 stdin_send_discord_logger.error("raise upload to file.io failed")
-                await send_discord_message_or_followup(interaction=interaction,message=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
         finally:
             # file_objが開いていたら閉じる(file_objはopen() or io.BytesIO()で開いたもの)
             file_obj.close()
@@ -2126,7 +2220,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     else:
         # Discordで直接送信
         stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await send_discord_message_or_followup(interaction=interaction,file=discord.File(file_path))
+        await send_discord_message_or_edit(interaction=interaction,file=discord.File(file_path,filename=file_name),embed=embed,ephemeral=True)
 
 
 #--------------------
@@ -2140,6 +2234,9 @@ stdin_wget_logger = stdin_logger.getChild("wget")
 @command_group_cmd_stdin.command(name="wget",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["wget"])
 async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.tmp"):
     await print_user(stdin_wget_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/cmd stdin wget {url} {path} ")
+    embed.set_image(url = embed_under_line_url)
+    # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin wget"]: 
         await not_enough_permission(interaction,stdin_wget_logger)
         return
@@ -2147,31 +2244,42 @@ async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.t
     # 既にファイルが存在しているか確認
     if os.path.exists(save_path):
         stdin_wget_logger.info("file already exists -> " + save_path)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["already_exists"].format(path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["wget"]["already_exists"].format(path),inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # pathが操作可能か確認
     if not is_path_within_scope(save_path):
         stdin_wget_logger.info("invalid path -> " + save_path)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(save_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(save_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # 管理者権限を持っていなくて、重要ファイルをダウンロードする場合は拒否
     if not await is_administrator(interaction.user) and await is_important_bot_file(save_path):
         stdin_wget_logger.info("permission denied -> " + save_path)
-        await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path))
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path),inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # URLからファイルをダウンロード
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status != 200:
-                stdin_wget_logger.info("download failed -> " + url)
-                await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_failed"].format(url))
-                return
+        try:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    stdin_wget_logger.info("download failed -> " + url)
+                    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_failed"].format(url),inline=False)
+                    await interaction.response.send_message(embed=embed)
+                    return
 
-            # ファイルを保存
-            with open(save_path, 'wb') as file:
-                file.write(await response.read())
+                # ファイルを保存
+                with open(save_path, 'wb') as file:
+                    file.write(await response.read())
+        except Exception as e:
+            stdin_wget_logger.info("download failed -> " + url + f"({e})")
+            embed.add_field(name="",value=f"invalid url -> ({e})",inline=False)
+            await interaction.response.send_message(embed=embed)
+            return
     stdin_wget_logger.info("download success -> " + url + " to " + save_path)
-    await interaction.response.send_message(RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_success"].format(url,save_path))
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["wget"]["download_success"].format(url,save_path),inline=False)
+    await interaction.response.send_message(embed=embed)
 #--------------------
 
 
@@ -2192,41 +2300,49 @@ tree.add_command(command_group_cmd)
 async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
+    embed = discord.Embed(color=bot_color,title= f"/backup {world_name}")
+    embed.set_image(url = embed_under_line_url)
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
     if is_running_server(backup_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["backup"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     # 操作可能パスかを判定
     if not is_path_within_scope(server_path + world_name):
         backup_logger.error("path not allowed : " + server_path + world_name)
-        await interaction.response.send_message(RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name)
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name,inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     backup_logger.info('backup started')
     #server_path + world_namの存在確認
     if os.path.exists(server_path + world_name):
-        await interaction.response.send_message("progress...\n")
+        await interaction.response.send_message(embed=embed)
         # discordにcopyed_files / exist_filesをプログレスバーで
-        await dircp_discord(server_path + world_name,backup_path + "/",interaction)
+        await dircp_discord(server_path + world_name,backup_path + "/",interaction,embed)
         backup_logger.info('backup done')
     else:
         backup_logger.error('data not found : ' + server_path + world_name)
-        await interaction.response.send_message(RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name)
+        embed.add_field(name="",value=RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name,inline=False)
+        await interaction.response.send_message(embed=embed,ephemeral=True)
 
 #/replace <py file>
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/replace {py_file.filename}")
+    embed.set_image(url = embed_under_line_url)
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
         await not_enough_permission(interaction,replace_logger)
         return
     #サーバー起動確認
     if is_running_server(replace_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["replace"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     replace_logger.info('replace started')
     # ファイルをすべて読み込む
@@ -2234,7 +2350,8 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
         f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
     # discordにコードを置き換える
     replace_logger.info('replace done')
-    await interaction.response.send_message(RESPONSE_MSG["replace"]["progress"])
+    embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
+    await interaction.response.send_message(embed=embed)
     response = await interaction.original_response()
     #interaction id を保存
     msg_id = str(response.id)
@@ -2247,11 +2364,14 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
 async def ip(interaction: discord.Interaction):
     await print_user(ip_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/ip")
+    embed.set_image(url = embed_under_line_url)
     if await user_permission(interaction.user) < COMMAND_PERMISSION["ip"]:
         await not_enough_permission(interaction,ip_logger)
         return
     if not allow["ip"]:
-        await interaction.response.send_message(RESPONSE_MSG["ip"]["not_allow"])
+        embed.add_field(name="",value=RESPONSE_MSG["ip"]["not_allow"],inline=False)
+        await interaction.response.send_message(embed=embed)
         ip_logger.error('ip is not allowed')
         return
     # ipをget
@@ -2259,14 +2379,17 @@ async def ip(interaction: discord.Interaction):
         addr = requests.get("https://api.ipify.org")
     except:
         ip_logger.error('get ip failed')
-        await interaction.response.send_message(RESPONSE_MSG["ip"]["get_ip_failed"])
+        embed.add_field(name="",value=RESPONSE_MSG["ip"]["get_ip_failed"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
     if config["mc"]:
         ip_logger.info('get ip : ' + addr.text + ":" + properties["server-port"])
-        await interaction.response.send_message(RESPONSE_MSG["ip"]["msg_startwith"] + addr.text + ":" + properties["server-port"] + "\n" + f"(ip:{addr.text} port(ポート):{properties['server-port']})")
+        embed.add_field(name=RESPONSE_MSG["ip"]["msg_startwith"] + addr.text + ":" + properties["server-port"],value=f"(ip:{addr.text} port(ポート):{properties['server-port']})",inline=False)
+        await interaction.response.send_message(embed=embed)
     else:
         ip_logger.info('get ip : ' + addr.text)
-        await interaction.response.send_message(RESPONSE_MSG["ip"]["msg_startwith"] + addr.text)
+        embed.add_field(name="",value=RESPONSE_MSG["ip"]["msg_startwith"] + addr.text,inline=False)
+        await interaction.response.send_message(embed=embed)
 
 
 async def get_log_files_choice_format(interaction: discord.Interaction, current: str):
@@ -2291,6 +2414,8 @@ async def get_log_files_choice_format(interaction: discord.Interaction, current:
 @app_commands.autocomplete(filename = get_log_files_choice_format)
 async def logs(interaction: discord.Interaction,filename:str = None):
     await print_user(log_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/logs {filename}")
+    embed.set_image(url = embed_under_line_url)
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["logs"]: 
         await not_enough_permission(interaction,log_logger)
@@ -2304,20 +2429,23 @@ async def logs(interaction: discord.Interaction,filename:str = None):
             send_length += len(i)
             send_msg.append(i)
             while True:
-                if send_length > 2000:
+                if send_length > 1900:
                     delete = send_msg.pop(0)
                     send_length -= len(delete)
                 else:
                     break
+        # embed.add_field(name="",value="```ansi\n" + "\n".join(send_msg) + "\n```",inline=False)
         await interaction.response.send_message("```ansi\n" + "\n".join(send_msg) + "\n```")
     else:
         if "/" in filename or "\\" in filename or "%" in filename:
             log_logger.error('invalid filename : ' + filename + "\n" + f"interaction user / id：{interaction.user} {interaction.user.id}")
-            await interaction.response.send_message(RESPONSE_MSG["logs"]["cant_access_other_dir"])
+            embed.add_field(name="",value=RESPONSE_MSG["logs"]["cant_access_other_dir"],inline=False)
+            await interaction.response.send_message(embed=embed)
             return
         elif not filename.endswith(".log"):
             log_logger.error('invalid filename : ' + filename + "\n" + f"interaction user / id：{interaction.user} {interaction.user.id}")
-            await interaction.response.send_message(RESPONSE_MSG["logs"]["not_found"])
+            embed.add_field(name="",value=RESPONSE_MSG["logs"]["not_found"],inline=False)
+            await interaction.response.send_message(embed=embed)
             return
         elif filename.startswith("server"):
             filename = server_path + "logs/" + filename
@@ -2330,7 +2458,8 @@ async def logs(interaction: discord.Interaction,filename:str = None):
                     filename = now_path + "/logs/" + filename
                 else:
                     log_logger.error('invalid filename : ' + filename + "\n" + f"interaction user / id：{interaction.user} {interaction.user.id}")
-                    await interaction.response.send_message(RESPONSE_MSG["logs"]["not_found"])
+                    embed.add_field(name="",value=RESPONSE_MSG["logs"]["not_found"],inline=False)
+                    await interaction.response.send_message(embed=embed)
                     return
         #ファイルを返却
         await interaction.response.send_message(file=discord.File(filename))
@@ -2347,12 +2476,15 @@ def gen_web_token():
 @tree.command(name="tokengen",description=COMMAND_DESCRIPTION[lang]["tokengen"])
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/tokengen")
+    embed.set_image(url = embed_under_line_url)
     #権限レベルを確認
     if await user_permission(interaction.user) < COMMAND_PERMISSION["tokengen"]:
         await not_enough_permission(interaction,token_logger)
         return
     new_token = gen_web_token()
-    await interaction.response.send_message(RESPONSE_MSG["tokengen"]["success"].format(new_token),ephemeral=True)
+    embed.add_field(name=RESPONSE_MSG["tokengen"]["success"].format(""),value=new_token,inline=False)
+    await interaction.response.send_message(embed=embed,ephemeral=True)
     token_logger.info('token sent')
     #トークンをファイルに書き込む
     dat_token = {"token":new_token, "deadline":(datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")}
@@ -2369,6 +2501,8 @@ async def tokengen(interaction: discord.Interaction):
 async def terminal(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/terminal")
+    embed.set_image(url = embed_under_line_url)
     # 権限レベルが足りていないなら
     if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
         await not_enough_permission(interaction,terminal_logger)
@@ -2380,29 +2514,34 @@ async def terminal(interaction: discord.Interaction):
     #configを書き換え
     with open(now_path + "/.config","w") as f:
         json.dump(config,f,indent=4,ensure_ascii=False)
-    await interaction.response.send_message(RESPONSE_MSG["terminal"]["success"].format(where_terminal))
+    embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
+    await interaction.response.send_message(embed=embed)
 
 
 #/help
 @tree.command(name="help",description=COMMAND_DESCRIPTION[lang]["help"])
 async def help(interaction: discord.Interaction):
     await print_user(help_logger,interaction.user)
-    await interaction.response.send_message(send_help)
+    await interaction.response.send_message(embed=send_help)
     help_logger.info('help sent')
 
 #/exit
 @tree.command(name="exit",description=COMMAND_DESCRIPTION[lang]["exit"])
 async def exit(interaction: discord.Interaction):
     await print_user(exit_logger,interaction.user)
+    embed = discord.Embed(color=bot_color,title= f"/exit")
+    embed.set_image(url = embed_under_line_url)
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["exit"]: 
         await not_enough_permission(interaction,exit_logger)
         return
     #サーバが動いているなら終了
     if is_running_server(exit_logger): 
-        await interaction.response.send_message(RESPONSE_MSG["other"]["is_running"])
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
         return
-    await interaction.response.send_message(RESPONSE_MSG["exit"]["success"])
+    embed.add_field(name="",value=RESPONSE_MSG["exit"]["success"],inline=False)
+    await interaction.response.send_message(embed=embed)
     exit_logger.info('exit')
     await client.close()
     #waitressサーバーを終了

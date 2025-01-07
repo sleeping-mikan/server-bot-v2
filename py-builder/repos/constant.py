@@ -50,7 +50,10 @@ discord_terminal_item = deque()
 discord_terminal_send_length = 0
 discord_loop_is_run = False
 
-USER_PERMISSION_MAX = 4
+# 濃い目の黄色
+bot_color = discord.Color.from_rgb(255, 242, 145)
+embed_under_line_url = "https://www.dropbox.com/scl/fi/70b9ckjwrfilds65gbs11/gradient_bar.png?rlkey=922kwpi4t17lk0ju4ztbq6ofc&st=nb9saec1&dl=1"
+
 
 
 # 権限データ
@@ -79,5 +82,6 @@ COMMAND_PERMISSION = {
     "terminal":1,
 }
 
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()

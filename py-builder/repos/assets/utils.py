@@ -7,7 +7,9 @@ from .text_dat import *
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
     logger.error('permission denied')
-    await interaction.response.send_message(RESPONSE_MSG["other"]["no_permission"],ephemeral = True)
+    embed = discord.Embed(title=RESPONSE_MSG["other"]["no_permission"], color=0xff0000)
+    embed.set_image(url = embed_under_line_url)
+    await interaction.response.send_message(embed = embed,ephemeral = True)
 
 
 async def is_administrator(user: discord.User) -> bool:
@@ -55,7 +57,7 @@ async def rewrite_config(config: dict) -> bool:
         return False
 
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: discord.Embed, symlinks=False) -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -94,7 +96,9 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, symlinks=Fal
                         now = RESPONSE_MSG["backup"]["now_backup"]
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
-                        await interaction.edit_original_response(content=f"{now}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```")
+                        embed.clear_fields()
+                        embed.add_field(name = f"{now}",value=f"```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
             # catch the Error from the recursive copytree so that we can
@@ -196,3 +200,9 @@ async def send_discord_message_or_followup(interaction: discord.Interaction, mes
         await interaction.followup.send(message, file=file)
     else:
         await interaction.response.send_message(message, file=file)
+
+async def send_discord_message_or_edit(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING, embed = discord.utils.MISSING, ephemeral = False):
+    if interaction.response.is_done():
+        await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
+    else:
+        await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
