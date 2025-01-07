@@ -2473,7 +2473,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 @tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
 async def update(interaction: discord.Interaction, is_force: bool = False):
     await print_user(update_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/update")
+    embed = discord.Embed(color=bot_color,title= f"/update {is_force}")
     embed.set_image(url = embed_under_line_url)
     #サーバー起動確認
     if is_running_server(update_logger): 
