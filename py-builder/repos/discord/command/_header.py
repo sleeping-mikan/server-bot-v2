@@ -9,6 +9,7 @@ from ...files.create import *
 from ...assets.core._header import *
 #!end-ignore
 
+
 #start
 @tree.command(name="start",description=COMMAND_DESCRIPTION[lang]["start"])
 async def start(interaction: discord.Interaction):
@@ -17,9 +18,8 @@ async def start(interaction: discord.Interaction):
         await not_enough_permission(interaction,start_logger)
         return
     result = core_start()
-    embed = discord.Embed(title = f"/start", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/start")
     embed.add_field(name="",value=result,inline=False)
-    embed.set_image(url = embed_under_line_url)
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
         return
@@ -37,9 +37,8 @@ async def stop(interaction: discord.Interaction):
         await not_enough_permission(interaction,stop_logger)
         return
     result = core_stop()
-    embed = discord.Embed(title = f"/stop", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/stop")
     embed.add_field(name="",value=result,inline=False)
-    embed.set_image(url = embed_under_line_url)
 
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_not_running"]:
@@ -85,9 +84,8 @@ async def language(interaction: discord.Interaction,language:str):
     await rewrite_config(config)
     #textデータを再構築
     await get_text_dat()
-    embed = discord.Embed(title = f"/lang {language}", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/lang {language}")
     embed.add_field(name="",value=RESPONSE_MSG["lang"]["success"].format(language))
-    embed.set_image(url = embed_under_line_url)
     await interaction.response.send_message(embed=embed)
     lang_logger.info("change lang to " + lang)
 
@@ -104,8 +102,7 @@ from .cmd import *
 async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
-    embed = discord.Embed(color=bot_color,title= f"/backup {world_name}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
         await not_enough_permission(interaction,backup_logger) 
@@ -142,8 +139,7 @@ from .update.github import *
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/replace {py_file.filename}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
     #デフォルトでコマンドを無効に
     if not allow["replace"]:
         embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
@@ -178,8 +174,7 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
 async def ip(interaction: discord.Interaction):
     await print_user(ip_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/ip")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/ip")
     if await user_permission(interaction.user) < COMMAND_PERMISSION["ip"]:
         await not_enough_permission(interaction,ip_logger)
         return
@@ -228,8 +223,7 @@ async def get_log_files_choice_format(interaction: discord.Interaction, current:
 @app_commands.autocomplete(filename = get_log_files_choice_format)
 async def logs(interaction: discord.Interaction,filename:str = None):
     await print_user(log_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/logs {filename}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/logs {filename}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["logs"]: 
         await not_enough_permission(interaction,log_logger)
@@ -290,8 +284,7 @@ def gen_web_token():
 @tree.command(name="tokengen",description=COMMAND_DESCRIPTION[lang]["tokengen"])
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/tokengen")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/tokengen")
     #権限レベルを確認
     if await user_permission(interaction.user) < COMMAND_PERMISSION["tokengen"]:
         await not_enough_permission(interaction,token_logger)
@@ -315,8 +308,7 @@ async def tokengen(interaction: discord.Interaction):
 async def terminal(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/terminal")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal")
     # 権限レベルが足りていないなら
     if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
         await not_enough_permission(interaction,terminal_logger)
@@ -343,8 +335,7 @@ async def help(interaction: discord.Interaction):
 @tree.command(name="exit",description=COMMAND_DESCRIPTION[lang]["exit"])
 async def exit(interaction: discord.Interaction):
     await print_user(exit_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/exit")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/exit")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["exit"]: 
         await not_enough_permission(interaction,exit_logger)

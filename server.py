@@ -99,6 +99,7 @@ discord_loop_is_run = False
 # 濃い目の黄色
 bot_color = discord.Color.from_rgb(255, 242, 145)
 embed_under_line_url = "https://www.dropbox.com/scl/fi/70b9ckjwrfilds65gbs11/gradient_bar.png?rlkey=922kwpi4t17lk0ju4ztbq6ofc&st=nb9saec1&dl=1"
+embed_thumbnail_url = "https://www.dropbox.com/scl/fi/a21ptajqddfkhilx1e4st/mi-2025.png?rlkey=29x0wvk1np17a3nvddth0jnyk&st=s6r4f2kr&dl=1"
 
 
 
@@ -132,6 +133,19 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+
+class ModifiedEmbeds():# 名前空間として
+    class DefaultEmbed(discord.Embed):
+        def __init__(self, title, description = None, color = bot_color):
+            super().__init__(title=title, description=description, color=color)
+            self.set_image(url=embed_under_line_url)
+            self.set_thumbnail(url=embed_thumbnail_url)
+    class ErrorEmbed(discord.Embed):
+        def __init__(self, title, description = None, color = 0xff0000):
+            super().__init__(title=title, description=description, color=color)
+            self.set_image(url=embed_under_line_url)
+            self.set_thumbnail(url=embed_thumbnail_url)
 #--------------------
 
 
@@ -801,7 +815,7 @@ def make_temp():
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None, is_force = False):
+async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: ModifiedEmbeds.DefaultEmbed | None = None, text_pack: dict | None = None, sender = None, is_force = False):
     # ファイルが存在しなければ作る
     if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
         save_mikanassets_dat()
@@ -1287,11 +1301,10 @@ async def get_text_dat():
     def make_send_help():
         global send_help
         send_help += f"web : http://{requests.get('https://api.ipify.org').text}:{web_port}\n" 
-        embed = discord.Embed(title="How to use this bot",color=bot_color)
+        embed = ModifiedEmbeds.DefaultEmbed(title="How to use this bot")
         for key in HELP_MSG[lang]:
             embed.add_field(name=key,value=HELP_MSG[lang][key],inline=False)
         embed.add_field(name="detail",value=send_help,inline=False)
-        embed.set_image(url = embed_under_line_url)
         send_help = embed
     make_send_help()
 
@@ -1309,8 +1322,7 @@ sys_logger.info('create text data')
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
     logger.error('permission denied')
-    embed = discord.Embed(title=RESPONSE_MSG["other"]["no_permission"], color=0xff0000)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.ErrorEmbed(title=RESPONSE_MSG["other"]["no_permission"])
     await interaction.response.send_message(embed = embed,ephemeral = True)
 
 
@@ -1359,7 +1371,7 @@ async def rewrite_config(config: dict) -> bool:
         return False
 
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, embed: discord.Embed, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -1676,6 +1688,7 @@ def core_start() -> str:
 #--------------------
 
 
+
 #start
 @tree.command(name="start",description=COMMAND_DESCRIPTION[lang]["start"])
 async def start(interaction: discord.Interaction):
@@ -1684,9 +1697,8 @@ async def start(interaction: discord.Interaction):
         await not_enough_permission(interaction,start_logger)
         return
     result = core_start()
-    embed = discord.Embed(title = f"/start", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/start")
     embed.add_field(name="",value=result,inline=False)
-    embed.set_image(url = embed_under_line_url)
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
         return
@@ -1704,9 +1716,8 @@ async def stop(interaction: discord.Interaction):
         await not_enough_permission(interaction,stop_logger)
         return
     result = core_stop()
-    embed = discord.Embed(title = f"/stop", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/stop")
     embed.add_field(name="",value=result,inline=False)
-    embed.set_image(url = embed_under_line_url)
 
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_not_running"]:
@@ -1731,8 +1742,7 @@ command_group_permission = app_commands.Group(name="permission",description="per
 @command_group_permission.command(name="change",description=COMMAND_DESCRIPTION[lang]["permission"]["change"])
 async def change(interaction: discord.Interaction,level: int,user:discord.User):
     await print_user(admin_logger,interaction.user)
-    embed = discord.Embed(title = f"/permission change {level} {user}", color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission change {level} {user}")
     if await user_permission(interaction.user) < COMMAND_PERMISSION["permission change"]:
         await not_enough_permission(interaction,lang_logger)
         return
@@ -1773,8 +1783,7 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
 @command_group_permission.command(name="view",description=COMMAND_DESCRIPTION[lang]["permission"]["view"])
 async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
-    embed = discord.Embed(title = f"/permission view {user} {detail}", color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission view {user} {detail}")
     COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
@@ -1821,9 +1830,8 @@ async def language(interaction: discord.Interaction,language:str):
     await rewrite_config(config)
     #textデータを再構築
     await get_text_dat()
-    embed = discord.Embed(title = f"/lang {language}", color=bot_color)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/lang {language}")
     embed.add_field(name="",value=RESPONSE_MSG["lang"]["success"].format(language))
-    embed.set_image(url = embed_under_line_url)
     await interaction.response.send_message(embed=embed)
     lang_logger.info("change lang to " + lang)
 
@@ -1857,8 +1865,7 @@ serverin_logger = cmd_logger.getChild("serverin")
 @command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(serverin_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd serverin {command}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd serverin {command}")
     global is_back_discord,cmd_logs
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 
@@ -1935,8 +1942,7 @@ stdin_ls_logger = stdin_logger.getChild("ls")
 @command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
 async def ls(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_ls_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin ls {file_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin ls {file_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
         await not_enough_permission(interaction,stdin_ls_logger)
@@ -2007,8 +2013,7 @@ stdin_mk_logger = stdin_logger.getChild("mk")
 @command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
     await print_user(stdin_mk_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mk {file_path} {file.filename if file is not None else ''}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mk {file_path} {file.filename if file is not None else ''}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
         await not_enough_permission(interaction,stdin_mk_logger)
@@ -2059,8 +2064,7 @@ stdin_rm_logger = stdin_logger.getChild("rm")
 @command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
 async def rm(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_rm_logger,interaction.user)
-    embed = discord.Embed(title=f"/cmd stdin rm {file_path}",color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title=f"/cmd stdin rm {file_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
         await not_enough_permission(interaction,stdin_rm_logger)
@@ -2113,8 +2117,7 @@ stdin_mkdir_logger = stdin_logger.getChild("mkdir")
 @command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
 async def mkdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_mkdir_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mkdir {dir_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mkdir {dir_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
         await not_enough_permission(interaction,stdin_mkdir_logger)
@@ -2150,8 +2153,7 @@ stdin_rmdir_logger = stdin_logger.getChild("rmdir")
 @command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
 async def rmdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_rmdir_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin rmdir {dir_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin rmdir {dir_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,stdin_rmdir_logger)
@@ -2198,8 +2200,7 @@ stdin_mv_logger = stdin_logger.getChild("mv")
 @command_group_cmd_stdin.command(name="mv",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mv"])
 async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     await print_user(stdin_mv_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mv {path} {dest} ")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mv {path} {dest} ")
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mv"]:
         await not_enough_permission(interaction,stdin_mv_logger)
@@ -2263,8 +2264,7 @@ send_discord_timeout_sec = 60 * 25
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
     await print_user(stdin_send_discord_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin send-discord {path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin send-discord {path}")
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
@@ -2370,8 +2370,7 @@ stdin_wget_logger = stdin_logger.getChild("wget")
 @command_group_cmd_stdin.command(name="wget",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["wget"])
 async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.tmp"):
     await print_user(stdin_wget_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin wget {url} {path} ")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin wget {url} {path} ")
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin wget"]: 
         await not_enough_permission(interaction,stdin_wget_logger)
@@ -2436,8 +2435,7 @@ tree.add_command(command_group_cmd)
 async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
-    embed = discord.Embed(color=bot_color,title= f"/backup {world_name}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
         await not_enough_permission(interaction,backup_logger) 
@@ -2473,8 +2471,7 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 @tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
 async def update(interaction: discord.Interaction, is_force: bool = False):
     await print_user(update_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/update {is_force}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/update {is_force}")
     #サーバー起動確認
     if is_running_server(update_logger): 
         embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
@@ -2493,8 +2490,7 @@ async def update(interaction: discord.Interaction, is_force: bool = False):
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
     await print_user(replace_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/replace {py_file.filename}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
     #デフォルトでコマンドを無効に
     if not allow["replace"]:
         embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
@@ -2529,8 +2525,7 @@ async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
 async def ip(interaction: discord.Interaction):
     await print_user(ip_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/ip")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/ip")
     if await user_permission(interaction.user) < COMMAND_PERMISSION["ip"]:
         await not_enough_permission(interaction,ip_logger)
         return
@@ -2579,8 +2574,7 @@ async def get_log_files_choice_format(interaction: discord.Interaction, current:
 @app_commands.autocomplete(filename = get_log_files_choice_format)
 async def logs(interaction: discord.Interaction,filename:str = None):
     await print_user(log_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/logs {filename}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/logs {filename}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["logs"]: 
         await not_enough_permission(interaction,log_logger)
@@ -2641,8 +2635,7 @@ def gen_web_token():
 @tree.command(name="tokengen",description=COMMAND_DESCRIPTION[lang]["tokengen"])
 async def tokengen(interaction: discord.Interaction):
     await print_user(token_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/tokengen")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/tokengen")
     #権限レベルを確認
     if await user_permission(interaction.user) < COMMAND_PERMISSION["tokengen"]:
         await not_enough_permission(interaction,token_logger)
@@ -2666,8 +2659,7 @@ async def tokengen(interaction: discord.Interaction):
 async def terminal(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/terminal")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal")
     # 権限レベルが足りていないなら
     if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
         await not_enough_permission(interaction,terminal_logger)
@@ -2694,8 +2686,7 @@ async def help(interaction: discord.Interaction):
 @tree.command(name="exit",description=COMMAND_DESCRIPTION[lang]["exit"])
 async def exit(interaction: discord.Interaction):
     await print_user(exit_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/exit")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/exit")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["exit"]: 
         await not_enough_permission(interaction,exit_logger)

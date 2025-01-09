@@ -15,8 +15,7 @@ command_group_permission = app_commands.Group(name="permission",description="per
 @command_group_permission.command(name="change",description=COMMAND_DESCRIPTION[lang]["permission"]["change"])
 async def change(interaction: discord.Interaction,level: int,user:discord.User):
     await print_user(admin_logger,interaction.user)
-    embed = discord.Embed(title = f"/permission change {level} {user}", color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission change {level} {user}")
     if await user_permission(interaction.user) < COMMAND_PERMISSION["permission change"]:
         await not_enough_permission(interaction,lang_logger)
         return
@@ -57,8 +56,7 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
 @command_group_permission.command(name="view",description=COMMAND_DESCRIPTION[lang]["permission"]["view"])
 async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
-    embed = discord.Embed(title = f"/permission view {user} {detail}", color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission view {user} {detail}")
     COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"

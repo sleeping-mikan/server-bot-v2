@@ -7,8 +7,7 @@ stdin_mv_logger = stdin_logger.getChild("mv")
 @command_group_cmd_stdin.command(name="mv",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mv"])
 async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
     await print_user(stdin_mv_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mv {path} {dest} ")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mv {path} {dest} ")
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mv"]:
         await not_enough_permission(interaction,stdin_mv_logger)

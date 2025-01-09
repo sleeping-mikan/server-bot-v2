@@ -7,8 +7,7 @@ stdin_rm_logger = stdin_logger.getChild("rm")
 @command_group_cmd_stdin.command(name="rm",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rm"])
 async def rm(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_rm_logger,interaction.user)
-    embed = discord.Embed(title=f"/cmd stdin rm {file_path}",color=bot_color)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title=f"/cmd stdin rm {file_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rm"]:
         await not_enough_permission(interaction,stdin_rm_logger)

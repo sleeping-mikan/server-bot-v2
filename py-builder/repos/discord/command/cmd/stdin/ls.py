@@ -7,8 +7,7 @@ stdin_ls_logger = stdin_logger.getChild("ls")
 @command_group_cmd_stdin.command(name="ls",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["ls"])
 async def ls(interaction: discord.Interaction, file_path: str):
     await print_user(stdin_ls_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin ls {file_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin ls {file_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin ls"]:
         await not_enough_permission(interaction,stdin_ls_logger)

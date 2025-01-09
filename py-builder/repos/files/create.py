@@ -122,7 +122,7 @@ def make_temp():
     if not os.path.exists(temp_path):
         os.mkdir(temp_path)
 
-async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: discord.Embed | None = None, text_pack: dict | None = None, sender = None, is_force = False):
+async def update_self_if_commit_changed(interaction: discord.Interaction | None = None,embed: ModifiedEmbeds.DefaultEmbed | None = None, text_pack: dict | None = None, sender = None, is_force = False):
     # ファイルが存在しなければ作る
     if not os.path.exists(os.path.join(now_path, "mikanassets", ".dat")):
         save_mikanassets_dat()

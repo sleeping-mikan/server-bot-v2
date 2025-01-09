@@ -370,11 +370,10 @@ async def get_text_dat():
     def make_send_help():
         global send_help
         send_help += f"web : http://{requests.get('https://api.ipify.org').text}:{web_port}\n" 
-        embed = discord.Embed(title="How to use this bot",color=bot_color)
+        embed = ModifiedEmbeds.DefaultEmbed(title="How to use this bot")
         for key in HELP_MSG[lang]:
             embed.add_field(name=key,value=HELP_MSG[lang][key],inline=False)
         embed.add_field(name="detail",value=send_help,inline=False)
-        embed.set_image(url = embed_under_line_url)
         send_help = embed
     make_send_help()
 

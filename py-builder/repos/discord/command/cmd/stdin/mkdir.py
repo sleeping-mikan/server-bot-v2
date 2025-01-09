@@ -7,8 +7,7 @@ stdin_mkdir_logger = stdin_logger.getChild("mkdir")
 @command_group_cmd_stdin.command(name="mkdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mkdir"])
 async def mkdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_mkdir_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mkdir {dir_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mkdir {dir_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mkdir"]:
         await not_enough_permission(interaction,stdin_mkdir_logger)

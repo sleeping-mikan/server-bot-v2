@@ -9,8 +9,7 @@ from ....config.read_config_all import *
 @tree.command(name="update",description=COMMAND_DESCRIPTION[lang]["update"])
 async def update(interaction: discord.Interaction, is_force: bool = False):
     await print_user(update_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/update {is_force}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/update {is_force}")
     #サーバー起動確認
     if is_running_server(update_logger): 
         embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)

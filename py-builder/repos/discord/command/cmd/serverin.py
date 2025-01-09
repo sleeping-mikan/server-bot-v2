@@ -13,8 +13,7 @@ from .common import *
 @command_group_cmd.command(name="serverin",description=COMMAND_DESCRIPTION[lang]["cmd"]["serverin"])
 async def cmd(interaction: discord.Interaction,command:str):
     await print_user(serverin_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd serverin {command}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd serverin {command}")
     global is_back_discord,cmd_logs
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd serverin"]: 

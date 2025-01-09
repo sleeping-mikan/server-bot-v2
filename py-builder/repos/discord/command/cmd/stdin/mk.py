@@ -9,8 +9,7 @@ stdin_mk_logger = stdin_logger.getChild("mk")
 @command_group_cmd_stdin.command(name="mk",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["mk"])
 async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attachment|None = None):
     await print_user(stdin_mk_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin mk {file_path} {file.filename if file is not None else ''}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin mk {file_path} {file.filename if file is not None else ''}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin mk"]:
         await not_enough_permission(interaction,stdin_mk_logger)

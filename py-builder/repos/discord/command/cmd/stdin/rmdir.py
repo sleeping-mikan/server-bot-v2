@@ -7,8 +7,7 @@ stdin_rmdir_logger = stdin_logger.getChild("rmdir")
 @command_group_cmd_stdin.command(name="rmdir",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["rmdir"])
 async def rmdir(interaction: discord.Interaction, dir_path: str):
     await print_user(stdin_rmdir_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin rmdir {dir_path}")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin rmdir {dir_path}")
     # 管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin rmdir"]:
         await not_enough_permission(interaction,stdin_rmdir_logger)

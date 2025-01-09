@@ -7,8 +7,7 @@ stdin_wget_logger = stdin_logger.getChild("wget")
 @command_group_cmd_stdin.command(name="wget",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["wget"])
 async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.tmp"):
     await print_user(stdin_wget_logger,interaction.user)
-    embed = discord.Embed(color=bot_color,title= f"/cmd stdin wget {url} {path} ")
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/cmd stdin wget {url} {path} ")
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin wget"]: 
         await not_enough_permission(interaction,stdin_wget_logger)

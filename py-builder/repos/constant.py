@@ -59,6 +59,7 @@ discord_loop_is_run = False
 # 濃い目の黄色
 bot_color = discord.Color.from_rgb(255, 242, 145)
 embed_under_line_url = "https://www.dropbox.com/scl/fi/70b9ckjwrfilds65gbs11/gradient_bar.png?rlkey=922kwpi4t17lk0ju4ztbq6ofc&st=nb9saec1&dl=1"
+embed_thumbnail_url = "https://www.dropbox.com/scl/fi/a21ptajqddfkhilx1e4st/mi-2025.png?rlkey=29x0wvk1np17a3nvddth0jnyk&st=s6r4f2kr&dl=1"
 
 
 
@@ -92,3 +93,16 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+
+class ModifiedEmbeds():# 名前空間として
+    class DefaultEmbed(discord.Embed):
+        def __init__(self, title, description = None, color = bot_color):
+            super().__init__(title=title, description=description, color=color)
+            self.set_image(url=embed_under_line_url)
+            self.set_thumbnail(url=embed_thumbnail_url)
+    class ErrorEmbed(discord.Embed):
+        def __init__(self, title, description = None, color = 0xff0000):
+            super().__init__(title=title, description=description, color=color)
+            self.set_image(url=embed_under_line_url)
+            self.set_thumbnail(url=embed_thumbnail_url)

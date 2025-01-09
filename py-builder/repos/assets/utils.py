@@ -7,8 +7,7 @@ from .text_dat import *
 
 async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
     logger.error('permission denied')
-    embed = discord.Embed(title=RESPONSE_MSG["other"]["no_permission"], color=0xff0000)
-    embed.set_image(url = embed_under_line_url)
+    embed = ModifiedEmbeds.ErrorEmbed(title=RESPONSE_MSG["other"]["no_permission"])
     await interaction.response.send_message(embed = embed,ephemeral = True)
 
 
@@ -57,7 +56,7 @@ async def rewrite_config(config: dict) -> bool:
         return False
 
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, embed: discord.Embed, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
