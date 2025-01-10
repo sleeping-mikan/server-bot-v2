@@ -1075,6 +1075,7 @@ async def get_text_dat():
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
+                        "is_directory":"`{}`はディレクトリであるため書き込めません",
                     },
                     "rm":{
                         "success":"`{}`を削除しました",
@@ -1201,6 +1202,7 @@ async def get_text_dat():
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
+                        "is_directory": "`{}` is a directory and cannot be written",
                     },
                     "rm":{
                         "success":"`{}` has been deleted",
@@ -2036,6 +2038,12 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_link"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("file is link -> " + file_path)
+        return
+    #ディレクトリであれば拒否
+    if os.path.isdir(file_path):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_directory"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        stdin_mk_logger.info("file is directory -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):

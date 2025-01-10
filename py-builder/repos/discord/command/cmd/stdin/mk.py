@@ -33,6 +33,12 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("file is link -> " + file_path)
         return
+    #ディレクトリであれば拒否
+    if os.path.isdir(file_path):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mk"]["is_directory"].format(file_path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        stdin_mk_logger.info("file is directory -> " + file_path)
+        return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)

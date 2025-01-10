@@ -144,6 +144,7 @@ async def get_text_dat():
                     "mk":{
                         "success":"ファイル`{}`を作成または上書きしました",
                         "is_link":"`{}`はシンボリックリンクであるため書き込めません",
+                        "is_directory":"`{}`はディレクトリであるため書き込めません",
                     },
                     "rm":{
                         "success":"`{}`を削除しました",
@@ -270,6 +271,7 @@ async def get_text_dat():
                     "mk":{
                         "success":"`{}` has been created or overwritten",
                         "is_link": "`{}` is a symbolic link and cannot be written",
+                        "is_directory": "`{}` is a directory and cannot be written",
                     },
                     "rm":{
                         "success":"`{}` has been deleted",
