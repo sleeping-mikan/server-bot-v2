@@ -31,8 +31,8 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
-    # パスが許可されているかを確認
-    if not is_path_within_scope(file_path):
+    # パスが許可されているかを確認 or .tokenなら常に拒否
+    if not is_path_within_scope(file_path) or os.path.basename(file_path) == ".token":
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
