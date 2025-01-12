@@ -135,6 +135,11 @@ async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
 from .update.github import *
 #!end-ignore
 
+#!open ./repos/discord/command/send/common.py
+#!ignore
+from .send.common import *
+#!end-ignore
+
 #/replace <py file>
 @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
 async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
