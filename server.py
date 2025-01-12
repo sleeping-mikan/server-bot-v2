@@ -2342,6 +2342,16 @@ async def send_discord(interaction: discord.Interaction, path: str):
                 await send_discord_message_or_edit(interaction=interaction,embed=embed)
                 return
             response = discord_multi_thread_return_dict[discord_dict_id]
+            stdin_send_discord_logger.info("content type -> " + str(response.headers.get("content-type")))
+            # responseがjsonで来ないことがあるので
+            if not response.headers.get("content-type").startswith("application/json"):
+                status = discord_multi_thread_return_dict[discord_dict_id].status_code
+                reason = discord_multi_thread_return_dict[discord_dict_id].reason
+                text = "Too Many Characters"
+                stdin_send_discord_logger.error("upload to file.io failed (not json) -> " + str(file_path))
+                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
+                await send_discord_message_or_edit(interaction=interaction,embed=embed)
+                return
             link = response.json()["link"]
             stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
             embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link),inline=False)
