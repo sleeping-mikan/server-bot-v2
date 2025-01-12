@@ -128,7 +128,7 @@ COMMAND_PERMISSION = {
     "tokengen":1,
     "terminal":1,
     "update":3,
-    "send embed":4,
+    "announce embed":4,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
@@ -656,7 +656,7 @@ token_logger = create_logger("token")
 terminal_logger = create_logger("terminal")
 base_extension_logger = create_logger("extension")
 update_logger = create_logger("update")
-send_logger = create_logger("send")
+announce_logger = create_logger("send")
 minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.MinecraftConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
 
 #--------------------
@@ -962,6 +962,7 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> で、botの言語を変更します。",
             "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
             "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/announce         ":"/announce embed <file | text> で、サーバーにed形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
@@ -978,6 +979,7 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> changes the bot's language.",
             "/tokengen         ":"/tokengen generates a token for login to the web.",
             "/terminal         ":"/terminal connects the server's console to a channel.",
+            "/announce         ":"/announce embed <file | text> sends an embed message to the server. Set the title after |title| and enter the content after \\n.",
         },
     }
         
@@ -1014,7 +1016,7 @@ async def get_text_dat():
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
             "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
-            "send":{
+            "announce":{
                 "embed":"discordにテキストをembedで送信します。引数にはmd形式のテキストファイルを指定するか、文字列を指定します。",
             }
         },
@@ -1049,7 +1051,7 @@ async def get_text_dat():
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
             "update":"Update the bot. This is a successor command of /replace.",
-            "send":{
+            "announce":{
                 "embed":"Send text to discord with embed. Specify a md-formatted text file or a string as an argument.",
             }
         },
@@ -1176,7 +1178,7 @@ async def get_text_dat():
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
             },
-            "send":{
+            "announce":{
                 "embed":{
                     "exist_file_and_txt":"`{}`と`{}`は両方存在するため、送信できません",
                     "empty":"`{}`は空のため、送信できません",
@@ -1310,7 +1312,7 @@ async def get_text_dat():
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",
             },
-            "send":{
+            "announce":{
                 "embed":{
                     "exist_file_and_txt":"File and text cannot be written at the same time",
                     "empty":"Text cannot be empty",
@@ -2559,64 +2561,65 @@ async def update(interaction: discord.Interaction, is_force: bool = False):
 
 # グループの設定
 # root
-command_group_send = app_commands.Group(name="announce",description="send messege to discord")
+command_group_announce = app_commands.Group(name="announce",description="send messege to discord")
 
 
 #--------------------
 
 
-@command_group_send.command(name="embed",description=COMMAND_DESCRIPTION[lang]["send"]["embed"])
+@command_group_announce.command(name="embed",description=COMMAND_DESCRIPTION[lang]["announce"]["embed"])
 async def embed(interaction: discord.Interaction, file: discord.Attachment|None = None, txt: str = ""):
-    await print_user(send_logger,interaction.user)
+    await print_user(announce_logger,interaction.user)
     return_embed = ModifiedEmbeds.DefaultEmbed(title= f"/embed {file.filename if file is not None else ''} {txt}")
     embed = ModifiedEmbeds.DefaultEmbed(title= f"")
     # 権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["send embed"]: 
-        await not_enough_permission(interaction,send_logger)
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["announce embed"]: 
+        await not_enough_permission(interaction,announce_logger)
         return
     # ファイルとテキストの両方が存在する場合はエラー
     if file is not None and txt != "":
-        return_embed.add_field(name="",value=RESPONSE_MSG["cmd"]["send"]["embed"]["exist_file_and_txt"],inline=False)
+        return_embed.add_field(name="",value=RESPONSE_MSG["cmd"]["announce"]["embed"]["exist_file_and_txt"],inline=False)
         await interaction.response.send_message(embed=return_embed)
-        send_logger.info("file and txt exist")
+        announce_logger.info("file and txt exist")
         return
     # ファイルがある場合はファイルを展開してtxtに代入
     if file is not None:
         try:
             txt = (await file.read()).decode("utf-8")
         except:
-            return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["decode_error"],inline=False)
+            return_embed.add_field(name="",value=RESPONSE_MSG["announce"]["embed"]["decode_error"],inline=False)
             await interaction.response.send_message(embed=return_embed)
-            send_logger.info("file decode error")
+            announce_logger.info("file decode error")
             return
     # テキストで送られてるなら\\nを改行に変換
     if txt:
         txt = txt.replace("\\n","\n")
-        return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["replace_slash_n"],inline=False)
+        return_embed.add_field(name="",value=RESPONSE_MSG["announce"]["embed"]["replace_slash_n"],inline=False)
     # 内容が空なら
     if txt == "":
-        return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["empty"],inline=False)
+        return_embed.add_field(name="",value=RESPONSE_MSG["announce"]["embed"]["empty"],inline=False)
         await interaction.response.send_message(embed=return_embed)
-        send_logger.info("txt is empty")
+        announce_logger.info("txt is empty")
         return
     send_data, other_dat = await parse_mimd(txt)
+    announce_logger.info("parsed txt")
     # embedに追加
     embed.title = other_dat["title"]
     for items in send_data:
         embed.add_field(name=items["name"],value=items["value"],inline=False)
-    return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["success"],inline=False)
+    return_embed.add_field(name="",value=RESPONSE_MSG["announce"]["embed"]["success"],inline=False)
     # embedを送信
     await interaction.response.send_message(embed=return_embed,ephemeral=True)
     # 同じchidにembedを送信
     await interaction.channel.send(embed=embed)
-    send_logger.info('embed sent')
+    announce_logger.info('embed sent')
 
 
 
 #--------------------
 
 
-tree.add_command(command_group_send)
+tree.add_command(command_group_announce)
 #--------------------
 
 

@@ -5,11 +5,11 @@ from ....logger.logger_create import *
 
 # グループの設定
 # root
-command_group_send = app_commands.Group(name="announce",description="send messege to discord")
+command_group_announce = app_commands.Group(name="announce",description="send messege to discord")
 
 #!open ./repos/discord/command/send/embed/main.py
 #!ignore
 from .embed.main import *
 #!end-ignore
 
-tree.add_command(command_group_send)
+tree.add_command(command_group_announce)

@@ -29,6 +29,7 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> で、botの言語を変更します。",
             "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
             "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/announce         ":"/announce embed <file | text> で、サーバーにed形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
@@ -45,6 +46,7 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> changes the bot's language.",
             "/tokengen         ":"/tokengen generates a token for login to the web.",
             "/terminal         ":"/terminal connects the server's console to a channel.",
+            "/announce         ":"/announce embed <file | text> sends an embed message to the server. Set the title after |title| and enter the content after \\n.",
         },
     }
         
@@ -81,7 +83,7 @@ async def get_text_dat():
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
             "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
-            "send":{
+            "announce":{
                 "embed":"discordにテキストをembedで送信します。引数にはmd形式のテキストファイルを指定するか、文字列を指定します。",
             }
         },
@@ -116,7 +118,7 @@ async def get_text_dat():
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
             "update":"Update the bot. This is a successor command of /replace.",
-            "send":{
+            "announce":{
                 "embed":"Send text to discord with embed. Specify a md-formatted text file or a string as an argument.",
             }
         },
@@ -243,7 +245,7 @@ async def get_text_dat():
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
             },
-            "send":{
+            "announce":{
                 "embed":{
                     "exist_file_and_txt":"`{}`と`{}`は両方存在するため、送信できません",
                     "empty":"`{}`は空のため、送信できません",
@@ -377,7 +379,7 @@ async def get_text_dat():
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",
             },
-            "send":{
+            "announce":{
                 "embed":{
                     "exist_file_and_txt":"File and text cannot be written at the same time",
                     "empty":"Text cannot be empty",
