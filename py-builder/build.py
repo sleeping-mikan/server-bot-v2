@@ -1,6 +1,7 @@
 from os import getcwd, path, listdir
 from logging import Logger, StreamHandler, Formatter
 from json import load
+import datetime
 
 
 
@@ -17,7 +18,7 @@ flgs = {"ignore":False}
 config = load(open(path.dirname(__file__) + "/config.json","r",encoding="utf-8"))
 output_path = getcwd() + "/" + config["out"]
 
-def write_code(code: list[str | list],file):
+def write_code(code: list[str | list],file: open):
     for i in range(len(code)):
         line = code[i]
         if type(line) == str:
@@ -87,6 +88,9 @@ def main():
     codes = code.readlines()
     code.close()
     inter_code(codes)
+    o_file = open(f"{path.basename(output_path)}.mio", "w", encoding="utf-8")
+    o_file.write(str(codes))
+    o_file.close()
     write_file = open(output_path, "w", encoding="utf-8")
     # builder_logger.info(f"write data -> {codes}")
     write_code(codes,write_file)
@@ -94,4 +98,9 @@ def main():
     builder_logger.info(f"end write data")
 
 if __name__ == "__main__":
+    time = datetime.datetime.now()
     main()
+    bar = "-" * 50
+    builder_logger.info(f"{bar}")
+    builder_logger.info(f"end time -> {datetime.datetime.now() - time}")
+    builder_logger.info(f"{bar}")
