@@ -128,6 +128,7 @@ COMMAND_PERMISSION = {
     "tokengen":1,
     "terminal":1,
     "update":3,
+    "send embed":4,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
@@ -655,6 +656,7 @@ token_logger = create_logger("token")
 terminal_logger = create_logger("terminal")
 base_extension_logger = create_logger("extension")
 update_logger = create_logger("update")
+send_logger = create_logger("send")
 minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.MinecraftConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
 
 #--------------------
@@ -1012,6 +1014,9 @@ async def get_text_dat():
             "tokengen":"webにログインするためのトークンを生成します。",
             "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
             "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
+            "send":{
+                "embed":"discordにテキストをembedで送信します。引数にはmd形式のテキストファイルを指定するか、文字列を指定します。",
+            }
         },
         "en":{
             "stop":"Stop the server.",
@@ -1044,6 +1049,9 @@ async def get_text_dat():
             "tokengen":"Generate a token for login to the web.",
             "terminal":"Connect the server's console to a channel.",
             "update":"Update the bot. This is a successor command of /replace.",
+            "send":{
+                "embed":"Send text to discord with embed. Specify a md-formatted text file or a string as an argument.",
+            }
         },
     }
 
@@ -1167,7 +1175,16 @@ async def get_text_dat():
                 "download_failed":"更新のダウンロードに失敗しました",
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
-            }
+            },
+            "send":{
+                "embed":{
+                    "exist_file_and_txt":"`{}`と`{}`は両方存在するため、送信できません",
+                    "empty":"`{}`は空のため、送信できません",
+                    "success":"データを送信しました",
+                    "replace_slash_n": "テキスト形式のデータに\\\\nが存在したため\\nに変換しました",
+                    "decode_error":"`{}`の読み込みに失敗しました",
+                },
+            },
         }
         ACTIVITY_NAME = {
             "starting":"さーばーきどう",
@@ -1293,6 +1310,15 @@ async def get_text_dat():
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",
             },
+            "send":{
+                "embed":{
+                    "exist_file_and_txt":"File and text cannot be written at the same time",
+                    "empty":"Text cannot be empty",
+                    "decode_error":"Failed to decode file",
+                    "success": "File has been sent",
+                    "replace_slash_n": "found \\n, replaced to \\r\\n",
+                }
+            }
         }
         ACTIVITY_NAME = {
             "starting":"Server go!",
@@ -1522,6 +1548,29 @@ async def send_discord_message_or_edit(interaction: discord.Interaction, message
         await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
     else:
         await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
+
+
+async def parse_mimd(text: str):
+    first_title_flag = False
+    send_data = deque([{"name":"","value":""}])
+    origin_data = {"title": ""}
+    for line in text.split("\n"):
+        parse_line = line
+        while parse_line.startswith(" "):
+            parse_line = line[1:]
+        # #から始まる一文ならnameに
+        if parse_line[0] == "#":
+            send_data.append({"name":"","value":""})
+            send_data[-1]["name"] = parse_line[1:]
+        # タイトルの設定(先頭のみ有効)
+        elif parse_line.startswith("|title|") and not first_title_flag:
+            origin_data["title"] = parse_line[7:]
+            first_title_flag = True
+        # 何でもないテキストならデータをセット
+        else:
+            send_data[-1]["value"] += line
+    return send_data, origin_data
+
 #--------------------
 
 
@@ -2501,6 +2550,73 @@ async def update(interaction: discord.Interaction, is_force: bool = False):
         return
     #py_builder.pyを更新
     await update_self_if_commit_changed(interaction=interaction,embed=embed,text_pack=RESPONSE_MSG["update"],sender=send_discord_message_or_edit,is_force = is_force)
+#--------------------
+
+
+
+#--------------------
+
+
+# グループの設定
+# root
+command_group_send = app_commands.Group(name="announce",description="send messege to discord")
+
+
+#--------------------
+
+
+@command_group_send.command(name="embed",description=COMMAND_DESCRIPTION[lang]["send"]["embed"])
+async def embed(interaction: discord.Interaction, file: discord.Attachment|None = None, txt: str = ""):
+    await print_user(send_logger,interaction.user)
+    return_embed = ModifiedEmbeds.DefaultEmbed(title= f"/embed {file.filename if file is not None else ''} {txt}")
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"")
+    # 権限を要求
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["send embed"]: 
+        await not_enough_permission(interaction,send_logger)
+        return
+    # ファイルとテキストの両方が存在する場合はエラー
+    if file is not None and txt != "":
+        return_embed.add_field(name="",value=RESPONSE_MSG["cmd"]["send"]["embed"]["exist_file_and_txt"],inline=False)
+        await interaction.response.send_message(embed=return_embed)
+        send_logger.info("file and txt exist")
+        return
+    # ファイルがある場合はファイルを展開してtxtに代入
+    if file is not None:
+        try:
+            txt = (await file.read()).decode("utf-8")
+        except:
+            return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["decode_error"],inline=False)
+            await interaction.response.send_message(embed=return_embed)
+            send_logger.info("file decode error")
+            return
+    # テキストで送られてるなら\\nを改行に変換
+    if txt:
+        txt = txt.replace("\\n","\n")
+        return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["replace_slash_n"],inline=False)
+    # 内容が空なら
+    if txt == "":
+        return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["empty"],inline=False)
+        await interaction.response.send_message(embed=return_embed)
+        send_logger.info("txt is empty")
+        return
+    send_data, other_dat = await parse_mimd(txt)
+    # embedに追加
+    embed.title = other_dat["title"]
+    for items in send_data:
+        embed.add_field(name=items["name"],value=items["value"],inline=False)
+    return_embed.add_field(name="",value=RESPONSE_MSG["send"]["embed"]["success"],inline=False)
+    # embedを送信
+    await interaction.response.send_message(embed=return_embed,ephemeral=True)
+    # 同じchidにembedを送信
+    await interaction.channel.send(embed=embed)
+    send_logger.info('embed sent')
+
+
+
+#--------------------
+
+
+tree.add_command(command_group_send)
 #--------------------
 
 

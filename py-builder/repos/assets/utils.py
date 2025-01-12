@@ -205,3 +205,25 @@ async def send_discord_message_or_edit(interaction: discord.Interaction, message
         await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
     else:
         await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
+
+
+async def parse_mimd(text: str):
+    first_title_flag = False
+    send_data = deque([{"name":"","value":""}])
+    origin_data = {"title": ""}
+    for line in text.split("\n"):
+        parse_line = line
+        while parse_line.startswith(" "):
+            parse_line = line[1:]
+        # #から始まる一文ならnameに
+        if parse_line[0] == "#":
+            send_data.append({"name":"","value":""})
+            send_data[-1]["name"] = parse_line[1:]
+        # タイトルの設定(先頭のみ有効)
+        elif parse_line.startswith("|title|") and not first_title_flag:
+            origin_data["title"] = parse_line[7:]
+            first_title_flag = True
+        # 何でもないテキストならデータをセット
+        else:
+            send_data[-1]["value"] += line
+    return send_data, origin_data

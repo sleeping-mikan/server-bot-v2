@@ -88,6 +88,7 @@ COMMAND_PERMISSION = {
     "tokengen":1,
     "terminal":1,
     "update":3,
+    "send embed":4,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
