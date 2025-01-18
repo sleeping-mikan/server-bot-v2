@@ -79,6 +79,7 @@ COMMAND_PERMISSION = {
     "cmd stdin wget":3,
     "help":0,
     "backup create":1,
+    "backup apply":3,
     "replace":4,
     "ip":0,
     "logs":1,

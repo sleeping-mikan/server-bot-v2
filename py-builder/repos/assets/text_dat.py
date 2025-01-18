@@ -201,11 +201,14 @@ async def get_text_dat():
                 }
             },
             "backup":{
+                "now_backup":"ファイルをコピー中・・・",
+                "success":"ファイルコピーが完了しました！",
                 "create":{
-                    "now_backup":"ファイルをコピー中・・・",
                     "data_not_found":"データが見つかりません",
-                    "success":"ファイルコピーが完了しました！",
                     "path_not_allowed":"不正なパス",
+                },
+                "apply":{
+                    "path_not_found":"指定されたパスが見つかりません",
                 },
             },
             "replace":{
@@ -337,11 +340,14 @@ async def get_text_dat():
                 }
             },
             "backup":{
+                "now_backup":"File copy in progress",
+                "success":"File copy complete!",
                 "create":{
-                    "now_backup":"File copy in progress",
                     "data_not_found":"Data not found",
-                    "success":"File copy complete!",
                     "path_not_allowed":"Path not allowed",
+                },
+                "apply":{
+                    "path_not_found":"Path is not exists",
                 },
             },
             "replace":{

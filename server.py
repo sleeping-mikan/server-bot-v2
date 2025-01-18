@@ -118,7 +118,8 @@ COMMAND_PERMISSION = {
     "cmd stdin send-discord":2,
     "cmd stdin wget":3,
     "help":0,
-    "backup":1,
+    "backup create":1,
+    "backup apply":3,
     "replace":4,
     "ip":0,
     "logs":1,
@@ -1003,7 +1004,10 @@ async def get_text_dat():
                     "wget": "urlからファイルをダウンロードします。",
                 },
             },
-            "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
+            "backup":{
+                "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
+
+            },
             "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
@@ -1038,7 +1042,10 @@ async def get_text_dat():
                     "wget":"Download a file from a url.",
                 },
             },
-            "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
+            "backup":{
+                "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
+
+            },
             "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
@@ -1128,10 +1135,15 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"バックアップ中・・・",
-                "data_not_found":"データが見つかりません",
-                "success":"バックアップが完了しました！",
-                "path_not_allowed":"不正なパス",
+                "now_backup":"ファイルをコピー中・・・",
+                "success":"ファイルコピーが完了しました！",
+                "create":{
+                    "data_not_found":"データが見つかりません",
+                    "path_not_allowed":"不正なパス",
+                },
+                "apply":{
+                    "path_not_found":"指定されたパスが見つかりません",
+                },
             },
             "replace":{
                 "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
@@ -1262,10 +1274,15 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"Backup in progress",
-                "data_not_found":"Data not found",
-                "success":"Backup complete!",
-                "path_not_allowed":"Path not allowed",
+                "now_backup":"File copy in progress",
+                "success":"File copy complete!",
+                "create":{
+                    "data_not_found":"Data not found",
+                    "path_not_allowed":"Path not allowed",
+                },
+                "apply":{
+                    "path_not_found":"Path is not exists",
+                },
             },
             "replace":{
                 "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
@@ -1408,11 +1425,15 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     dst : コピー先dir
     symlinks : リンクをコピーするか
     """
+    original_src = src
+    original_dst = dst
     #表示サイズ
     bar_width = 30
     #送信制限
     max_send = 20
-    dst += datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+    # dstがbackuppathの場合だけ名前を操作する
+    if dst.startswith(backup_path):
+        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + os.path.basename(src))
     exist_files = 0
     for root, dirs, files in os.walk(top=src, topdown=False):
         exist_files += len(files)
@@ -1422,7 +1443,8 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     async def copytree(src, dst, symlinks=False):
         global copyed_files
         names = os.listdir(src)
-        os.makedirs(dst)
+        if not os.path.exists(dst):
+            os.makedirs(dst)
         errors = []
         for name in names:
             srcname = os.path.join(src, name)
@@ -1441,7 +1463,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
                         embed.clear_fields()
-                        embed.add_field(name = f"{now}",value=f"```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
                         await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
@@ -2338,8 +2360,8 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("file not found -> " + file_path)
         return
-    # パスが許可されているかを確認
-    if not is_path_within_scope(file_path):
+    # パスが許可されているかを確認 or .tokenなら常に拒否
+    if not is_path_within_scope(file_path) or os.path.basename(file_path) == ".token":
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["invalid_path"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
@@ -2499,38 +2521,105 @@ tree.add_command(command_group_cmd)
 #--------------------
 
 
+
+#--------------------
+
+
+command_group_backup = app_commands.Group(name="backup",description="backup group")
+
+
+#--------------------
+
+
+backup_create_logger = backup_logger.getChild("create")
+
 #/backup()
-@tree.command(name="backup",description=COMMAND_DESCRIPTION[lang]["backup"])
-async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
+@command_group_backup.command(name="create",description=COMMAND_DESCRIPTION[lang]["backup"]["create"])
+async def backup(interaction: discord.Interaction,path:str = "worlds"):
+    from_backup = os.path.join(server_path,path)
+    world_name = path
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
     #管理者権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup create"]:
         await not_enough_permission(interaction,backup_logger) 
         return
     #サーバー起動確認
     if is_running_server(backup_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["backup"]["is_running"],inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
     # 操作可能パスかを判定
-    if not is_path_within_scope(server_path + world_name):
-        backup_logger.error("path not allowed : " + server_path + world_name)
-        embed.add_field(name="",value = RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name,inline=False)
+    if not is_path_within_scope(from_backup):
+        backup_logger.error("path not allowed : " + from_backup)
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["create"]["path_not_allowed"] + ":" + from_backup,inline=False)
         await interaction.response.send_message(embed=embed)
         return
     backup_logger.info('backup started')
     #server_path + world_namの存在確認
-    if os.path.exists(server_path + world_name):
+    if os.path.exists(from_backup):
         await interaction.response.send_message(embed=embed)
         # discordにcopyed_files / exist_filesをプログレスバーで
-        await dircp_discord(server_path + world_name,backup_path + "/",interaction,embed)
+        await dircp_discord(from_backup,backup_path + "/",interaction,embed)
         backup_logger.info('backup done')
     else:
-        backup_logger.error('data not found : ' + server_path + world_name)
-        embed.add_field(name="",value=RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name,inline=False)
+        backup_logger.error('data not found : ' + from_backup)
+        embed.add_field(name="",value=RESPONSE_MSG["backup"]["create"]["data_not_found"] + ":" + from_backup,inline=False)
         await interaction.response.send_message(embed=embed,ephemeral=True)
+#--------------------
+
+
+#--------------------
+
+
+
+backup_apply_logger = backup_logger.getChild("apply")
+
+async def server_backup_list(interaction: discord.Interaction, current: str):
+    current = current.translate(str.maketrans("/\\:","--_"))
+    #全てのファイルを取得
+    backups = os.listdir(backup_path)
+    # current と一致するものを返す & logファイル & 25個制限を実装
+    logfiles = [i for i in backups if current in i][-25:]
+    # open("./tmp.txt","w").write("\n".join(logfiles))
+    return [
+        app_commands.Choice(name = i,value = i) for i in logfiles
+    ]
+
+@command_group_backup.command(name="apply",description="apply backup")
+@app_commands.autocomplete(witch=server_backup_list)
+async def backup_apply(interaction:discord.Interaction, witch:str, path:str = ""):
+    await print_user(backup_apply_logger,interaction.user)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup apply {witch} {path}")
+    #管理者権限を要求
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup apply"]: 
+        await not_enough_permission(interaction,backup_apply_logger)
+        return
+    #サーバー起動確認
+    if is_running_server(backup_apply_logger): 
+        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
+    # dirの存在確認
+    if not os.path.exists(os.path.join(server_path,path)):
+        backup_apply_logger.error('data not found : ' + os.path.join(server_path,path))
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_found"] + ":" + os.path.join(server_path,path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
+    backup_apply_logger.info('backup apply started' + " -> " + witch + " to " + os.path.join(server_path,path,witch))
+    await interaction.response.send_message(embed=embed)
+    # dircp_discordを用いて進捗を出しつつ、コピーする
+    await dircp_discord(os.path.join(backup_path,witch),os.path.join(server_path,path),interaction,embed)
+    backup_apply_logger.info('backup apply done')
+    
+#--------------------
+
+
+tree.add_command(command_group_backup)
+
+#--------------------
+
 
 
 #--------------------

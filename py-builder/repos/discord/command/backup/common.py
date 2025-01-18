@@ -9,3 +9,5 @@ command_group_backup = app_commands.Group(name="backup",description="backup grou
 
 #!open ./repos/discord/command/backup/create.py
 #!open ./repos/discord/command/backup/apply.py
+
+tree.add_command(command_group_backup)

@@ -63,11 +63,15 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     dst : コピー先dir
     symlinks : リンクをコピーするか
     """
+    original_src = src
+    original_dst = dst
     #表示サイズ
     bar_width = 30
     #送信制限
     max_send = 20
-    dst += datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + os.path.basename(src)
+    # dstがbackuppathの場合だけ名前を操作する
+    if dst.startswith(backup_path):
+        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + "-" + os.path.basename(src))
     exist_files = 0
     for root, dirs, files in os.walk(top=src, topdown=False):
         exist_files += len(files)
@@ -77,7 +81,8 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     async def copytree(src, dst, symlinks=False):
         global copyed_files
         names = os.listdir(src)
-        os.makedirs(dst)
+        if not os.path.exists(dst):
+            os.makedirs(dst)
         errors = []
         for name in names:
             srcname = os.path.join(src, name)
@@ -96,7 +101,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
                         embed.clear_fields()
-                        embed.add_field(name = f"{now}",value=f"copy {srcname} -> {dstname}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
                         await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
