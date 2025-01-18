@@ -96,7 +96,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
                         embed.clear_fields()
-                        embed.add_field(name = f"{now}",value=f"```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        embed.add_field(name = f"{now}",value=f"copy {srcname} -> {dstname}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
                         await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
