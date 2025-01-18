@@ -78,7 +78,7 @@ COMMAND_PERMISSION = {
     "cmd stdin send-discord":2,
     "cmd stdin wget":3,
     "help":0,
-    "backup":1,
+    "backup create":1,
     "replace":4,
     "ip":0,
     "logs":1,

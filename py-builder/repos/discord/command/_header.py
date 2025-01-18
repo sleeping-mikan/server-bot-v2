@@ -97,38 +97,10 @@ async def language(interaction: discord.Interaction,language:str):
 from .cmd import *
 #!end-ignore
 
-#/backup()
-@tree.command(name="backup",description=COMMAND_DESCRIPTION[lang]["backup"])
-async def backup(interaction: discord.Interaction,world_name:str = "worlds"):
-    await print_user(backup_logger,interaction.user)
-    global exist_files, copyed_files
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
-    #管理者権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["backup"]:
-        await not_enough_permission(interaction,backup_logger) 
-        return
-    #サーバー起動確認
-    if is_running_server(backup_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["backup"]["is_running"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    # 操作可能パスかを判定
-    if not is_path_within_scope(server_path + world_name):
-        backup_logger.error("path not allowed : " + server_path + world_name)
-        embed.add_field(name="",value = RESPONSE_MSG["backup"]["path_not_allowed"] + ":" + server_path + world_name,inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    backup_logger.info('backup started')
-    #server_path + world_namの存在確認
-    if os.path.exists(server_path + world_name):
-        await interaction.response.send_message(embed=embed)
-        # discordにcopyed_files / exist_filesをプログレスバーで
-        await dircp_discord(server_path + world_name,backup_path + "/",interaction,embed)
-        backup_logger.info('backup done')
-    else:
-        backup_logger.error('data not found : ' + server_path + world_name)
-        embed.add_field(name="",value=RESPONSE_MSG["backup"]["data_not_found"] + ":" + server_path + world_name,inline=False)
-        await interaction.response.send_message(embed=embed,ephemeral=True)
+#!open ./repos/discord/command/backup/common.py
+#!ignore
+from .backup.common import *
+#!end-ignore
 
 #!open ./repos/discord/command/update/github.py
 #!ignore

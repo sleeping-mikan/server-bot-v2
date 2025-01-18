@@ -70,7 +70,10 @@ async def get_text_dat():
                     "wget": "urlからファイルをダウンロードします。",
                 },
             },
-            "backup":"ワールドデータをバックアップします。引数にはワールドファイルの名前を指定します。入力しない場合worldsが選択されます。",
+            "backup":{
+                "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
+
+            },
             "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
@@ -105,7 +108,10 @@ async def get_text_dat():
                     "wget":"Download a file from a url.",
                 },
             },
-            "backup":"Copy the world data. If no argument is given, the worlds will be copied.",
+            "backup":{
+                "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
+
+            },
             "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
@@ -195,10 +201,12 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"バックアップ中・・・",
-                "data_not_found":"データが見つかりません",
-                "success":"バックアップが完了しました！",
-                "path_not_allowed":"不正なパス",
+                "create":{
+                    "now_backup":"バックアップ中・・・",
+                    "data_not_found":"データが見つかりません",
+                    "success":"バックアップが完了しました！",
+                    "path_not_allowed":"不正なパス",
+                },
             },
             "replace":{
                 "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
@@ -329,10 +337,12 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"Backup in progress",
-                "data_not_found":"Data not found",
-                "success":"Backup complete!",
-                "path_not_allowed":"Path not allowed",
+                "create":{
+                    "now_backup":"Backup in progress",
+                    "data_not_found":"Data not found",
+                    "success":"Backup complete!",
+                    "path_not_allowed":"Path not allowed",
+                },
             },
             "replace":{
                 "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},

@@ -67,7 +67,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     bar_width = 30
     #送信制限
     max_send = 20
-    dst += datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+    dst += datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + os.path.basename(src)
     exist_files = 0
     for root, dirs, files in os.walk(top=src, topdown=False):
         exist_files += len(files)
