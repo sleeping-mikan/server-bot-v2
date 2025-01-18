@@ -29,7 +29,7 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> で、botの言語を変更します。",
             "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
             "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
-            "/announce         ":"/announce embed <file | text> で、サーバーにed形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
+            "/announce         ":"/announce embed <file | text> で、サーバーにmimd形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
