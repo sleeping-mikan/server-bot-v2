@@ -45,13 +45,8 @@ import base64
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
-repository = {
-    "user": "sleeping-mikan",
-    "name": "server-bot-v2",
-    "branch": "main",#!debug else main
-}
 
 
 intents = discord.Intents.default() 
@@ -198,6 +193,14 @@ configの読み込みと最小限の変数へのロードを行う
 
 config_file_place = now_path + "/" + ".config"
 
+def delete_config(config_dict):
+    changed = False
+    # v2.2.0まで存在した -> 現在はupdate keyに複数要素が存在している
+    if "auto_update" in config_dict:
+        del config_dict["auto_update"]
+        changed = True
+    return changed
+
 def make_config():
     if not os.path.exists(config_file_place):
         file = open(config_file_place,"w")
@@ -209,7 +212,10 @@ def make_config():
         print("default backup path: " + default_backup_path)
         config_dict = {\
                             "allow":{"ip":True,"replace":False},\
-                            "auto_update":True,\
+                            "update":{
+                                "auto":True,\
+                                "branch":"main",\
+                            },\
                             "server_path":now_path + "/",\
                             
                             "server_name":"bedrock_server.exe",\
@@ -235,6 +241,8 @@ def make_config():
     else:
         try:
             config_dict = json.load(open(now_path + "/"  + ".config","r"))
+            # 不要な要素があれば削除
+            changed = delete_config(config_dict)
         except json.decoder.JSONDecodeError:
             print("config file is broken. please delete .config and try again.")
             wait_for_keypress()
@@ -247,8 +255,12 @@ def make_config():
             if "replace" not in cfg["allow"]:
                 cfg["allow"]["replace"] = False
 
-            if "auto_update" not in cfg:
-                cfg["auto_update"] = True
+            if "update" not in cfg:
+                cfg["update"] = {"auto":True,"branch":"main"}
+            if "auto" not in cfg["update"]:
+                cfg["update"]["auto"] = True
+            if "branch" not in cfg["update"]:
+                cfg["update"]["branch"] = "main"
             elif "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
@@ -320,7 +332,7 @@ def make_config():
                 print("admin.members is list. format changed to dict.(this version isv2.1.0 or later)")
             return cfg
         checked_config = check(deepcopy(config_dict))
-        if config_dict != checked_config:
+        if config_dict != checked_config or changed:
             config_dict = checked_config
             file = open(now_path + "/"  + ".config","w")
             #ログ
@@ -685,11 +697,13 @@ try:
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
     where_terminal = config["discord_commands"]["terminal"]["discord"]
-    is_auto_update = config["auto_update"]
+    is_auto_update = config["update"]["auto"]
+    update_branch = config["update"]["branch"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
+    
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
@@ -700,6 +714,13 @@ except KeyError:
 
 #--------------------
 
+
+
+repository = {
+    "user": "sleeping-mikan",
+    "name": "server-bot-v2",
+    "branch": update_branch,#!debug else main
+}
 
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
@@ -953,8 +974,9 @@ async def get_text_dat():
             "/start            ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
             "/exit             ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
             "/cmd serverin     ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
-            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|rmdir|mkdir>を用いて、ファイル確認/削除/作成/フォルダ作成/フォルダ削除を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
-            "/backup           ":"/backup [ワールド名] でワールドデータをバックアップします。ワールド名を省略した場合worldsをコピーします。サーバーを停止した状態で実行してください",
+            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord>を用いて、ファイル確認/削除/作成/移動/フォルダ作成/フォルダ削除/urlからダウンロード/discord送信を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
+            "/backup create    ":"/backup create [directory] でデータをバックアップします。ディレクトリ名を省略した場合worldsをコピーします。",
+            "/backup apply     ":"/backup apply <directory> でデータをバックアップから復元します。",
             "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
             "/ip               ":"サーバーのIPアドレスを表示します。",
             "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
@@ -963,15 +985,16 @@ async def get_text_dat():
             "/lang             ":"/lang <lang> で、botの言語を変更します。",
             "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
             "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
-            "/announce         ":"/announce embed <file | text> で、サーバーにed形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
+            "/announce         ":"/announce embed <file | text> で、サーバーにmimd形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
             "/start            ":"Start the server. If the server is running, an error message will be returned.",
             "/exit             ":"Exit the bot. Stop the server first and then run the command. If the server is not running, an error message will be returned.\n",
             "/cmd serverin     ":f"/cmd <mc command> can be used to execute commands in the server console. The available commands are {allow_cmd}.",
-            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|rmdir|mkdir> can be used to check/erase/creat/create a folder. For example, if you want to create a file a.txt in the server directory, enter /cmd stdin mk a.txt.",
-            "/backup           ":"/backup [world name] copies the world data. If no world name is given, the worlds will be copied.",
+            "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord> can be used to execute commands in the server console. For example, to create a file in the server directory, you can type /cmd stdin mk a.txt.",
+            "/backup create    ":"/backup create [directory] creates data. If the directory name is omitted, worlds is copied.",
+            "/backup apply     ":"/backup apply <directory> recovers data from a backup.",
             "/replace          ":"/replace <py file> replaces the bot's code.",
             "/ip               ":"The server's IP address will be displayed to discord.",
             "/logs             ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
@@ -1433,7 +1456,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     max_send = 20
     # dstがbackuppathの場合だけ名前を操作する
     if dst.startswith(backup_path):
-        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + os.path.basename(src))
+        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + "-" + os.path.basename(src))
     exist_files = 0
     for root, dirs, files in os.walk(top=src, topdown=False):
         exist_files += len(files)

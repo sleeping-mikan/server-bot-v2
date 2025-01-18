@@ -7,11 +7,6 @@ from .imports import *
 
 __version__ = "2.2.0"
 
-repository = {
-    "user": "sleeping-mikan",
-    "name": "server-bot-v2",
-    "branch": "main",#!debug else main
-}
 
 
 intents = discord.Intents.default() 

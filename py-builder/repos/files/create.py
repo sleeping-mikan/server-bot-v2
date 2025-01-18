@@ -5,6 +5,13 @@ from ..logger.logger_create import *
 from ..config.read_config_all import *
 #!end-ignore
 
+
+repository = {
+    "user": "sleeping-mikan",
+    "name": "server-bot-v2",
+    "branch": update_branch,#!debug else main
+}
+
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
     response = requests.get(url)
