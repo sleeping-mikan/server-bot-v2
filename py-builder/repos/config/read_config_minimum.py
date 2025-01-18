@@ -10,6 +10,14 @@ from ..wait_for_keypress import *
 
 config_file_place = now_path + "/" + ".config"
 
+def delete_config(config_dict):
+    changed = False
+    # v2.2.0まで存在した -> 現在はupdate keyに複数要素が存在している
+    if "auto_update" in config_dict:
+        del config_dict["auto_update"]
+        changed = True
+    return changed
+
 def make_config():
     if not os.path.exists(config_file_place):
         file = open(config_file_place,"w")
@@ -21,7 +29,10 @@ def make_config():
         print("default backup path: " + default_backup_path)
         config_dict = {\
                             "allow":{"ip":True,"replace":False},\
-                            "auto_update":True,\
+                            "update":{
+                                "auto":True,\
+                                "branch":"main",\
+                            },\
                             "server_path":now_path + "/",\
                             
                             "server_name":"bedrock_server.exe",\
@@ -47,6 +58,8 @@ def make_config():
     else:
         try:
             config_dict = json.load(open(now_path + "/"  + ".config","r"))
+            # 不要な要素があれば削除
+            changed = delete_config(config_dict)
         except json.decoder.JSONDecodeError:
             print("config file is broken. please delete .config and try again.")
             wait_for_keypress()
@@ -59,8 +72,12 @@ def make_config():
             if "replace" not in cfg["allow"]:
                 cfg["allow"]["replace"] = False
 
-            if "auto_update" not in cfg:
-                cfg["auto_update"] = True
+            if "update" not in cfg:
+                cfg["update"] = {"auto":True,"branch":"main"}
+            if "auto" not in cfg["update"]:
+                cfg["update"]["auto"] = True
+            if "branch" not in cfg["update"]:
+                cfg["update"]["branch"] = "main"
             elif "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
@@ -132,7 +149,7 @@ def make_config():
                 print("admin.members is list. format changed to dict.(this version isv2.1.0 or later)")
             return cfg
         checked_config = check(deepcopy(config_dict))
-        if config_dict != checked_config:
+        if config_dict != checked_config or changed:
             config_dict = checked_config
             file = open(now_path + "/"  + ".config","w")
             #ログ

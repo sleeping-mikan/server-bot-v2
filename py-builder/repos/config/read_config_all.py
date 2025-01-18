@@ -22,11 +22,13 @@ try:
     web_port = config["web"]["port"]
     STOP = config["discord_commands"]["stop"]["submit"]
     where_terminal = config["discord_commands"]["terminal"]["discord"]
-    is_auto_update = config["auto_update"]
+    is_auto_update = config["update"]["auto"]
+    update_branch = config["update"]["branch"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
+    
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
