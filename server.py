@@ -2903,25 +2903,70 @@ async def tokengen(interaction: discord.Interaction):
         json.dump(item,f,indent=4,ensure_ascii=False)
     token_logger.info('token added : ' + str(dat_token))
 
-#/terminal
-@tree.command(name="terminal",description=COMMAND_DESCRIPTION[lang]["terminal"])
-async def terminal(interaction: discord.Interaction):
-    global where_terminal
-    await print_user(terminal_logger,interaction.user)
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal")
-    # 権限レベルが足りていないなら
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
-        await not_enough_permission(interaction,terminal_logger)
-        return
-    #発言したチャンネルをwhere_terminalに登録
-    where_terminal = interaction.channel_id
+
+#--------------------
+
+
+command_group_terminal = app_commands.Group(name="terminal",description="terminal group")
+
+async def change_terminal_ch(channel: int | False):    
+    #terminalを無効化
+    where_terminal = channel
     config["discord_commands"]["terminal"]["discord"] = where_terminal
     terminal_logger.info(f"terminal setting -> {where_terminal}")
     #configを書き換え
     with open(now_path + "/.config","w") as f:
         json.dump(config,f,indent=4,ensure_ascii=False)
+
+
+#--------------------
+
+
+terminal_set_logger = terminal_logger.getChild("set")
+
+#/terminal
+@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"])
+async def terminal_set(interaction: discord.Interaction, channel:discord.TextChannel = None):
+    global where_terminal
+    await print_user(terminal_logger,interaction.user)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal set {channel}")
+    # 権限レベルが足りていないなら
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
+        await not_enough_permission(interaction,terminal_logger)
+        return
+    #発言したチャンネルをwhere_terminalに登録
+    change_terminal_ch(channel.id)
     embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
     await interaction.response.send_message(embed=embed)
+#--------------------
+
+
+#--------------------
+
+
+terminal_delete_logger = terminal_logger.getChild("delete")
+
+#/terminal
+@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"])
+async def terminal_set(interaction: discord.Interaction):
+    global where_terminal
+    await print_user(terminal_logger,interaction.user)
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal del")
+    # 権限レベルが足りていないなら
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
+        await not_enough_permission(interaction,terminal_logger)
+        return
+    #発言したチャンネルをwhere_terminalに登録
+    change_terminal_ch(False)
+    embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
+    await interaction.response.send_message(embed=embed)
+
+#--------------------
+
+
+tree.add_command(command_group_terminal)
+
+#--------------------
 
 
 #/help
