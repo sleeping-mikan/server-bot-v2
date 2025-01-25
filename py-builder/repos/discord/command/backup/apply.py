@@ -3,6 +3,7 @@ from ....logger.logger_create import *
 from ....minecraft.read_properties import *
 from ....assets.text_dat import *
 from ....assets.utils import *
+from ..cmd.stdin.common import *
 from .common import *
 #!end-ignore
 
@@ -38,6 +39,12 @@ async def backup_apply(interaction:discord.Interaction, witch:str, path:str = ""
     if not os.path.exists(os.path.join(server_path,path)):
         backup_apply_logger.error('data not found : ' + os.path.join(server_path,path))
         embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_found"] + ":" + os.path.join(server_path,path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
+    # 操作可能パスかを判定
+    if not is_path_within_scope(os.path.join(server_path,path)) or await is_important_bot_file(os.path.join(server_path,path)):
+        backup_logger.error("path not allowed : " + os.path.join(server_path,path))
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_allowed"] + ":" + os.path.join(server_path,path),inline=False)
         await interaction.response.send_message(embed=embed)
         return
     backup_apply_logger.info('backup apply started' + " -> " + witch + " to " + os.path.join(server_path,path,witch))

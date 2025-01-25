@@ -3,6 +3,8 @@ from ....logger.logger_create import *
 from ....minecraft.read_properties import *
 from ....assets.text_dat import *
 from ....assets.utils import *
+from ....constant import *
+from ..cmd.stdin.common import *
 from .common import *
 #!end-ignore
 
@@ -15,7 +17,7 @@ async def backup(interaction: discord.Interaction,path:str = "worlds"):
     world_name = path
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup create {world_name}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["backup create"]:
         await not_enough_permission(interaction,backup_logger) 
@@ -26,7 +28,7 @@ async def backup(interaction: discord.Interaction,path:str = "worlds"):
         await interaction.response.send_message(embed=embed)
         return
     # 操作可能パスかを判定
-    if not is_path_within_scope(from_backup):
+    if not is_path_within_scope(from_backup) or await is_important_bot_file(from_backup):
         backup_logger.error("path not allowed : " + from_backup)
         embed.add_field(name="",value = RESPONSE_MSG["backup"]["create"]["path_not_allowed"] + ":" + from_backup,inline=False)
         await interaction.response.send_message(embed=embed)

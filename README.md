@@ -31,25 +31,27 @@ discordを用いて特定のサーバーを管理できます。
 |start|サーバーを開始します。但し、server.py起動時には自動的に開始されます。|1|
 |stop|サーバーを停止します。但しserver.pyは実行状態から遷移しないため他のコマンドを使用できます。|1|
 |exit|server.pyを終了します(このコマンドを利用すると次回サーバー管理者がserver.pyを起動するまでbotを利用できません)。サーバー停止中にのみ使用できます。|2|
-|backup create|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
-|backup apply|バックアップを指定したディレクトリに展開します。|3|
-|cmd serverin|サーバーに対してコマンドを送信します。|1|
-|cmd stdin ls|ディレクトリ内のファイル一覧を返します。rootディレクトリはサーバー直下になります。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mk|ファイルを作成または上書きします。file引数を渡さない場合空のファイルを作成します。|3(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin rm|指定したファイルが存在する場合削除します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin rmdir|指定したディレクトリが存在する場合削除します。このコマンドは指定したディレクトリ内に対して再帰的に適用されます。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mkdir|指定したディレクトリを作成します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin send-discord|指定したディレクトリをdiscordに送信します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin wget|指定したパスのファイルをurlから得られるデータで上書きします。|3(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mv|指定したpathをdestに移動させます。|3(一部特定ファイルの操作はdiscord管理者のみ)|
-|logs|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを表示できる限り表示します。|1|
-|lang|サーバーの言語を変更します。|2|
-|permission change|ユーザーのbot利用権限を操作します。|4|
-|permission view|プレイヤーの権限を表示します。|0|
-|tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください|1|
-|update|githubにアクセスして最新のserver.pyをダウンロードします。|3|
-|announce|通常のテキストまたは[mimd](https://github.com/sleeping-mikan/server-bot-v2/blob/main/py-builder/mimd.md)形式のテキストまたはファイルを指定してbotとしてdiscordにメッセージを送信します。テキストの場合改行には\nを利用してください|4|
-|<非推奨>replace|server.pyを与えられた引数に置換します。|4|
+|backup create <path(optional)>|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
+|backup apply <path(optional)>|バックアップを指定したディレクトリに展開します。引数が与えられない場合直下に展開します。|3|
+|cmd serverin <server command>|サーバーに対してコマンドを送信します。|1|
+|cmd stdin ls <path(optional)>|ディレクトリ内のファイル一覧を返します。rootディレクトリはサーバー直下になります。|2(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin mk <path> <file(optional)>|ファイルを作成または上書きします。file引数を渡さない場合空のファイルを作成します。|3(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin rm <path>|指定したファイルが存在する場合削除します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin rmdir <path>|指定したディレクトリが存在する場合削除します。このコマンドは指定したディレクトリ内に対して再帰的に適用されます。|2(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin mkdir <path>|指定したディレクトリを作成します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin send-discord <path>|指定したディレクトリをdiscordに送信します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin wget <url> <path(optional)>|指定したパスのファイルをurlから得られるデータで上書きします。path引数を渡さない場合直下にファイルを生成します。|3(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin mv <src> <dest>|指定したpathをdestに移動させます。|3(一部特定ファイルの操作はdiscord管理者のみ)|
+|logs <file(optional)>|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを表示できる限り表示します。|1|
+|lang <"ja"/"en">|サーバーの言語を変更します。|2|
+|permission change <level> <user>|ユーザーのbot利用権限を操作します。|4|
+|permission view <user> <detail True/False>|プレイヤーの権限を表示します。|0|
+|tokengen|webアクセスのためのtokenを生成します。webログイン画面で入力してください。|1|
+|update <force True/False>|githubにアクセスして最新のserver.pyをダウンロードします。force引数を与えると強制的にダウンロードします。|3|
+|announce <text/file>|通常のテキストまたは[mimd](https://github.com/sleeping-mikan/server-bot-v2/blob/main/py-builder/mimd.md)形式のテキストまたはファイルを指定してbotとしてdiscordにメッセージを送信します。テキストの場合改行には\nを利用してください|4|
+|terminal set <ch(optional)>|discordのチャンネルIDを与えるとサーバーのログをdiscordに送信します。また標準入力を受け取ります|1|
+|terminal del|ターミナルの紐づけを解除します|1|
+|<非推奨>replace <file>|server.pyを与えられた引数に置換します。|4|
 
 これらコマンドの設定等は後述の使用方法を参照してください。
 

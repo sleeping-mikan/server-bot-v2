@@ -82,7 +82,8 @@ COMMAND_PERMISSION = {
     "permission change":4,
     "lang":2,
     "tokengen":1,
-    "terminal":1,
+    "terminal set":1,
+    "terminal del":1,
     "update":3,
     "announce embed":4,
 }
