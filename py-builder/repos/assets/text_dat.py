@@ -215,10 +215,11 @@ async def get_text_dat():
                 "success":"ファイルコピーが完了しました！",
                 "create":{
                     "data_not_found":"データが見つかりません",
-                    "path_not_allowed":"不正なパス",
+                    "path_not_allowed":"許可されないパス",
                 },
                 "apply":{
                     "path_not_found":"指定されたパスが見つかりません",
+                    "path_not_allowed":"許可されないパス",
                 },
             },
             "replace":{
@@ -358,6 +359,7 @@ async def get_text_dat():
                 },
                 "apply":{
                     "path_not_found":"Path is not exists",
+                    "path_not_allowed":"Path not allowed",
                 },
             },
             "replace":{

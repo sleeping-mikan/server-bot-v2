@@ -1171,10 +1171,11 @@ async def get_text_dat():
                 "success":"ファイルコピーが完了しました！",
                 "create":{
                     "data_not_found":"データが見つかりません",
-                    "path_not_allowed":"不正なパス",
+                    "path_not_allowed":"許可されないパス",
                 },
                 "apply":{
                     "path_not_found":"指定されたパスが見つかりません",
+                    "path_not_allowed":"許可されないパス",
                 },
             },
             "replace":{
@@ -1314,6 +1315,7 @@ async def get_text_dat():
                 },
                 "apply":{
                     "path_not_found":"Path is not exists",
+                    "path_not_allowed":"Path not allowed",
                 },
             },
             "replace":{
@@ -2571,7 +2573,7 @@ async def backup(interaction: discord.Interaction,path:str = "worlds"):
     world_name = path
     await print_user(backup_logger,interaction.user)
     global exist_files, copyed_files
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup {world_name}")
+    embed = ModifiedEmbeds.DefaultEmbed(title= f"/backup create {world_name}")
     #管理者権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["backup create"]:
         await not_enough_permission(interaction,backup_logger) 
@@ -2582,7 +2584,7 @@ async def backup(interaction: discord.Interaction,path:str = "worlds"):
         await interaction.response.send_message(embed=embed)
         return
     # 操作可能パスかを判定
-    if not is_path_within_scope(from_backup):
+    if not is_path_within_scope(from_backup) or await is_important_bot_file(from_backup):
         backup_logger.error("path not allowed : " + from_backup)
         embed.add_field(name="",value = RESPONSE_MSG["backup"]["create"]["path_not_allowed"] + ":" + from_backup,inline=False)
         await interaction.response.send_message(embed=embed)
@@ -2636,6 +2638,12 @@ async def backup_apply(interaction:discord.Interaction, witch:str, path:str = ""
     if not os.path.exists(os.path.join(server_path,path)):
         backup_apply_logger.error('data not found : ' + os.path.join(server_path,path))
         embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_found"] + ":" + os.path.join(server_path,path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
+    # 操作可能パスかを判定
+    if not is_path_within_scope(os.path.join(server_path,path)) or await is_important_bot_file(os.path.join(server_path,path)):
+        backup_logger.error("path not allowed : " + os.path.join(server_path,path))
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_allowed"] + ":" + os.path.join(server_path,path),inline=False)
         await interaction.response.send_message(embed=embed)
         return
     backup_apply_logger.info('backup apply started' + " -> " + witch + " to " + os.path.join(server_path,path,witch))
