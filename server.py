@@ -218,8 +218,8 @@ def make_config():
                                 "branch":"main",\
                             },\
                             "server_path":now_path + "/",\
-                            
                             "server_name":"bedrock_server.exe",\
+                            "server_args":"",\
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
@@ -266,6 +266,8 @@ def make_config():
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
                 cfg["server_path"] = now_path + "/"
+            if "server_args" not in cfg:
+                cfg["server_args"] = ""
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
@@ -685,6 +687,7 @@ minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Col
 try:
     allow_cmd = set(config["discord_commands"]["cmd"]["serverin"]["allow_mccmd"])
     server_name = config["server_name"]
+    server_args = config["server_args"].split(" ")
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
@@ -1740,7 +1743,7 @@ async def on_ready():
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
         if process is  None:
             #server を実行する
-            process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
             threading.Thread(target=server_logger,args=(process,deque())).start()
             ready_logger.info('server starting')
         else:
@@ -1781,7 +1784,7 @@ def core_start() -> str:
     if is_running_server(start_logger):
         return RESPONSE_MSG["other"]["is_running"]
     start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
     threading.Thread(target=server_logger,args=(process,deque())).start()
     return RESPONSE_MSG["start"]["success"]
 
@@ -2940,7 +2943,7 @@ async def change_terminal_ch(channel: int | bool, logger: logging.Logger):
 terminal_set_logger = terminal_logger.getChild("set")
 
 #/terminal
-@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"]["del"])
+@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"]["set"])
 async def terminal_set(interaction: discord.Interaction, channel:discord.TextChannel = None):
     global where_terminal
     await print_user(terminal_set_logger,interaction.user)
@@ -2962,7 +2965,7 @@ async def terminal_set(interaction: discord.Interaction, channel:discord.TextCha
 terminal_delete_logger = terminal_logger.getChild("delete")
 
 #/terminal
-@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"]["set"])
+@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"]["del"])
 async def terminal_set(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_delete_logger,interaction.user)
