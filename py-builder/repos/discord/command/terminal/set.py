@@ -14,11 +14,11 @@ terminal_set_logger = terminal_logger.getChild("set")
 @command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"])
 async def terminal_set(interaction: discord.Interaction, channel:discord.TextChannel = None):
     global where_terminal
-    await print_user(terminal_logger,interaction.user)
+    await print_user(terminal_set_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal set {channel}")
     # 権限レベルが足りていないなら
     if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
-        await not_enough_permission(interaction,terminal_logger)
+        await not_enough_permission(interaction,terminal_set_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
     await change_terminal_ch(channel.id)
