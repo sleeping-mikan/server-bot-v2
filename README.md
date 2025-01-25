@@ -110,6 +110,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "auto_update": true,
     "server_path": "path/to/serverdir/",
     "server_name": "bedrock_server.exe",
+    "server_args": "",
     "log": {
         "server": true,
         "all": false
@@ -150,8 +151,9 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |---|---|
 |allow|各コマンドの実行を許可するかどうか。(現在は/ip,/replaceにのみ実装されています)|
 |auto_update|サーバー本体を自動更新するか否か|
-|server_path|minecraft server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
-|server_name|minecraft server本体の名前 java版の場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
+|server_path|server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
+|server_name|server本体の名前 java版minecraftの場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
+|server_args|server起動時のコンソール引数。例えばTerrariaを起動する場合`-world /path/to/world.wld`を入力してください||
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
