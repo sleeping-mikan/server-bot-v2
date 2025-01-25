@@ -11,7 +11,7 @@ from .common import *
 terminal_set_logger = terminal_logger.getChild("set")
 
 #/terminal
-@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"]["del"])
+@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"]["set"])
 async def terminal_set(interaction: discord.Interaction, channel:discord.TextChannel = None):
     global where_terminal
     await print_user(terminal_set_logger,interaction.user)

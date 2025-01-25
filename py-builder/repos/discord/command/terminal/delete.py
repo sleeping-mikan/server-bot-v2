@@ -11,7 +11,7 @@ from .common import *
 terminal_delete_logger = terminal_logger.getChild("delete")
 
 #/terminal
-@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"]["set"])
+@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"]["del"])
 async def terminal_set(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_delete_logger,interaction.user)
