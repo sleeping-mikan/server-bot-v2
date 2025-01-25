@@ -21,6 +21,6 @@ async def terminal_set(interaction: discord.Interaction):
         await not_enough_permission(interaction,terminal_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
-    change_terminal_ch(False)
+    await change_terminal_ch(False)
     embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
     await interaction.response.send_message(embed=embed)
