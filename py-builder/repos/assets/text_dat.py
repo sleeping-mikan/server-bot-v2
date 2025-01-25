@@ -29,7 +29,8 @@ async def get_text_dat():
             "/permission view  ":"/permission view <user> で、userのbot操作権利を表示します。",
             "/lang             ":"/lang <lang> で、botの言語を変更します。",
             "/tokengen         ":"/tokengen で、webでログインするためのトークンを生成します。",
-            "/terminal         ":"/terminal で、サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "/terminal set     ":"/terminal set <ch> で、サーバーのコンソールを実行したチャンネルに紐づけます。chが省略された場合は現在のチャンネルに紐づけます。",
+            "/terminal del     ":"/terminal del で、サーバーのコンソールを実行したチャンネルを解除します。",
             "/announce         ":"/announce embed <file | text> で、サーバーにmimd形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
         },
         "en":{
@@ -47,7 +48,8 @@ async def get_text_dat():
             "/permission view  ":"/permission view <user> displays the user's bot operation rights.",
             "/lang             ":"/lang <lang> changes the bot's language.",
             "/tokengen         ":"/tokengen generates a token for login to the web.",
-            "/terminal         ":"/terminal connects the server's console to a channel.",
+            "/terminal set     ":"/terminal set <ch> connects the server's console to a channel. If ch is omitted, the current channel is connected.",
+            "/terminal del     ":"/terminal del disconnects the server's console from a channel.",
             "/announce         ":"/announce embed <file | text> sends an embed message to the server. Set the title after |title| and enter the content after \\n.",
         },
     }
@@ -86,7 +88,10 @@ async def get_text_dat():
             },
             "lang":"botの言語を変更します。引数には言語コードを指定します。",
             "tokengen":"webにログインするためのトークンを生成します。",
-            "terminal":"サーバーのコンソールを実行したチャンネルに紐づけます。",
+            "terminal":{
+                "set":"サーバーのコンソールを実行したチャンネルに紐づけます。",
+                "del":"コンソール紐づけを実行したチャンネルから解除します。",
+            },
             "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
             "announce":{
                 "embed":"discordにテキストをembedで送信します。引数にはmd形式のテキストファイルを指定するか、文字列を指定します。",
@@ -124,7 +129,10 @@ async def get_text_dat():
             },
             "lang":"Change the bot's language. With an argument, specify the language code.",
             "tokengen":"Generate a token for login to the web.",
-            "terminal":"Connect the server's console to a channel.",
+            "terminal":{
+                "set":"Connect the server's console to a channel.",
+                "del":"Disconnect the server's console from a channel.",
+            },
             "update":"Update the bot. This is a successor command of /replace.",
             "announce":{
                 "embed":"Send text to discord with embed. Specify a md-formatted text file or a string as an argument.",
@@ -249,7 +257,7 @@ async def get_text_dat():
                 "success":"生成したトークン(30日間有効) : {}",
             },
             "terminal":{
-                "success":"サーバーのコンソールを{}に紐づけました",
+                "success":"サーバーのコンソールを{}に設定しました。",
             },
             "update":{
                 "same":"存在するファイルは既に最新です",

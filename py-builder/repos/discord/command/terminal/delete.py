@@ -11,7 +11,7 @@ from .common import *
 terminal_delete_logger = terminal_logger.getChild("delete")
 
 #/terminal
-@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"])
+@command_group_terminal.command(name="del",description=COMMAND_DESCRIPTION[lang]["terminal"]["set"])
 async def terminal_set(interaction: discord.Interaction):
     global where_terminal
     await print_user(terminal_delete_logger,interaction.user)
@@ -21,6 +21,6 @@ async def terminal_set(interaction: discord.Interaction):
         await not_enough_permission(interaction,terminal_delete_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
-    await change_terminal_ch(False)
+    await change_terminal_ch(False, terminal_delete_logger)
     embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
     await interaction.response.send_message(embed=embed)

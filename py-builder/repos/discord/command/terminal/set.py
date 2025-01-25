@@ -11,7 +11,7 @@ from .common import *
 terminal_set_logger = terminal_logger.getChild("set")
 
 #/terminal
-@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"])
+@command_group_terminal.command(name="set",description=COMMAND_DESCRIPTION[lang]["terminal"]["del"])
 async def terminal_set(interaction: discord.Interaction, channel:discord.TextChannel = None):
     global where_terminal
     await print_user(terminal_set_logger,interaction.user)
@@ -21,6 +21,6 @@ async def terminal_set(interaction: discord.Interaction, channel:discord.TextCha
         await not_enough_permission(interaction,terminal_set_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
-    await change_terminal_ch(channel.id)
+    await change_terminal_ch(channel.id if channel else interaction.channel.id, terminal_set_logger)
     embed.add_field(name="",value=RESPONSE_MSG["terminal"]["success"].format(where_terminal),inline=False)
     await interaction.response.send_message(embed=embed)

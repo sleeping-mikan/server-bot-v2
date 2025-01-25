@@ -49,8 +49,7 @@ async def reload_config():
 async def rewrite_config(config: dict) -> bool:
     try:
         with open(config_file_place, 'w') as f:
-            import json
-            json.dump(config, f,indent=4)
+            json.dump(config, f,indent=4, ensure_ascii=False)
         return True
     except:
         return False
