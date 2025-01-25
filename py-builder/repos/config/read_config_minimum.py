@@ -34,8 +34,8 @@ def make_config():
                                 "branch":"main",\
                             },\
                             "server_path":now_path + "/",\
-                            
                             "server_name":"bedrock_server.exe",\
+                            "server_args":"",\
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
@@ -82,6 +82,8 @@ def make_config():
                 cfg["allow"]["ip"] = True
             if "server_path" not in cfg:
                 cfg["server_path"] = now_path + "/"
+            if "server_args" not in cfg:
+                cfg["server_args"] = ""
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:

@@ -9,6 +9,7 @@ from ..logger.logger_create import *
 try:
     allow_cmd = set(config["discord_commands"]["cmd"]["serverin"]["allow_mccmd"])
     server_name = config["server_name"]
+    server_args = config["server_args"].split(" ")
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
