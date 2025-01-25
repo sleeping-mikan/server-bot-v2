@@ -184,13 +184,14 @@ server.pyはサーバ本体と同じ改装に配置することを推奨しま�
 
 ## 動作確認済み環境(必要環境)
 
-|確認バージョン|日時|確認時のOS|python|
-|----|----|----|----|
-|Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|
-|Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|
-|Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|
-|Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|
-|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
+|確認バージョン|日時|確認時のOS|python|備考|
+|----|----|----|----|----|
+|Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
+|Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
+|Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|下記に示すbatを利用|
+|Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
+|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1||
+|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定|
 
  - 想定環境
    - os : ubuntu(wsl2) / windows11 / windows10
