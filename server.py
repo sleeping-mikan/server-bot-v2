@@ -2909,7 +2909,8 @@ async def tokengen(interaction: discord.Interaction):
 
 command_group_terminal = app_commands.Group(name="terminal",description="terminal group")
 
-async def change_terminal_ch(channel: int | False):    
+async def change_terminal_ch(channel: int | bool):    
+    global where_terminal
     #terminalを無効化
     where_terminal = channel
     config["discord_commands"]["terminal"]["discord"] = where_terminal
