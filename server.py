@@ -122,7 +122,8 @@ COMMAND_PERMISSION = {
     "permission change":4,
     "lang":2,
     "tokengen":1,
-    "terminal":1,
+    "terminal set":1,
+    "terminal del":1,
     "update":3,
     "announce embed":4,
 }
@@ -2937,7 +2938,7 @@ async def terminal_set(interaction: discord.Interaction, channel:discord.TextCha
     await print_user(terminal_set_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal set {channel}")
     # 権限レベルが足りていないなら
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal set"]:
         await not_enough_permission(interaction,terminal_set_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
@@ -2959,7 +2960,7 @@ async def terminal_set(interaction: discord.Interaction):
     await print_user(terminal_delete_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal del")
     # 権限レベルが足りていないなら
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal del"]:
         await not_enough_permission(interaction,terminal_delete_logger)
         return
     #発言したチャンネルをwhere_terminalに登録

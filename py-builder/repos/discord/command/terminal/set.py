@@ -17,7 +17,7 @@ async def terminal_set(interaction: discord.Interaction, channel:discord.TextCha
     await print_user(terminal_set_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/terminal set {channel}")
     # 権限レベルが足りていないなら
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal"]:
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["terminal set"]:
         await not_enough_permission(interaction,terminal_set_logger)
         return
     #発言したチャンネルをwhere_terminalに登録
