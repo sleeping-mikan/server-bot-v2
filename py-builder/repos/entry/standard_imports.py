@@ -1,13 +1,6 @@
 """
 各種必要なパッケージを呼び出す / libraryをインストール
 """
-
-
-import discord 
-from discord import app_commands 
-from discord.ext import tasks
-import waitress.server
-
 from enum import Enum
 from datetime import datetime, timedelta
 from collections import deque
@@ -22,10 +15,20 @@ import aiohttp
 from copy import deepcopy
 import importlib
 import uuid
+import io
+import zipfile
+import base64
+import subprocess
+import sys
+import json
+
+import discord 
+from discord import app_commands 
+from discord.ext import tasks
+import waitress.server
+
+
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
 from ansi2html import Ansi2HTMLConverter
 import waitress
-import io
-import zipfile
-import base64

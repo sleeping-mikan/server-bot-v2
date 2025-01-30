@@ -1,10 +1,46 @@
 
 #--------------------
 
-
+"""
+各種必要なパッケージを呼び出す / libraryをインストール
+"""
+from enum import Enum
+from datetime import datetime, timedelta
+from collections import deque
+import threading
+import asyncio
+import platform
+import os
+from shutil import copystat,Error,copy2,copytree,rmtree,move as shutil_move
+import logging
+import requests
+import aiohttp
+from copy import deepcopy
+import importlib
+import uuid
+import io
+import zipfile
+import base64
 import subprocess
 import sys
 import json
+
+import discord 
+from discord import app_commands 
+from discord.ext import tasks
+import waitress.server
+
+
+
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
+from ansi2html import Ansi2HTMLConverter
+import waitress
+
+#--------------------
+
+
+#--------------------
+
 
 args = sys.argv[1:]
 do_init = False
@@ -17,6 +53,13 @@ for i in args:
         # pass
     if arg[0] == "-reinstall":
         do_reinstall = True
+#--------------------
+
+
+#--------------------
+
+
+
 
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
@@ -24,7 +67,8 @@ packages = {
     "requests": "2.32.2",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
-    "waitress": "3.0.0"
+    "waitress": "3.0.0",
+    "aiohttp": "3.9.5"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
@@ -72,44 +116,20 @@ install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_p
 if install_packages:
     print(f"Installing the following packages: {', '.join(install_packages)}")
     subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
-
-
 #--------------------
 
 
 #--------------------
 
-"""
-各種必要なパッケージを呼び出す / libraryをインストール
-"""
-
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
+from ansi2html import Ansi2HTMLConverter
+import waitress
 
 import discord 
 from discord import app_commands 
 from discord.ext import tasks
 import waitress.server
-
-from enum import Enum
-from datetime import datetime, timedelta
-from collections import deque
-import threading
-import asyncio
-import platform
-import os
-from shutil import copystat,Error,copy2,copytree,rmtree,move as shutil_move
-import logging
 import requests
-import aiohttp
-from copy import deepcopy
-import importlib
-import uuid
-
-from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
-from ansi2html import Ansi2HTMLConverter
-import waitress
-import io
-import zipfile
-import base64
 #--------------------
 
 

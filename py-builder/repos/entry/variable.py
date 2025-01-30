@@ -2,7 +2,7 @@
 処理に必要な定数を宣言する
 """
 #!ignore
-from .imports import *
+from .standard_imports import *
 #!end-ignore
 
 __version__ = "2.2.0"

@@ -1,19 +1,9 @@
+#!ignore
+from .standard_imports import *
+from .read_args import *
+#!end-ignore
 
-import subprocess
-import sys
-import json
 
-args = sys.argv[1:]
-do_init = False
-do_reinstall = False
-#引数を処理する。
-for i in args:
-    arg = i.split("=")
-    if arg[0] == "-init":
-        do_init = True
-        # pass
-    if arg[0] == "-reinstall":
-        do_reinstall = True
 
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
@@ -21,7 +11,8 @@ packages = {
     "requests": "2.32.2",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
-    "waitress": "3.0.0"
+    "waitress": "3.0.0",
+    "aiohttp": "3.9.5"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
@@ -69,4 +60,3 @@ install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_p
 if install_packages:
     print(f"Installing the following packages: {', '.join(install_packages)}")
     subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
-

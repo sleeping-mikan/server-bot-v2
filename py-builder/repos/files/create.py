@@ -1,7 +1,8 @@
 #!ignore
-from ..auto_pip import *
-from ..imports import *
-from ..constant import *
+from ..entry.read_args import *
+from ..entry.auto_pip import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..logger.logger_create import *
 from ..config.read_config_all import *
 #!end-ignore
