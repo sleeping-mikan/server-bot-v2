@@ -179,15 +179,60 @@ server.pyはサーバ本体と同じ階層に配置することを推奨しま�
 
 ## 動作確認済み環境(必要環境)
 <details>
-  <summary>クリックして確認済み環境例を表示</summary>
-|確認バージョン|日時|確認時のOS|python|備考|
-|----|----|----|----|----|
-|Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
-|Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
-|Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|下記に示すbatを利用|
-|Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
-|Bedrock dedicated server 1.21|2025/01/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
-|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定|
+    <summary>クリックして確認済み環境例を表示</summary>
+    <table>
+        <thread>
+            <th>確認バージョン</th>
+            <th>日時</th>
+            <th>確認時のOS</th>
+            <th>python</th>
+            <th>備考</th>
+        </thread>
+        <tbody>
+            <tr>
+                <td>Minecraft Java vanilla 1.9.4</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java vanilla 1.19</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java vanilla 1.19.4</td>
+                <td>2024/07/31</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java fabric 1.20.1</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Bedrock dedicated server 1.21</td>
+                <td>2025/01/30</td>
+                <td>Windows 11 & Ubuntu(wsl2)</td>
+                <td>python 3.12.1</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>TShock-5.2.1-for-Terraria-1.4.4.9</td>
+                <td>2025/01/25</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>.configのserver_argsに`-world /path/to/world.wld`を指定</td>
+            </tr>
+        </tbody>
+    </table>
 </details>
 
  - 想定環境
