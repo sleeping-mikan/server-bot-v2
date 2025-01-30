@@ -64,7 +64,7 @@ discordを用いて特定のサーバーを管理できます。
 
 言語：python3.12.x
 
-ライブラリ：requirements.txtを参照(ただし、初回起動時に自動でインストールするため、pipを行う必要はありません)
+ライブラリ：requirements.txtを参照 (PowerShellや管理者権限のあるCmdの場合は、server.pyが自動でインストールします。)
 
 ## 使用方法
 

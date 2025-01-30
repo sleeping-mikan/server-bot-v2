@@ -59,4 +59,4 @@ install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_p
 # 必要なパッケージのみインストール
 if install_packages:
     print(f"Installing the following packages: {', '.join(install_packages)}")
-    subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "-U", *install_packages], check=True)
