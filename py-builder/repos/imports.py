@@ -1,6 +1,8 @@
 """
-各種必要なパッケージを呼び出す
+各種必要なパッケージを呼び出す / libraryをインストール
 """
+
+
 import discord 
 from discord import app_commands 
 from discord.ext import tasks
@@ -9,17 +11,14 @@ import waitress.server
 from enum import Enum
 from datetime import datetime, timedelta
 from collections import deque
-import subprocess
 import threading
 import asyncio
 import platform
 import os
 from shutil import copystat,Error,copy2,copytree,rmtree,move as shutil_move
-import sys
 import logging
 import requests
 import aiohttp
-import json
 from copy import deepcopy
 import importlib
 import uuid

@@ -1,10 +1,89 @@
 
+#--------------------
+
+
+import subprocess
+import sys
+import json
+
+args = sys.argv[1:]
+do_init = False
+do_reinstall = False
+#引数を処理する。
+for i in args:
+    arg = i.split("=")
+    if arg[0] == "-init":
+        do_init = True
+        # pass
+    if arg[0] == "-reinstall":
+        do_reinstall = True
+
+# インストールしたいパッケージのリスト（パッケージ名: バージョン）
+packages = {
+    "discord.py": "2.3.2",
+    "requests": "2.32.2",
+    "Flask": "3.0.3",
+    "ansi2html": "1.9.2",
+    "waitress": "3.0.0"
+}
+all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
+
+def get_mikanassets_dat_lib():
+    now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
+    try:
+        file = open(now_path + "/mikanassets/.dat", "r")
+        jfile = json.load(file)
+        file.close()
+        return jfile["installed_packages"]
+    except Exception as e:
+        return []
+
+already_install_packages = get_mikanassets_dat_lib()
+if do_reinstall:
+    already_install_packages = []
+for item in already_install_packages: 
+    pkg, ver = item.split("==")
+    # バージョンが一致していれば、確認対象から削除
+    if ver == packages[pkg]:
+        del packages[pkg]
+
+
+# パッケージがすでにインストールされているかを確認する関数
+def is_package_installed(package, version):
+    print(f"Checking if {package} is installed with version {version}")
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "show", package],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.startswith("Version:"):
+                    installed_version = line.split(":", 1)[1].strip()
+                    return installed_version == version
+        return False
+    except subprocess.CalledProcessError:
+        return False
+
+# インストールが必要なパッケージをリストアップ
+install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_package_installed(pkg, ver)]
+
+# 必要なパッケージのみインストール
+if install_packages:
+    print(f"Installing the following packages: {', '.join(install_packages)}")
+    subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
+
+
+#--------------------
+
 
 #--------------------
 
 """
-各種必要なパッケージを呼び出す
+各種必要なパッケージを呼び出す / libraryをインストール
 """
+
+
 import discord 
 from discord import app_commands 
 from discord.ext import tasks
@@ -13,17 +92,14 @@ import waitress.server
 from enum import Enum
 from datetime import datetime, timedelta
 from collections import deque
-import subprocess
 import threading
 import asyncio
 import platform
 import os
 from shutil import copystat,Error,copy2,copytree,rmtree,move as shutil_move
-import sys
 import logging
 import requests
 import aiohttp
-import json
 from copy import deepcopy
 import importlib
 import uuid
@@ -735,15 +811,8 @@ def get_self_commit_id():
     commit_id = response.json()["sha"]
     return commit_id
 
-args = sys.argv[1:]
-do_init = False
 
-#引数を処理する。
-for i in args:
-    arg = i.split("=")
-    if arg[0] == "-init":
-        do_init = True
-        # pass
+
 
 is_first_run = False
 
@@ -771,6 +840,16 @@ def save_mikanassets_dat():
         # 存在しなければデータファイルを作成する(現状 commit id 保管用)
         file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
         file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
+        file.close()
+    # 全てが記憶されているわけでないなら
+    if packages:
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "r")
+        jfile = json.load(file)
+        file.close()
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+        # 必要な全てのパッケージが入っていることを記憶
+        jfile["installed_packages"] = all_packages
+        file.write(json.dumps(jfile, indent=4))
         file.close()
 save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")

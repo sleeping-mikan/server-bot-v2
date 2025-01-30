@@ -1,4 +1,4 @@
-
+#!open ./repos/auto_pip.py
 #!open ./repos/imports.py
 
 # 基本的な変数の読み込み
