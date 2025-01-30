@@ -187,7 +187,7 @@ server.pyはサーバ本体と同じ階層に配置することを推奨しま�
 |Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|下記に示すbatを利用|
 |Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
 |Bedrock dedicated server 1.21|2025/01/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
-|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定||
+|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定|
 </details>
 
  - 想定環境
