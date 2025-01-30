@@ -1,11 +1,5 @@
 # server-bot
 
-## 最初に
-
-以前のバージョンを利用中で新たなバージョンに更新する方は最下部に存在する"更新履歴"の"最後の破壊的変更"を確認してください。また、更新時には/replaceを用いて最新のserver.pyファイルに置き換えてください。
-
-確認や/replaceでの更新が面倒な場合はこれまでの.configや.token、update.pyを削除してから新たなバージョンを起動してください。
-
 ## 対応言語
 
 This bot supports English and Japanese.(このbotは英語と日本語をサポートしています。)
@@ -22,7 +16,7 @@ discordを用いて特定のサーバーを管理できます。
 
 ## コマンド一覧(できること)
 
-プログラムに含まれるbotコマンドは以下の通りです。
+プログラムに含まれるdiscord botコマンドは以下の通りです。
 
 |コマンド|実行結果|必要権限レベル|
 |----|----|----|
@@ -64,15 +58,16 @@ discordを用いて特定のサーバーを管理できます。
 
 言語：python3.12.x
 
-ライブラリ：requirements.txtを参照 (PowerShellや管理者権限のあるCmdの場合は、server.pyが自動でインストールします。)
+ライブラリ：requirements.txtを参照 (PowerShellや管理者権限のあるCmd/ubuntu+bashの場合は、server.pyが自動でインストール出来ることを確認済み。)
 
 ## 使用方法
 
-(読みたくない方へ：サーバーソフトウェアのrootディレクトリにserver.pyを配置して実行して進めれば何とかなるかも・・・？)
-
 ### 配置
 
-server.pyを任意の場所に配置します。(推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。)
+server.pyを任意の場所に配置します。
+
+> [!note]
+> 推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。
 
 > [!note]
 > ただしserver.exeやserver.jar本体が存在する階層はroot(windowsの場合c:/直下など)でない必要があります。(何かのディレクトリの中に入れてください)これは初期状態では、`../backup/`内にbackupが生成されるためです。
@@ -168,17 +163,10 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
 |discord_commands.stop.submit|/stopコマンドが入力された際にサーバーの標準入力へ送信するコマンドを設定します。|
 |discord_commands.backup.path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
-|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。||
+|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。|
 |discord_commands.lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
 
-server.pyはサーバ本体と同じ改装に配置することを推奨します。
-
-
-## 注意
-
-・生成されるupdate.pyの名前は変更しないでください。`/replace`が動作しなくなるはずです。
-
-・.configに存在するweb.secret_keyには予測不可能で十分に長い文字列を設定してください。
+server.pyはサーバ本体と同じ階層に配置することを推奨します。
 
 
 ## web上での操作
@@ -190,15 +178,17 @@ server.pyはサーバ本体と同じ改装に配置することを推奨しま�
 現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
 ## 動作確認済み環境(必要環境)
-
+<details>
+  <summary>クリックして確認済み環境例を表示</summary>
 |確認バージョン|日時|確認時のOS|python|備考|
 |----|----|----|----|----|
 |Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
 |Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
 |Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|下記に示すbatを利用|
 |Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|下記に示すbatを利用|
-|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1||
-|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定|
+|Bedrock dedicated server 1.21|2025/01/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
+|TShock-5.2.1-for-Terraria-1.4.4.9|2025/01/25|Windows 11|python 3.12.1|.configのserver_argsに`-world /path/to/world.wld`を指定||
+<details>
 
  - 想定環境
    - os : ubuntu(wsl2) / windows11 / windows10
@@ -229,16 +219,3 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 以下の画像は、webアクセス時の画面です。(PC/スマホ)
 
 ![PCサイズ](https://github.com/user-attachments/assets/a1b09ad4-9fde-4df9-abd8-cb6628589a67)![スマホサイズ](https://github.com/user-attachments/assets/6b59139f-363d-4a92-b7c8-398ed9d03d78)
-
-## 免責事項
-
-本プログラムのインストール/実行/その他本プログラムが影響する挙動全てにおいて、生じた損害や不具合には作者は一切の責任を負わないものとします。
-
-
-### 最後の破壊的変更
-
-破壊的変更とは既存のupdate.py等を変更する必要がある変更を指します。
-
-2024/06/10 更新前にupdate.pyの削除が必要です。6/10以前のserver.pyを利用している場合はupdate.pyを削除してください。
-
-今後の更新ではupdate.pyを自動更新するように変更しています。
