@@ -45,6 +45,7 @@ discordを用いて特定のサーバーを管理できます。
 |announce <text/file>|通常のテキストまたは[mimd](https://github.com/sleeping-mikan/server-bot-v2/blob/main/py-builder/mimd.md)形式のテキストまたはファイルを指定してbotとしてdiscordにメッセージを送信します。テキストの場合改行には\nを利用してください|4|
 |terminal set <ch(optional)>|discordのチャンネルIDを与えるとサーバーのログをdiscordに送信します。また標準入力を受け取ります|1|
 |terminal del|ターミナルの紐づけを解除します|1|
+|status|現在のサーバーの状態を表示します|0|
 |<非推奨>replace <file>|server.pyを与えられた引数に置換します。|4|
 
 これらコマンドの設定等は後述の使用方法を参照してください。
