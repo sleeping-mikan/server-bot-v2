@@ -224,6 +224,7 @@ COMMAND_PERMISSION = {
     "terminal del":1,
     "update":3,
     "announce embed":4,
+    "status":0,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
@@ -3228,6 +3229,10 @@ async def status(interaction: discord.Interaction):
     await print_user(status_logger,interaction.user)
     await interaction.response.defer()
     embed = ModifiedEmbeds.DefaultEmbed(title= f"/status")
+    # 権限の確認
+    if await user_permission(interaction.user) < COMMAND_PERMISSION["status"]:
+        await not_enough_permission(interaction,status_logger)
+        return
     
     # プログラムの利用メモリを取得する
     memorys = await get_process_memory(process)

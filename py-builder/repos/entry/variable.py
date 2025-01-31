@@ -89,6 +89,7 @@ COMMAND_PERMISSION = {
     "terminal del":1,
     "update":3,
     "announce embed":4,
+    "status":0,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
