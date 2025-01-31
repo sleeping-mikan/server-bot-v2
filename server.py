@@ -3161,28 +3161,23 @@ async def get_thread_cpu_usage(pid : int, interval=1.0, is_self = False):
     if is_self:
     # スレッド名の辞書を作成
         items = {thread.ident: thread.name for thread in threading.enumerate()}
-
         # 一時辞書を用意（ループ中の辞書変更を防ぐ）
         updated_thread_cpu_times = {}
-
         # IDをスレッド名に変換
         for thread_id, cpu_time in thread_cpu_times.items():
             if thread_id in items:
                 updated_thread_cpu_times[items[thread_id]] = cpu_time
             else:
                 updated_thread_cpu_times[thread_id] = cpu_time
-
         # 名前のないスレッドを "NoName Thread x" にする
         no_name_thread_count = 1
         final_thread_cpu_times = {}
-
         for key, cpu_time in updated_thread_cpu_times.items():
             if isinstance(key, int):  # スレッドIDが残っている場合
                 final_thread_cpu_times[f"NoName {no_name_thread_count}"] = cpu_time
                 no_name_thread_count += 1
             else:
                 final_thread_cpu_times[key] = cpu_time
-
         # 更新後の辞書を適用
         thread_cpu_times = final_thread_cpu_times
     # 全体のCPU時間を取得
@@ -3262,7 +3257,7 @@ async def status(interaction: discord.Interaction):
     status_logger.info(f"get cpu usage -> {' '.join(send_str)}")
 
     # 基本情報を記載
-    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system() + " " + platform.release() + " " + platform.version(), sys.version, get_version()), inline=True)
+    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system() + " " + platform.release(), sys.version, get_version()), inline=True)
 
     await interaction.edit_original_response(embed=embed)
     status_logger.info('status command end')
