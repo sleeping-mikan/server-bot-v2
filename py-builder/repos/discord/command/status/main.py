@@ -127,7 +127,7 @@ async def status(interaction: discord.Interaction):
     status_logger.info(f"get cpu usage -> {' '.join(send_str)}")
 
     # 基本情報を記載
-    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system(), sys.version, __version__), inline=True)
+    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system() + " " + platform.release() + " " + platform.version(), sys.version, __version__), inline=True)
 
     await interaction.edit_original_response(embed=embed)
     status_logger.info('status command end')
