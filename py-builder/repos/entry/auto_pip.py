@@ -33,6 +33,9 @@ if do_reinstall:
 for item in already_install_packages: 
     pkg, ver = item.split("==")
     # バージョンが一致していれば、確認対象から削除
+    if pkg not in packages:
+        print(f"not exist package in need packages: {pkg}")
+        continue
     if ver == packages[pkg]:
         del packages[pkg]
 

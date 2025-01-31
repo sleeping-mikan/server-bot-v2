@@ -95,7 +95,8 @@ async def get_text_dat():
             "update":"botを更新します。非推奨となった/replaceの後継コマンドです。",
             "announce":{
                 "embed":"discordにテキストをembedで送信します。引数にはmd形式のテキストファイルを指定するか、文字列を指定します。",
-            }
+            },
+            "status": "プロセスの状態を表示します。",
         },
         "en":{
             "stop":"Stop the server.",
@@ -136,7 +137,8 @@ async def get_text_dat():
             "update":"Update the bot. This is a successor command of /replace.",
             "announce":{
                 "embed":"Send text to discord with embed. Specify a md-formatted text file or a string as an argument.",
-            }
+            },
+            "status": "Display the status of the process.",
         },
     }
 
@@ -275,6 +277,18 @@ async def get_text_dat():
                     "replace_slash_n": "テキスト形式のデータに\\\\nが存在したため\\nに変換しました",
                     "decode_error":"`{}`の読み込みに失敗しました",
                 },
+            },
+            "status": {
+                "mem_title": "メモリ使用量",
+                "mem_value": "{} MB Self",
+                "mem_server_value": "{} MB Server",
+                "cpu_title": "CPU使用率",
+                "cpu_value_thread": "{}% Thread {}",
+                "cpu_value_proc": "{}% Process {}",
+                "online_title": "オンライン状態",
+                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "base_title": "基本情報",
+                "base_value": "OS：{}\nPython：{}\nBot Version：{}",
             },
         }
         ACTIVITY_NAME = {

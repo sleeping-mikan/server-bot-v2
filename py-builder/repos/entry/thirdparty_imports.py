@@ -10,6 +10,8 @@ try:
     import waitress.server
     import requests
 
+    import aiohttp
+
     import psutil
 except:
     print("import error. please run 'python3 <thisfile> -reinstall'")

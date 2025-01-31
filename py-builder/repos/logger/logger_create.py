@@ -29,9 +29,9 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
             log_entry = self.format(record)
             self.deque.append(log_entry)
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     console = logging.StreamHandler(sys.stdout)
-    console.setLevel(logging.DEBUG)
+    console.setLevel(logging.INFO)
     console.setFormatter(console_formatter)
     logger.addHandler(console)
     if log["all"]:
