@@ -1,6 +1,7 @@
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
+from ..entry.thirdparty_imports import *
 from ..logger.logger_create import *
 from ..config.read_config_minimum import *
 from ..config.read_config_all import *
@@ -32,6 +33,7 @@ async def get_text_dat():
             "/terminal set     ":"/terminal set <ch> で、サーバーのコンソールを実行したチャンネルに紐づけます。chが省略された場合は現在のチャンネルに紐づけます。",
             "/terminal del     ":"/terminal del で、サーバーのコンソールを実行したチャンネルを解除します。",
             "/announce         ":"/announce embed <file | text> で、サーバーにmimd形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
+            "/status           ":"/status で、サーバーの状態を表示します。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
@@ -51,6 +53,7 @@ async def get_text_dat():
             "/terminal set     ":"/terminal set <ch> connects the server's console to a channel. If ch is omitted, the current channel is connected.",
             "/terminal del     ":"/terminal del disconnects the server's console from a channel.",
             "/announce         ":"/announce embed <file | text> sends an embed message to the server. Set the title after |title| and enter the content after \\n.",
+            "/status           ":"/status displays the status of the server.",
         },
     }
         
@@ -280,15 +283,15 @@ async def get_text_dat():
             },
             "status": {
                 "mem_title": "メモリ使用量",
-                "mem_value": "{} MB Self",
-                "mem_server_value": "{} MB Server",
+                "mem_value": "**{} MB** Self",
+                "mem_server_value": "**{} MB** Server",
                 "cpu_title": "CPU使用率",
-                "cpu_value_thread": "{}% Thread {}",
-                "cpu_value_proc": "{}% Process {}",
+                "cpu_value_thread": "**{}%** Thread {}",
+                "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
                 "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
                 "base_title": "基本情報",
-                "base_value": "OS：{}\nPython：{}\nBot Version：{}",
+                "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
         }
         ACTIVITY_NAME = {
@@ -429,6 +432,18 @@ async def get_text_dat():
                     "success": "File has been sent",
                     "replace_slash_n": "found \\n, replaced to \\r\\n",
                 }
+            },
+            "status": {
+                "mem_title": "Memory Usage",
+                "mem_value": "**{} MB** Self",
+                "mem_server_value": "**{} MB** Server",
+                "cpu_title": "CPU Usage",
+                "cpu_value_thread": "**{}%** Thread {}",
+                "cpu_value_proc": "**{}%** Process {}",
+                "online_title": "Online Status",
+                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "base_title": "Basic Information",
+                "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }
         }
         ACTIVITY_NAME = {

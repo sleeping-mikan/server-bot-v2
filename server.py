@@ -143,6 +143,8 @@ except:
 
 __version__ = "2.3.0"
 
+def get_version():
+    return __version__
 
 
 intents = discord.Intents.default() 
@@ -1091,6 +1093,7 @@ async def get_text_dat():
             "/terminal set     ":"/terminal set <ch> で、サーバーのコンソールを実行したチャンネルに紐づけます。chが省略された場合は現在のチャンネルに紐づけます。",
             "/terminal del     ":"/terminal del で、サーバーのコンソールを実行したチャンネルを解除します。",
             "/announce         ":"/announce embed <file | text> で、サーバーにmimd形式のメッセージを送信します。タイトルを|title|に続けて設定し、以後\\nで改行を行い内容を記述してください。",
+            "/status           ":"/status で、サーバーの状態を表示します。",
         },
         "en":{
             "/stop             ":"Stop the server. If the server is not running, an error message will be returned.",
@@ -1110,6 +1113,7 @@ async def get_text_dat():
             "/terminal set     ":"/terminal set <ch> connects the server's console to a channel. If ch is omitted, the current channel is connected.",
             "/terminal del     ":"/terminal del disconnects the server's console from a channel.",
             "/announce         ":"/announce embed <file | text> sends an embed message to the server. Set the title after |title| and enter the content after \\n.",
+            "/status           ":"/status displays the status of the server.",
         },
     }
         
@@ -1339,15 +1343,15 @@ async def get_text_dat():
             },
             "status": {
                 "mem_title": "メモリ使用量",
-                "mem_value": "{} MB Self",
-                "mem_server_value": "{} MB Server",
+                "mem_value": "**{} MB** Self",
+                "mem_server_value": "**{} MB** Server",
                 "cpu_title": "CPU使用率",
-                "cpu_value_thread": "{}% Thread {}",
-                "cpu_value_proc": "{}% Process {}",
+                "cpu_value_thread": "**{}%** Thread {}",
+                "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
                 "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
                 "base_title": "基本情報",
-                "base_value": "OS：{}\nPython：{}\nBot Version：{}",
+                "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
         }
         ACTIVITY_NAME = {
@@ -1488,6 +1492,18 @@ async def get_text_dat():
                     "success": "File has been sent",
                     "replace_slash_n": "found \\n, replaced to \\r\\n",
                 }
+            },
+            "status": {
+                "mem_title": "Memory Usage",
+                "mem_value": "**{} MB** Self",
+                "mem_server_value": "**{} MB** Server",
+                "cpu_title": "CPU Usage",
+                "cpu_value_thread": "**{}%** Thread {}",
+                "cpu_value_proc": "**{}%** Process {}",
+                "online_title": "Online Status",
+                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "base_title": "Basic Information",
+                "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }
         }
         ACTIVITY_NAME = {
@@ -3143,10 +3159,32 @@ async def get_thread_cpu_usage(pid : int, interval=1.0, is_self = False):
     sum_cpu_times = sum(thread_cpu_times.values())
     # is_selfがtrueであれば、自身の名前に置き換える
     if is_self:
-        items = threading.enumerate()
-        for thread in items:
-            if thread.ident in thread_cpu_times:
-                thread_cpu_times[thread.name] = thread_cpu_times.pop(thread.ident)
+    # スレッド名の辞書を作成
+        items = {thread.ident: thread.name for thread in threading.enumerate()}
+
+        # 一時辞書を用意（ループ中の辞書変更を防ぐ）
+        updated_thread_cpu_times = {}
+
+        # IDをスレッド名に変換
+        for thread_id, cpu_time in thread_cpu_times.items():
+            if thread_id in items:
+                updated_thread_cpu_times[items[thread_id]] = cpu_time
+            else:
+                updated_thread_cpu_times[thread_id] = cpu_time
+
+        # 名前のないスレッドを "NoName Thread x" にする
+        no_name_thread_count = 1
+        final_thread_cpu_times = {}
+
+        for key, cpu_time in updated_thread_cpu_times.items():
+            if isinstance(key, int):  # スレッドIDが残っている場合
+                final_thread_cpu_times[f"NoName {no_name_thread_count}"] = cpu_time
+                no_name_thread_count += 1
+            else:
+                final_thread_cpu_times[key] = cpu_time
+
+        # 更新後の辞書を適用
+        thread_cpu_times = final_thread_cpu_times
     # 全体のCPU時間を取得
     sum_cpu_times = sum(thread_cpu_times.values())
 
@@ -3224,7 +3262,7 @@ async def status(interaction: discord.Interaction):
     status_logger.info(f"get cpu usage -> {' '.join(send_str)}")
 
     # 基本情報を記載
-    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system() + " " + platform.release() + " " + platform.version(), sys.version, __version__), inline=True)
+    embed.add_field(name=RESPONSE_MSG["status"]["base_title"],value=RESPONSE_MSG["status"]["base_value"].format(platform.system() + " " + platform.release() + " " + platform.version(), sys.version, get_version()), inline=True)
 
     await interaction.edit_original_response(embed=embed)
     status_logger.info('status command end')
