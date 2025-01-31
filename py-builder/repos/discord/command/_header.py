@@ -1,6 +1,8 @@
 #!ignore
-from ...imports import *
-from ...constant import *
+from ...entry.standard_imports import *
+from ...entry.read_args import *
+from ...entry.thirdparty_imports import *
+from ...entry.variable import *
 from ...logger.logger_create import *
 from ...assets.text_dat import *
 from ...assets.utils import *
@@ -283,6 +285,11 @@ async def tokengen(interaction: discord.Interaction):
 #!open ./repos/discord/command/terminal/common.py
 #!ignore
 from terminal.common import *
+#!end-ignore
+
+#!open ./repos/discord/command/status/main.py
+#!ignore
+from .status.main import *
 #!end-ignore
 
 #/help

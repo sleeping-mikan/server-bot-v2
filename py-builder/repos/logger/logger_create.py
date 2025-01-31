@@ -2,8 +2,8 @@
 ロガーの作成および設定を行う
 """
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..logger.logger_formatter import *
 from ..config.read_config_minimum import *
 #!end-ignore
@@ -72,4 +72,5 @@ terminal_logger = create_logger("terminal")
 base_extension_logger = create_logger("extension")
 update_logger = create_logger("update")
 announce_logger = create_logger("send")
+status_logger = create_logger("status")
 minecraft_logger = create_logger("minecraft",Formatter.MinecraftFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.MinecraftConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
