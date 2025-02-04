@@ -55,8 +55,8 @@ packages = {
     "requests": "2.32.2",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
-    "waitress": "3.0.0",
-    "aiohttp": "3.9.5",
+    "waitress": "3.0.1",
+    "aiohttp": "3.10.11",
     "psutil": "5.9.0"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
