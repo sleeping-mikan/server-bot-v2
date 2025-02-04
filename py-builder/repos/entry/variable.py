@@ -2,11 +2,14 @@
 処理に必要な定数を宣言する
 """
 #!ignore
-from .imports import *
+from .standard_imports import *
+from .thirdparty_imports import *
 #!end-ignore
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
+def get_version():
+    return __version__
 
 
 intents = discord.Intents.default() 
@@ -86,6 +89,7 @@ COMMAND_PERMISSION = {
     "terminal del":1,
     "update":3,
     "announce embed":4,
+    "status":0,
 }
 
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())

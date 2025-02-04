@@ -24,6 +24,6 @@ def core_start() -> str:
     if is_running_server(start_logger):
         return RESPONSE_MSG["other"]["is_running"]
     start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
     threading.Thread(target=server_logger,args=(process,deque())).start()
     return RESPONSE_MSG["start"]["success"]

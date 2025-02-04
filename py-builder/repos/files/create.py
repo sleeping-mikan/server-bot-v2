@@ -1,6 +1,8 @@
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.read_args import *
+from ..entry.auto_pip import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..logger.logger_create import *
 from ..config.read_config_all import *
 #!end-ignore
@@ -21,15 +23,8 @@ def get_self_commit_id():
     commit_id = response.json()["sha"]
     return commit_id
 
-args = sys.argv[1:]
-do_init = False
 
-#引数を処理する。
-for i in args:
-    arg = i.split("=")
-    if arg[0] == "-init":
-        do_init = True
-        # pass
+
 
 is_first_run = False
 
@@ -57,6 +52,16 @@ def save_mikanassets_dat():
         # 存在しなければデータファイルを作成する(現状 commit id 保管用)
         file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
         file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
+        file.close()
+    # 全てが記憶されているわけでないなら
+    if packages:
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "r")
+        jfile = json.load(file)
+        file.close()
+        file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
+        # 必要な全てのパッケージが入っていることを記憶
+        jfile["installed_packages"] = all_packages
+        file.write(json.dumps(jfile, indent=4))
         file.close()
 save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")

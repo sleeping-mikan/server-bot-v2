@@ -50,7 +50,7 @@ async def ls(interaction: discord.Interaction, file_path: str):
             colorized_files.append(f"\033[32m{f}\033[0m")
     formatted_files = "\n".join(colorized_files)
     stdin_ls_logger.info("list directory -> " + file_path)
-    if len(formatted_files) > 2000:
+    if len(formatted_files) > 900:
             with io.StringIO() as temp_file:
                 temp_file.write("\n".join(files))
                 temp_file.seek(0)

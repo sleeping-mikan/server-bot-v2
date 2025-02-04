@@ -1,11 +1,5 @@
 # server-bot
 
-## 最初に
-
-以前のバージョンを利用中で新たなバージョンに更新する方は最下部に存在する"更新履歴"の"最後の破壊的変更"を確認してください。また、更新時には/replaceを用いて最新のserver.pyファイルに置き換えてください。
-
-確認や/replaceでの更新が面倒な場合はこれまでの.configや.token、update.pyを削除してから新たなバージョンを起動してください。
-
 ## 対応言語
 
 This bot supports English and Japanese.(このbotは英語と日本語をサポートしています。)
@@ -22,7 +16,7 @@ discordを用いて特定のサーバーを管理できます。
 
 ## コマンド一覧(できること)
 
-プログラムに含まれるbotコマンドは以下の通りです。
+プログラムに含まれるdiscord botコマンドは以下の通りです。
 
 |コマンド|実行結果|必要権限レベル|
 |----|----|----|
@@ -51,6 +45,7 @@ discordを用いて特定のサーバーを管理できます。
 |announce <text/file>|通常のテキストまたは[mimd](https://github.com/sleeping-mikan/server-bot-v2/blob/main/py-builder/mimd.md)形式のテキストまたはファイルを指定してbotとしてdiscordにメッセージを送信します。テキストの場合改行には\nを利用してください|4|
 |terminal set <ch(optional)>|discordのチャンネルIDを与えるとサーバーのログをdiscordに送信します。また標準入力を受け取ります|1|
 |terminal del|ターミナルの紐づけを解除します|1|
+|status|現在のサーバーの状態を表示します|0|
 |<非推奨>replace <file>|server.pyを与えられた引数に置換します。|4|
 
 これらコマンドの設定等は後述の使用方法を参照してください。
@@ -64,15 +59,16 @@ discordを用いて特定のサーバーを管理できます。
 
 言語：python3.12.x
 
-ライブラリ：requirements.txtを参照
+ライブラリ：requirements.txtを参照 (PowerShellや管理者権限のあるCmd/ubuntu+bashの場合は、server.pyが自動でインストール出来ることを確認済み。)
 
 ## 使用方法
 
-(読みたくない方へ：サーバーソフトウェアのrootディレクトリにserver.pyを配置して実行して進めれば何とかなるかも・・・？)
-
 ### 配置
 
-server.pyを任意の場所に配置します。(推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。)
+server.pyを任意の場所に配置します。
+
+> [!note]
+> 推奨ディレクトリは実行するserver.[exe/jar]が存在する階層です。この場所をrootディレクトリとして一部の権限を持ったdiscordユーザーはファイル操作を行えます。
 
 > [!note]
 > ただしserver.exeやserver.jar本体が存在する階層はroot(windowsの場合c:/直下など)でない必要があります。(何かのディレクトリの中に入れてください)これは初期状態では、`../backup/`内にbackupが生成されるためです。
@@ -81,8 +77,13 @@ server.pyを任意の場所に配置します。(推奨ディレクトリは実�
 
 server.pyを起動するとserver.pyと同じ階層に`.config`と`.token`が生成されます。
 
+コンソール引数(これらは任意であるため、エラーが発生した場合などに利用してください)
+ - `-init` update.pyなどの一部server.pyがダウンロードするファイルを再度ダウンロード (update.pyなどの[server_path]/mikanassetsが破損している場合に有効です)
+ - `-reinstall` discord.pyなどの外部ライブラリを再度インストールチェック/存在しない場合にはインストール (初回起動以外で、外部ライブラリが存在しない/アンインストールした場合に有効です)
+
 > [!note]
 > この際.tokenが生成されない場合、.config内のserver_path+server_nameが存在していないので、サーバーが存在するパス+拡張子を含むサーバーの名前に変更してください
+
 
 ### 初期設定
 
@@ -110,6 +111,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "auto_update": true,
     "server_path": "path/to/serverdir/",
     "server_name": "bedrock_server.exe",
+    "server_args": "",
     "log": {
         "server": true,
         "all": false
@@ -150,8 +152,9 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |---|---|
 |allow|各コマンドの実行を許可するかどうか。(現在は/ip,/replaceにのみ実装されています)|
 |auto_update|サーバー本体を自動更新するか否か|
-|server_path|minecraft server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
-|server_name|minecraft server本体の名前 java版の場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
+|server_path|server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
+|server_name|server本体の名前 java版minecraftの場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
+|server_args|server起動時のコンソール引数。例えばTerrariaを起動する場合`-world /path/to/world.wld`を入力してください||
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
@@ -161,17 +164,10 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
 |discord_commands.stop.submit|/stopコマンドが入力された際にサーバーの標準入力へ送信するコマンドを設定します。|
 |discord_commands.backup.path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
-|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。||
+|discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。|
 |discord_commands.lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
 
-server.pyはサーバ本体と同じ改装に配置することを推奨します。
-
-
-## 注意
-
-・生成されるupdate.pyの名前は変更しないでください。`/replace`が動作しなくなるはずです。
-
-・.configに存在するweb.secret_keyには予測不可能で十分に長い文字列を設定してください。
+server.pyはサーバ本体と同じ階層に配置することを推奨します。
 
 
 ## web上での操作
@@ -183,14 +179,62 @@ server.pyはサーバ本体と同じ改装に配置することを推奨しま�
 現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
 ## 動作確認済み環境(必要環境)
-
-|確認バージョン|日時|確認時のOS|python|
-|----|----|----|----|
-|Java vanilla 1.9.4|2024/06/26|Windows 11|python 3.12.1|
-|Java vanilla 1.19|2024/06/26|Windows 11|python 3.12.1|
-|Java vanilla 1.19.4|2024/07/31|Windows 11|python 3.12.1|
-|Java fabric 1.20.1|2024/06/26|Windows 11|python 3.12.1|
-|Bedrock dedicated server 1.21|2024/07/30|Windows 11 & Ubuntu(wsl2)|python 3.12.1|
+<details>
+    <summary>クリックして確認済み環境例を表示</summary>
+    <table>
+        <thread>
+            <th>確認バージョン</th>
+            <th>日時</th>
+            <th>確認時のOS</th>
+            <th>python</th>
+            <th>備考</th>
+        </thread>
+        <tbody>
+            <tr>
+                <td>Minecraft Java vanilla 1.9.4</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java vanilla 1.19</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java vanilla 1.19.4</td>
+                <td>2024/07/31</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Java fabric 1.20.1</td>
+                <td>2024/06/26</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>下記に示すbatを利用</td>
+            </tr>
+            <tr>
+                <td>Minecraft Bedrock dedicated server 1.21</td>
+                <td>2025/01/30</td>
+                <td>Windows 11 & Ubuntu(wsl2)</td>
+                <td>python 3.12.1</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>TShock-5.2.1-for-Terraria-1.4.4.9</td>
+                <td>2025/01/25</td>
+                <td>Windows 11</td>
+                <td>python 3.12.1</td>
+                <td>.configのserver_argsに`-world /path/to/world.wld`を指定</td>
+            </tr>
+        </tbody>
+    </table>
+</details>
 
  - 想定環境
    - os : ubuntu(wsl2) / windows11 / windows10
@@ -221,16 +265,3 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 以下の画像は、webアクセス時の画面です。(PC/スマホ)
 
 ![PCサイズ](https://github.com/user-attachments/assets/a1b09ad4-9fde-4df9-abd8-cb6628589a67)![スマホサイズ](https://github.com/user-attachments/assets/6b59139f-363d-4a92-b7c8-398ed9d03d78)
-
-## 免責事項
-
-本プログラムのインストール/実行/その他本プログラムが影響する挙動全てにおいて、生じた損害や不具合には作者は一切の責任を負わないものとします。
-
-
-### 最後の破壊的変更
-
-破壊的変更とは既存のupdate.py等を変更する必要がある変更を指します。
-
-2024/06/10 更新前にupdate.pyの削除が必要です。6/10以前のserver.pyを利用している場合はupdate.pyを削除してください。
-
-今後の更新ではupdate.pyを自動更新するように変更しています。
