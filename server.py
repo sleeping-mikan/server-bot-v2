@@ -328,6 +328,9 @@ def make_config():
                             "web":{"secret_key":"YOURSECRETKEY","port":80},\
                             "discord_commands":{\
                                 "cmd":{\
+                                    "stdin":{\
+                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                    },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
                                     }\
@@ -375,6 +378,10 @@ def make_config():
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
+            if "stdin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["stdin"] = {}
+            if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -813,6 +820,7 @@ try:
     is_auto_update = config["update"]["auto"]
     update_branch = config["update"]["branch"]
     enable_advanced_features = config["enable_advanced_features"]
+    sys_files = config["discord_commands"]["cmd"]["stdin"]["sys_files"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
@@ -2172,7 +2180,6 @@ command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin gro
 command_group_cmd.add_command(command_group_cmd_stdin)
 
 
-sys_files = [".config",".token","logs","mikanassets"]
 important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
 ] + [
