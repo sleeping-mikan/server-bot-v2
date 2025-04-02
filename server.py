@@ -231,6 +231,9 @@ USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
 
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
+
 
 class ModifiedEmbeds():# 名前空間として
     class DefaultEmbed(discord.Embed):
@@ -824,7 +827,7 @@ repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
     "branch": update_branch,#!debug else main
-}
+} 
 
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
@@ -1868,7 +1871,11 @@ async def on_message(message: discord.Message):
 async def on_ready():
     global process
     ready_logger.info('discord bot logging on')
+    # update_loopを開始
     update_loop.start()
+    # 拡張で読み込んだtasksを実行
+    for task in extension_tasks_func:
+        task.start()
     try:
         #サーバーの起動
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
