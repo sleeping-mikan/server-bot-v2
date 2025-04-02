@@ -322,6 +322,7 @@ async def exit(interaction: discord.Interaction):
     sys.exit()
 
 # 拡張コマンドを読み込む
+#!open ./repos/discord/command/extension/utils.py
 #!open ./repos/discord/command/extension/read.py
 
 import traceback

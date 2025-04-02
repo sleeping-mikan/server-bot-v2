@@ -55,8 +55,8 @@ packages = {
     "requests": "2.32.2",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
-    "waitress": "3.0.0",
-    "aiohttp": "3.9.5",
+    "waitress": "3.0.1",
+    "aiohttp": "3.10.11",
     "psutil": "5.9.0"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
@@ -141,7 +141,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 def get_version():
     return __version__
@@ -230,6 +230,9 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
 
 
 class ModifiedEmbeds():# 名前空間として
@@ -709,7 +712,7 @@ file_formatter = Formatter.DefaultConsoleFormatter('%(asctime)s %(levelname)s %(
 """
 
 #/log用のログ保管場所
-log_msg = deque(maxlen=19)
+log_msg = deque(maxlen=100)
 #discord送信用のログ
 discord_log_msg = deque() 
 def create_logger(name,console_formatter=console_formatter,file_formatter=file_formatter):
@@ -749,6 +752,9 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     logger.addHandler(deque_handler)
     logger.addHandler(discord_handler)
     return logger
+
+def get_log():
+    return log_msg
 
 #ロガーの作成
 logger_name = ["stop", "start", "exit", "ready", "cmd", "help", "backup", "replace", "ip", "sys"]
@@ -824,7 +830,7 @@ repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
     "branch": update_branch,#!debug else main
-}
+} 
 
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
@@ -1868,7 +1874,11 @@ async def on_message(message: discord.Message):
 async def on_ready():
     global process
     ready_logger.info('discord bot logging on')
+    # update_loopを開始
     update_loop.start()
+    # 拡張で読み込んだtasksを実行
+    for task in extension_tasks_func:
+        task.start()
     try:
         #サーバーの起動
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
@@ -3299,6 +3309,34 @@ async def exit(interaction: discord.Interaction):
     sys.exit()
 
 # 拡張コマンドを読み込む
+
+#--------------------
+
+
+
+def get_process():
+    return process
+
+def append_tasks_func(func):
+    extension_tasks_func.append(func)
+    return
+
+is_write_server_block = False
+def write_server_in(command: str):
+    global is_write_server_block
+    if is_write_server_block:
+        return False, "write_server_block"
+    is_write_server_block = True
+    # サーバーが動いていれば、コマンドを送る
+    if is_stopped_server(sys_logger):
+        is_write_server_block = False
+        return False, "server_is_not_running"
+    process.stdin.write(command + "\n")
+    process.stdin.flush()
+    is_write_server_block = False
+    return True, "success"
+#--------------------
+
 
 #--------------------
 

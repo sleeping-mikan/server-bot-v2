@@ -6,7 +6,7 @@ from .standard_imports import *
 from .thirdparty_imports import *
 #!end-ignore
 
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 def get_version():
     return __version__
@@ -95,6 +95,9 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
 
 
 class ModifiedEmbeds():# 名前空間として

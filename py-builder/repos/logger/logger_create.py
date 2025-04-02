@@ -9,7 +9,7 @@ from ..config.read_config_minimum import *
 #!end-ignore
 
 #/log用のログ保管場所
-log_msg = deque(maxlen=19)
+log_msg = deque(maxlen=100)
 #discord送信用のログ
 discord_log_msg = deque() 
 def create_logger(name,console_formatter=console_formatter,file_formatter=file_formatter):
@@ -49,6 +49,9 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     logger.addHandler(deque_handler)
     logger.addHandler(discord_handler)
     return logger
+
+def get_log():
+    return log_msg
 
 #ロガーの作成
 logger_name = ["stop", "start", "exit", "ready", "cmd", "help", "backup", "replace", "ip", "sys"]
