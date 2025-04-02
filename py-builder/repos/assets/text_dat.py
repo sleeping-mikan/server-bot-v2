@@ -247,7 +247,7 @@ async def get_text_dat():
                 "error_base":"エラーが発生しました。\n",
             },
             "permission":{
-                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "success":"{} の権限 : コード実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
@@ -399,7 +399,7 @@ async def get_text_dat():
                 "error_base":"An error has occurred.\n",
             },
             "permission":{
-                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
+                "success":"{}'s permission : \nadvanced(root) features : {}\ndiscord administrator permission : {}\nbot administrator permission : {}",
                 "change":{
                     "already_added":"The user has already been added as an administrator",
                     "add_success":"Added as an administrator to {}",
