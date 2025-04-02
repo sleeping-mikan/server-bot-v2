@@ -12,7 +12,7 @@ repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
     "branch": update_branch,#!debug else main
-}
+} 
 
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
