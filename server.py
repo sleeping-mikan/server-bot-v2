@@ -3312,6 +3312,32 @@ async def exit(interaction: discord.Interaction):
 
 #--------------------
 
+
+
+def get_process():
+    return process
+
+def append_tasks_func(func):
+    extension_tasks_func.append(func)
+    return
+
+is_write_server_block = False
+def write_server_in(command: str):
+    global is_write_server_block
+    if is_write_server_block:
+        return False, "write_server_block"
+    is_write_server_block = True
+    # サーバーが動いていれば、コマンドを送る
+    if is_stopped_server(sys_logger):
+        return False, "server_is_not_running"
+    process.stdin.write(command + "\n")
+    process.stdin.flush()
+    return
+#--------------------
+
+
+#--------------------
+
 base_extension_logger.info("search extension commands")
 extension_commands_group = None
 extension_logger = None
@@ -3353,32 +3379,6 @@ if os.path.exists(now_path + "/mikanassets/extension"):
 del extension_commands_group
 
 
-#--------------------
-
-
-#--------------------
-
-
-
-def get_process():
-    return process
-
-def append_tasks_func(func):
-    extension_tasks_func.append(func)
-    return
-
-is_write_server_block = False
-def write_server_in(command: str):
-    global is_write_server_block
-    if is_write_server_block:
-        return False, "write_server_block"
-    is_write_server_block = True
-    # サーバーが動いていれば、コマンドを送る
-    if is_stopped_server(sys_logger):
-        return False, "server_is_not_running"
-    process.stdin.write(command + "\n")
-    process.stdin.flush()
-    return
 #--------------------
 
 
