@@ -213,7 +213,7 @@ COMMAND_PERMISSION = {
     "help":0,
     "backup create":1,
     "backup apply":3,
-    "replace":4,
+    # "replace":4,
     "ip":0,
     "logs":1,
     "permission view":0,
@@ -1320,7 +1320,7 @@ async def get_text_dat():
                 "error_base":"エラーが発生しました。\n",
             },
             "permission":{
-                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "success":"{} の権限 : コード実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
@@ -1472,7 +1472,7 @@ async def get_text_dat():
                 "error_base":"An error has occurred.\n",
             },
             "permission":{
-                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
+                "success":"{}'s permission : \nadvanced(root) features : {}\ndiscord administrator permission : {}\nbot administrator permission : {}",
                 "change":{
                     "already_added":"The user has already been added as an administrator",
                     "add_success":"Added as an administrator to {}",
@@ -2043,16 +2043,17 @@ async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission view {user} {detail}")
     COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
+    advanced = "☑" if enable_advanced_features else "☐"
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
     value["force_admin"] = await user_permission(user)
     if detail:
         my_perm_level = await user_permission(user)
         can_use_cmd = {f"{key}":("☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐") + f"({COMMAND_PERMISSION[key]})" for key in COMMAND_PERMISSION}
-        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```",inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,advanced,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```",inline=False)
         await interaction.response.send_message(embed=embed)
     else:
-        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]),inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,advanced,value["admin"],value["force_admin"]),inline=False)
         await interaction.response.send_message(embed=embed)
     permission_logger.info("send permission info : " + str(user.id) + f"({user})")
 
