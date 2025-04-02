@@ -15,10 +15,15 @@ def append_tasks_func(func):
     extension_tasks_func.append(func)
     return
 
+is_write_server_block = False
 def write_server_in(command: str):
+    global is_write_server_block
+    if is_write_server_block:
+        return False, "write_server_block"
+    is_write_server_block = True
     # サーバーが動いていれば、コマンドを送る
     if is_stopped_server(sys_logger):
-        return
+        return False, "server_is_not_running"
     process.stdin.write(command + "\n")
     process.stdin.flush()
     return
