@@ -26,6 +26,7 @@ try:
     is_auto_update = config["update"]["auto"]
     update_branch = config["update"]["branch"]
     enable_advanced_features = config["enable_advanced_features"]
+    sys_files = config["discord_commands"]["cmd"]["stdin"]["sys_files"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
