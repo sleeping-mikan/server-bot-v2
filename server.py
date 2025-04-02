@@ -3329,9 +3329,11 @@ def write_server_in(command: str):
     is_write_server_block = True
     # サーバーが動いていれば、コマンドを送る
     if is_stopped_server(sys_logger):
+        is_write_server_block = False
         return False, "server_is_not_running"
     process.stdin.write(command + "\n")
     process.stdin.flush()
+    is_write_server_block = False
     return True, "success"
 #--------------------
 
