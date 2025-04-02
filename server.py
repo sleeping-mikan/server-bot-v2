@@ -3332,7 +3332,7 @@ def write_server_in(command: str):
         return False, "server_is_not_running"
     process.stdin.write(command + "\n")
     process.stdin.flush()
-    return
+    return True, "success"
 #--------------------
 
 
