@@ -38,7 +38,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
         stdin_rm_logger.info("not file -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("permission denied -> " + file_path)

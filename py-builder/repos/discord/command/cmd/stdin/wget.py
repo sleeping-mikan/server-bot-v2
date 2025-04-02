@@ -26,7 +26,7 @@ async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.t
         await interaction.response.send_message(embed=embed)
         return
     # 管理者権限を持っていなくて、重要ファイルをダウンロードする場合は拒否
-    if not await is_administrator(interaction.user) and await is_important_bot_file(save_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(save_path):
         stdin_wget_logger.info("permission denied -> " + save_path)
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path),inline=False)
         await interaction.response.send_message(embed=embed)

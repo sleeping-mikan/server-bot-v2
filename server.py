@@ -338,6 +338,7 @@ def make_config():
                                 "admin":{"members":{}},\
                                 "lang":"en",\
                             },\
+                            "enable_advanced_features":False,\
                         }
         json.dump(config_dict,file,indent=4)
         config_changed = True
@@ -427,6 +428,8 @@ def make_config():
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "enable_advanced_features" not in cfg:
+                cfg["enable_advanced_features"] = False
             # バージョン移行処理
             # v2.0.0までは、admin.membersがlistで管理されていた(当時の権限レベルは現在の1に該当する。)
             if type(cfg["discord_commands"]["admin"]["members"]) == list:
@@ -809,6 +812,7 @@ try:
     where_terminal = config["discord_commands"]["terminal"]["discord"]
     is_auto_update = config["update"]["auto"]
     update_branch = config["update"]["branch"]
+    enable_advanced_features = config["enable_advanced_features"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
@@ -817,6 +821,8 @@ try:
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+sys_logger.info("advanced features -> " + str(enable_advanced_features))
 #--------------------
 
 
@@ -1090,7 +1096,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord>を用いて、ファイル確認/削除/作成/移動/フォルダ作成/フォルダ削除/urlからダウンロード/discord送信を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
             "/backup create    ":"/backup create [directory] でデータをバックアップします。ディレクトリ名を省略した場合worldsをコピーします。",
             "/backup apply     ":"/backup apply <directory> でデータをバックアップから復元します。",
-            "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
+            # "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
             "/ip               ":"サーバーのIPアドレスを表示します。",
             "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
             "/permission change":"/permission change <level> <user> で、userのbot操作権利を変更できます。必要な権限レベルは/permission viewで確認できます。",
@@ -1110,7 +1116,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord> can be used to execute commands in the server console. For example, to create a file in the server directory, you can type /cmd stdin mk a.txt.",
             "/backup create    ":"/backup create [directory] creates data. If the directory name is omitted, worlds is copied.",
             "/backup apply     ":"/backup apply <directory> recovers data from a backup.",
-            "/replace          ":"/replace <py file> replaces the bot's code.",
+            # "/replace          ":"/replace <py file> replaces the bot's code.",
             "/ip               ":"The server's IP address will be displayed to discord.",
             "/logs             ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
             "/permission change":"/permission change <level> <user> changes the user's bot operation rights. The required permission level can be checked by /permission view.",
@@ -1148,7 +1154,7 @@ async def get_text_dat():
                 "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
 
             },
-            "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
+            # "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
@@ -1190,7 +1196,7 @@ async def get_text_dat():
                 "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
 
             },
-            "replace":"<Not recommended> Replace the bot's code with <py file>.",
+            # "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
@@ -1294,10 +1300,10 @@ async def get_text_dat():
                     "path_not_allowed":"許可されないパス",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
-                "progress":"更新プログラムの適応中・・・",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
+            #     "progress":"更新プログラムの適応中・・・",
+            # },
             "ip":{
                 "not_allow":"このコマンドはconfigにより実行を拒否されました",
                 "get_ip_failed":"IPアドレスを取得できません",
@@ -1446,10 +1452,10 @@ async def get_text_dat():
                     "path_not_allowed":"Path not allowed",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
-                "progress":"Applying update program",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
+            #     "progress":"Applying update program",
+            # },
             "ip":{
                 "not_allow":"This command is denied by config",
                 "get_ip_failed":"Failed to get IP address",
@@ -2295,8 +2301,8 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("file is directory -> " + file_path)
         return
-    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+    # 全ての条件を満たすがサーバー管理者権限を持たないまたは危険な操作を拒否されている状態で、重要ファイルを操作しようとしている場合
+    if ((not await is_administrator(interaction.user)) or not enable_advanced_features) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("permission denied -> " + file_path)
@@ -2353,7 +2359,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
         stdin_rm_logger.info("not file -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("permission denied -> " + file_path)
@@ -2436,7 +2442,7 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
         stdin_rmdir_logger.info("directory not exists -> " + dir_path)
         return
     # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
-    if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
+    if (await is_important_bot_file(dir_path) or not enable_advanced_features) and not await is_administrator(interaction.user):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("permission denied -> " + dir_path)
@@ -2492,7 +2498,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("not file -> " + path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("permission denied -> " + path + " or " + dest)
@@ -2657,7 +2663,7 @@ async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.t
         await interaction.response.send_message(embed=embed)
         return
     # 管理者権限を持っていなくて、重要ファイルをダウンロードする場合は拒否
-    if not await is_administrator(interaction.user) and await is_important_bot_file(save_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(save_path):
         stdin_wget_logger.info("permission denied -> " + save_path)
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path),inline=False)
         await interaction.response.send_message(embed=embed)
@@ -2896,39 +2902,39 @@ tree.add_command(command_group_announce)
 
 
 #/replace <py file>
-@tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
-async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
-    await print_user(replace_logger,interaction.user)
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
-    #デフォルトでコマンドを無効に
-    if not allow["replace"]:
-        embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    #管理者権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
-        await not_enough_permission(interaction,replace_logger)
-        return
-    #サーバー起動確認
-    if is_running_server(replace_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    replace_logger.info('replace started')
-    # ファイルをすべて読み込む
-    with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
-        f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
-    # discordにコードを置き換える
-    replace_logger.info('replace done')
-    embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
-    await interaction.response.send_message(embed=embed)
-    response = await interaction.original_response()
-    #interaction id を保存
-    msg_id = str(response.id)
-    channel_id = str(interaction.channel_id)
-    replace_logger.info("call update.py")
-    replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+# @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
+# async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
+#     await print_user(replace_logger,interaction.user)
+#     embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
+#     #デフォルトでコマンドを無効に
+#     if not allow["replace"]:
+#         embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     #管理者権限を要求
+#     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
+#         await not_enough_permission(interaction,replace_logger)
+#         return
+#     #サーバー起動確認
+#     if is_running_server(replace_logger): 
+#         embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     replace_logger.info('replace started')
+#     # ファイルをすべて読み込む
+#     with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
+#         f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
+#     # discordにコードを置き換える
+#     replace_logger.info('replace done')
+#     embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
+#     await interaction.response.send_message(embed=embed)
+#     response = await interaction.original_response()
+#     #interaction id を保存
+#     msg_id = str(response.id)
+#     channel_id = str(interaction.channel_id)
+#     replace_logger.info("call update.py")
+#     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
+#     os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 #/ip
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
