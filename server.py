@@ -1320,7 +1320,7 @@ async def get_text_dat():
                 "error_base":"エラーが発生しました。\n",
             },
             "permission":{
-                "success":"{} の権限 : コード実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
