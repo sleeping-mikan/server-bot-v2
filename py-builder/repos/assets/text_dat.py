@@ -23,7 +23,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord>を用いて、ファイル確認/削除/作成/移動/フォルダ作成/フォルダ削除/urlからダウンロード/discord送信を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
             "/backup create    ":"/backup create [directory] でデータをバックアップします。ディレクトリ名を省略した場合worldsをコピーします。",
             "/backup apply     ":"/backup apply <directory> でデータをバックアップから復元します。",
-            "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
+            # "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
             "/ip               ":"サーバーのIPアドレスを表示します。",
             "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
             "/permission change":"/permission change <level> <user> で、userのbot操作権利を変更できます。必要な権限レベルは/permission viewで確認できます。",
@@ -43,7 +43,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord> can be used to execute commands in the server console. For example, to create a file in the server directory, you can type /cmd stdin mk a.txt.",
             "/backup create    ":"/backup create [directory] creates data. If the directory name is omitted, worlds is copied.",
             "/backup apply     ":"/backup apply <directory> recovers data from a backup.",
-            "/replace          ":"/replace <py file> replaces the bot's code.",
+            # "/replace          ":"/replace <py file> replaces the bot's code.",
             "/ip               ":"The server's IP address will be displayed to discord.",
             "/logs             ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
             "/permission change":"/permission change <level> <user> changes the user's bot operation rights. The required permission level can be checked by /permission view.",
@@ -81,7 +81,7 @@ async def get_text_dat():
                 "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
 
             },
-            "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
+            # "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
@@ -123,7 +123,7 @@ async def get_text_dat():
                 "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
 
             },
-            "replace":"<Not recommended> Replace the bot's code with <py file>.",
+            # "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
@@ -227,10 +227,10 @@ async def get_text_dat():
                     "path_not_allowed":"許可されないパス",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
-                "progress":"更新プログラムの適応中・・・",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
+            #     "progress":"更新プログラムの適応中・・・",
+            # },
             "ip":{
                 "not_allow":"このコマンドはconfigにより実行を拒否されました",
                 "get_ip_failed":"IPアドレスを取得できません",
@@ -247,7 +247,7 @@ async def get_text_dat():
                 "error_base":"エラーが発生しました。\n",
             },
             "permission":{
-                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
@@ -379,10 +379,10 @@ async def get_text_dat():
                     "path_not_allowed":"Path not allowed",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
-                "progress":"Applying update program",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
+            #     "progress":"Applying update program",
+            # },
             "ip":{
                 "not_allow":"This command is denied by config",
                 "get_ip_failed":"Failed to get IP address",
@@ -399,7 +399,7 @@ async def get_text_dat():
                 "error_base":"An error has occurred.\n",
             },
             "permission":{
-                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
+                "success":"{}'s permission : \nadvanced(root) features : {}\ndiscord administrator permission : {}\nbot administrator permission : {}",
                 "change":{
                     "already_added":"The user has already been added as an administrator",
                     "add_success":"Added as an administrator to {}",

@@ -28,14 +28,14 @@ discordを用いて特定のサーバーを管理できます。
 |backup create <path(optional)>|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
 |backup apply <path(optional)>|バックアップを指定したディレクトリに展開します。引数が与えられない場合直下に展開します。|3|
 |cmd serverin <server command>|サーバーに対してコマンドを送信します。|1|
-|cmd stdin ls <path(optional)>|ディレクトリ内のファイル一覧を返します。rootディレクトリはサーバー直下になります。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mk <path> <file(optional)>|ファイルを作成または上書きします。file引数を渡さない場合空のファイルを作成します。|3(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin rm <path>|指定したファイルが存在する場合削除します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin rmdir <path>|指定したディレクトリが存在する場合削除します。このコマンドは指定したディレクトリ内に対して再帰的に適用されます。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mkdir <path>|指定したディレクトリを作成します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin send-discord <path>|指定したディレクトリをdiscordに送信します。|2(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin wget <url> <path(optional)>|指定したパスのファイルをurlから得られるデータで上書きします。path引数を渡さない場合直下にファイルを生成します。|3(一部特定ファイルの操作はdiscord管理者のみ)|
-|cmd stdin mv <src> <dest>|指定したpathをdestに移動させます。|3(一部特定ファイルの操作はdiscord管理者のみ)|
+|cmd stdin ls <path(optional)>|ディレクトリ内のファイル一覧を返します。rootディレクトリはサーバー直下になります。|2(*2)|
+|cmd stdin mk <path> <file(optional)>|ファイルを作成または上書きします。file引数を渡さない場合空のファイルを作成します。|3(*1)|
+|cmd stdin rm <path>|指定したファイルが存在する場合削除します。|2(*1)|
+|cmd stdin rmdir <path>|指定したディレクトリが存在する場合削除します。このコマンドは指定したディレクトリ内に対して再帰的に適用されます。|2(*1)|
+|cmd stdin mkdir <path>|指定したディレクトリを作成します。|2(*2)|
+|cmd stdin send-discord <path>|指定したディレクトリをdiscordに送信します。|2(*2)|
+|cmd stdin wget <url> <path(optional)>|指定したパスのファイルをurlから得られるデータで上書きします。path引数を渡さない場合直下にファイルを生成します。|3(*1)|
+|cmd stdin mv <src> <dest>|指定したpathをdestに移動させます。|3(*1)|
 |logs <file(optional)>|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを表示できる限り表示します。|1|
 |lang <"ja"/"en">|サーバーの言語を変更します。|2|
 |permission change <level> <user>|ユーザーのbot利用権限を操作します。|4|
@@ -46,7 +46,10 @@ discordを用いて特定のサーバーを管理できます。
 |terminal set <ch(optional)>|discordのチャンネルIDを与えるとサーバーのログをdiscordに送信します。また標準入力を受け取ります|1|
 |terminal del|ターミナルの紐づけを解除します|1|
 |status|現在のサーバーの状態を表示します|0|
-|<非推奨>replace <file>|server.pyを与えられた引数に置換します。|4|
+
+*1 : 一部のファイル/ディレクトリに対する操作は行えません。ただしdiscord管理者権限を保持した上で、config上のenable_advanced_featuresをtrueにすることで操作可能となります。
+
+*2 : 一部のファイル/ディレクトリに対する操作は行えません。
 
 これらコマンドの設定等は後述の使用方法を参照してください。
 
@@ -123,6 +126,14 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     },
     "discord_commands": {
         "cmd": {
+            "stdin": {
+                "sys_files": [
+                    ".config",
+                    ".token",
+                    "logs",
+                    "mikanassets"
+                ]
+            },
             "serverin": {
                 "allow_mccmd": [
                     "to server",
@@ -145,6 +156,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
         },
         "lang": "ja"
     }
+    "enable_advanced_features": false
 }
 ```
 
@@ -159,6 +171,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
 |web.port|webサーバーのポート番号を入力します。|
+|discord_commands.cmd.stdin.sys_files|/cmd stdin <mv/rmdir/rm/wget/mv>において、権限を持っていても操作を拒否するファイルのリスト|
 |discord_commands.cmd.serverin.allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
 |discord_commands.terminal.discord|コンソールとして扱うチャンネルidを指定します。通常configを直接操作しません。指定したチャンネルではサーバー起動中の入出力が可能になります(但し、allow_mccmdで許可されている命令のみ)。|
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
@@ -166,6 +179,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |discord_commands.backup.path|ワールドデータのバックアップパス(例えば`D:\\server\\backup`に保存したければ`D:\\server\\backup\\`または`D:/server/backup/`)|
 |discord_commands.admin.members|サーバー内の管理者権限を操作します。通常configを直接操作しません。permission changeコマンドを用いてbot管理者を設定できます。|
 |discord_commands.lang|discordに送信するメッセージの言語を選択します。(en : 英語, ja : 日本語)|
+|enable_advanced_features|discord上で管理者権限を持っている場合に、discord_commands.cmd.stdin.sys_filesに含まれるファイルを操作可能にするか否か|
 
 server.pyはサーバ本体と同じ階層に配置することを推奨します。
 

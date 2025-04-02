@@ -78,7 +78,7 @@ COMMAND_PERMISSION = {
     "help":0,
     "backup create":1,
     "backup apply":3,
-    "replace":4,
+    # "replace":4,
     "ip":0,
     "logs":1,
     "permission view":0,

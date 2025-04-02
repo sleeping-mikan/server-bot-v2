@@ -2,8 +2,8 @@
 configの読み込みと最小限の変数へのロードを行う
 """
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..wait_for_keypress import *
 #!end-ignore
 
@@ -42,6 +42,9 @@ def make_config():
                             "web":{"secret_key":"YOURSECRETKEY","port":80},\
                             "discord_commands":{\
                                 "cmd":{\
+                                    "stdin":{\
+                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                    },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
                                     }\
@@ -52,6 +55,7 @@ def make_config():
                                 "admin":{"members":{}},\
                                 "lang":"en",\
                             },\
+                            "enable_advanced_features":False,\
                         }
         json.dump(config_dict,file,indent=4)
         config_changed = True
@@ -88,6 +92,10 @@ def make_config():
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
+            if "stdin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["stdin"] = {}
+            if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -141,6 +149,8 @@ def make_config():
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "enable_advanced_features" not in cfg:
+                cfg["enable_advanced_features"] = False
             # バージョン移行処理
             # v2.0.0までは、admin.membersがlistで管理されていた(当時の権限レベルは現在の1に該当する。)
             if type(cfg["discord_commands"]["admin"]["members"]) == list:
