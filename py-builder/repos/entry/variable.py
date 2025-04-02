@@ -96,6 +96,9 @@ USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
 
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
+
 
 class ModifiedEmbeds():# 名前空間として
     class DefaultEmbed(discord.Embed):
