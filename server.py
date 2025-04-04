@@ -1754,7 +1754,7 @@ async def parse_mimd(text: str):
     for line in text.split("\n"):
         parse_line = line
         while parse_line.startswith(" "):
-            parse_line = line[1:]
+            parse_line = parse_line[1:]
         # #から始まる一文ならnameに
         if parse_line[0] == "#":
             send_data.append({"name":"","value":""})
