@@ -78,7 +78,7 @@ COMMAND_PERMISSION = {
     "help":0,
     "backup create":1,
     "backup apply":3,
-    "replace":4,
+    # "replace":4,
     "ip":0,
     "logs":1,
     "permission view":0,
@@ -95,6 +95,9 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
 
 
 class ModifiedEmbeds():# 名前空間として

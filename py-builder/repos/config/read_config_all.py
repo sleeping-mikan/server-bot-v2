@@ -25,6 +25,8 @@ try:
     where_terminal = config["discord_commands"]["terminal"]["discord"]
     is_auto_update = config["update"]["auto"]
     update_branch = config["update"]["branch"]
+    enable_advanced_features = config["enable_advanced_features"]
+    sys_files = config["discord_commands"]["cmd"]["stdin"]["sys_files"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
@@ -33,3 +35,5 @@ try:
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+sys_logger.info("advanced features -> " + str(enable_advanced_features))

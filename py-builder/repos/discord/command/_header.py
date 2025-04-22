@@ -115,39 +115,39 @@ from .send.common import *
 #!end-ignore
 
 #/replace <py file>
-@tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
-async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
-    await print_user(replace_logger,interaction.user)
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
-    #デフォルトでコマンドを無効に
-    if not allow["replace"]:
-        embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    #管理者権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
-        await not_enough_permission(interaction,replace_logger)
-        return
-    #サーバー起動確認
-    if is_running_server(replace_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    replace_logger.info('replace started')
-    # ファイルをすべて読み込む
-    with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
-        f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
-    # discordにコードを置き換える
-    replace_logger.info('replace done')
-    embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
-    await interaction.response.send_message(embed=embed)
-    response = await interaction.original_response()
-    #interaction id を保存
-    msg_id = str(response.id)
-    channel_id = str(interaction.channel_id)
-    replace_logger.info("call update.py")
-    replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+# @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
+# async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
+#     await print_user(replace_logger,interaction.user)
+#     embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
+#     #デフォルトでコマンドを無効に
+#     if not allow["replace"]:
+#         embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     #管理者権限を要求
+#     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
+#         await not_enough_permission(interaction,replace_logger)
+#         return
+#     #サーバー起動確認
+#     if is_running_server(replace_logger): 
+#         embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     replace_logger.info('replace started')
+#     # ファイルをすべて読み込む
+#     with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
+#         f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
+#     # discordにコードを置き換える
+#     replace_logger.info('replace done')
+#     embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
+#     await interaction.response.send_message(embed=embed)
+#     response = await interaction.original_response()
+#     #interaction id を保存
+#     msg_id = str(response.id)
+#     channel_id = str(interaction.channel_id)
+#     replace_logger.info("call update.py")
+#     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
+#     os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 #/ip
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
@@ -322,6 +322,7 @@ async def exit(interaction: discord.Interaction):
     sys.exit()
 
 # 拡張コマンドを読み込む
+#!open ./repos/discord/command/extension/utils.py
 #!open ./repos/discord/command/extension/read.py
 
 import traceback

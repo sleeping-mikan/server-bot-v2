@@ -213,7 +213,7 @@ COMMAND_PERMISSION = {
     "help":0,
     "backup create":1,
     "backup apply":3,
-    "replace":4,
+    # "replace":4,
     "ip":0,
     "logs":1,
     "permission view":0,
@@ -230,6 +230,9 @@ COMMAND_PERMISSION = {
 USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 unti_GC_obj = deque()
+
+# 拡張機能から読み込むdiscord.tasks
+extension_tasks_func = []
 
 
 class ModifiedEmbeds():# 名前空間として
@@ -325,6 +328,9 @@ def make_config():
                             "web":{"secret_key":"YOURSECRETKEY","port":80},\
                             "discord_commands":{\
                                 "cmd":{\
+                                    "stdin":{\
+                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                    },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
                                     }\
@@ -335,6 +341,7 @@ def make_config():
                                 "admin":{"members":{}},\
                                 "lang":"en",\
                             },\
+                            "enable_advanced_features":False,\
                         }
         json.dump(config_dict,file,indent=4)
         config_changed = True
@@ -371,6 +378,10 @@ def make_config():
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
+            if "stdin" not in cfg["discord_commands"]["cmd"]:
+                cfg["discord_commands"]["cmd"]["stdin"] = {}
+            if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -424,6 +435,8 @@ def make_config():
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "enable_advanced_features" not in cfg:
+                cfg["enable_advanced_features"] = False
             # バージョン移行処理
             # v2.0.0までは、admin.membersがlistで管理されていた(当時の権限レベルは現在の1に該当する。)
             if type(cfg["discord_commands"]["admin"]["members"]) == list:
@@ -709,7 +722,7 @@ file_formatter = Formatter.DefaultConsoleFormatter('%(asctime)s %(levelname)s %(
 """
 
 #/log用のログ保管場所
-log_msg = deque(maxlen=19)
+log_msg = deque(maxlen=100)
 #discord送信用のログ
 discord_log_msg = deque() 
 def create_logger(name,console_formatter=console_formatter,file_formatter=file_formatter):
@@ -749,6 +762,9 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     logger.addHandler(deque_handler)
     logger.addHandler(discord_handler)
     return logger
+
+def get_log():
+    return log_msg
 
 #ロガーの作成
 logger_name = ["stop", "start", "exit", "ready", "cmd", "help", "backup", "replace", "ip", "sys"]
@@ -803,6 +819,8 @@ try:
     where_terminal = config["discord_commands"]["terminal"]["discord"]
     is_auto_update = config["update"]["auto"]
     update_branch = config["update"]["branch"]
+    enable_advanced_features = config["enable_advanced_features"]
+    sys_files = config["discord_commands"]["cmd"]["stdin"]["sys_files"]
     if config["discord_commands"]["terminal"]["capacity"] == "inf":
         terminal_capacity = float("inf")
     else:
@@ -811,6 +829,8 @@ try:
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+sys_logger.info("advanced features -> " + str(enable_advanced_features))
 #--------------------
 
 
@@ -824,7 +844,7 @@ repository = {
     "user": "sleeping-mikan",
     "name": "server-bot-v2",
     "branch": update_branch,#!debug else main
-}
+} 
 
 def get_self_commit_id():
     url = f'https://api.github.com/repos/{repository["user"]}/{repository["name"]}/contents/server.py?ref={repository["branch"]}'
@@ -1084,7 +1104,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord>を用いて、ファイル確認/削除/作成/移動/フォルダ作成/フォルダ削除/urlからダウンロード/discord送信を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
             "/backup create    ":"/backup create [directory] でデータをバックアップします。ディレクトリ名を省略した場合worldsをコピーします。",
             "/backup apply     ":"/backup apply <directory> でデータをバックアップから復元します。",
-            "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
+            # "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
             "/ip               ":"サーバーのIPアドレスを表示します。",
             "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
             "/permission change":"/permission change <level> <user> で、userのbot操作権利を変更できます。必要な権限レベルは/permission viewで確認できます。",
@@ -1104,7 +1124,7 @@ async def get_text_dat():
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord> can be used to execute commands in the server console. For example, to create a file in the server directory, you can type /cmd stdin mk a.txt.",
             "/backup create    ":"/backup create [directory] creates data. If the directory name is omitted, worlds is copied.",
             "/backup apply     ":"/backup apply <directory> recovers data from a backup.",
-            "/replace          ":"/replace <py file> replaces the bot's code.",
+            # "/replace          ":"/replace <py file> replaces the bot's code.",
             "/ip               ":"The server's IP address will be displayed to discord.",
             "/logs             ":"Display the server's logs. If an argument is given, that file will be returned. If no argument is given, the latest 10 logs will be returned.",
             "/permission change":"/permission change <level> <user> changes the user's bot operation rights. The required permission level can be checked by /permission view.",
@@ -1142,7 +1162,7 @@ async def get_text_dat():
                 "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
 
             },
-            "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
+            # "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
             "ip":"サーバーのIPアドレスを表示します。",
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
@@ -1184,7 +1204,7 @@ async def get_text_dat():
                 "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
 
             },
-            "replace":"<Not recommended> Replace the bot's code with <py file>.",
+            # "replace":"<Not recommended> Replace the bot's code with <py file>.",
             "ip":"The server's IP address will be displayed to discord.",
             "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
             "help":"Display this bot's command list.",
@@ -1288,10 +1308,10 @@ async def get_text_dat():
                     "path_not_allowed":"許可されないパス",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
-                "progress":"更新プログラムの適応中・・・",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"このコマンドはconfigにより実行を拒否されました","value":"/replaceは現在のバージョンでは非推奨です\nautoupdate機能による起動時自動更新と/updateによる更新を使用してください"},
+            #     "progress":"更新プログラムの適応中・・・",
+            # },
             "ip":{
                 "not_allow":"このコマンドはconfigにより実行を拒否されました",
                 "get_ip_failed":"IPアドレスを取得できません",
@@ -1308,7 +1328,7 @@ async def get_text_dat():
                 "error_base":"エラーが発生しました。\n",
             },
             "permission":{
-                "success":"{} の権限 : \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
+                "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
                     "add_success":"`{}`にbotの管理者権限を与えました",
@@ -1440,10 +1460,10 @@ async def get_text_dat():
                     "path_not_allowed":"Path not allowed",
                 },
             },
-            "replace":{
-                "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
-                "progress":"Applying update program",
-            },
+            # "replace":{
+            #     "not_allow":{"name":"This command is denied by config","value":"/replace is not recommended in now version. Please use auto update in config and /update"},
+            #     "progress":"Applying update program",
+            # },
             "ip":{
                 "not_allow":"This command is denied by config",
                 "get_ip_failed":"Failed to get IP address",
@@ -1460,7 +1480,7 @@ async def get_text_dat():
                 "error_base":"An error has occurred.\n",
             },
             "permission":{
-                "success":"{}'s permission : \ndiscord administrator permission : {}\nbot administrator permission : {}",
+                "success":"{}'s permission : \nadvanced(root) features : {}\ndiscord administrator permission : {}\nbot administrator permission : {}",
                 "change":{
                     "already_added":"The user has already been added as an administrator",
                     "add_success":"Added as an administrator to {}",
@@ -1748,7 +1768,7 @@ async def parse_mimd(text: str):
     for line in text.split("\n"):
         parse_line = line
         while parse_line.startswith(" "):
-            parse_line = line[1:]
+            parse_line = parse_line[1:]
         # #から始まる一文ならnameに
         if parse_line[0] == "#":
             send_data.append({"name":"","value":""})
@@ -1868,7 +1888,11 @@ async def on_message(message: discord.Message):
 async def on_ready():
     global process
     ready_logger.info('discord bot logging on')
+    # update_loopを開始
     update_loop.start()
+    # 拡張で読み込んだtasksを実行
+    for task in extension_tasks_func:
+        task.start()
     try:
         #サーバーの起動
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
@@ -2027,16 +2051,17 @@ async def view(interaction: discord.Interaction,user:discord.User,detail:bool):
     await print_user(permission_logger,interaction.user)
     embed = ModifiedEmbeds.DefaultEmbed(title = f"/permission view {user} {detail}")
     COMMAND_MAX_LENGTH = max([len(key) for key in COMMAND_PERMISSION])
+    advanced = "☑" if enable_advanced_features else "☐"
     value = {"admin":"☐","force_admin":"☐"}
     if await is_administrator(user): value["admin"] = f"☑({USER_PERMISSION_MAX})"
     value["force_admin"] = await user_permission(user)
     if detail:
         my_perm_level = await user_permission(user)
         can_use_cmd = {f"{key}":("☑" if COMMAND_PERMISSION[key] <= my_perm_level else "☐") + f"({COMMAND_PERMISSION[key]})" for key in COMMAND_PERMISSION}
-        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```",inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,advanced,value["admin"],value["force_admin"]) + "\n```\n"+"\n".join([f"{key.ljust(COMMAND_MAX_LENGTH)} : {value}" for key,value in can_use_cmd.items()]) + "\n```",inline=False)
         await interaction.response.send_message(embed=embed)
     else:
-        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,value["admin"],value["force_admin"]),inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["permission"]["success"].format(user,advanced,value["admin"],value["force_admin"]),inline=False)
         await interaction.response.send_message(embed=embed)
     permission_logger.info("send permission info : " + str(user.id) + f"({user})")
 
@@ -2155,7 +2180,6 @@ command_group_cmd_stdin = app_commands.Group(name="stdin",description="stdin gro
 command_group_cmd.add_command(command_group_cmd_stdin)
 
 
-sys_files = [".config",".token","logs","mikanassets"]
 important_bot_file = [
     os.path.abspath(os.path.join(os.path.dirname(__file__),i)) for i in sys_files
 ] + [
@@ -2285,8 +2309,8 @@ async def mk(interaction: discord.Interaction, file_path: str,file:discord.Attac
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("file is directory -> " + file_path)
         return
-    # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+    # 全ての条件を満たすがサーバー管理者権限を持たないまたは危険な操作を拒否されている状態で、重要ファイルを操作しようとしている場合
+    if ((not await is_administrator(interaction.user)) or not enable_advanced_features) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mk_logger.info("permission denied -> " + file_path)
@@ -2343,7 +2367,7 @@ async def rm(interaction: discord.Interaction, file_path: str):
         stdin_rm_logger.info("not file -> " + file_path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and await is_important_bot_file(file_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(file_path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(file_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rm_logger.info("permission denied -> " + file_path)
@@ -2426,7 +2450,7 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
         stdin_rmdir_logger.info("directory not exists -> " + dir_path)
         return
     # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
-    if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
+    if await is_important_bot_file(dir_path) and (not enable_advanced_features or (not await is_administrator(interaction.user))):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("permission denied -> " + dir_path)
@@ -2482,7 +2506,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("not file -> " + path)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
-    if not await is_administrator(interaction.user) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("permission denied -> " + path + " or " + dest)
@@ -2647,7 +2671,7 @@ async def wget(interaction: discord.Interaction,url:str,path:str = "mi_dl_file.t
         await interaction.response.send_message(embed=embed)
         return
     # 管理者権限を持っていなくて、重要ファイルをダウンロードする場合は拒否
-    if not await is_administrator(interaction.user) and await is_important_bot_file(save_path):
+    if (not await is_administrator(interaction.user) or not enable_advanced_features) and await is_important_bot_file(save_path):
         stdin_wget_logger.info("permission denied -> " + save_path)
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(save_path),inline=False)
         await interaction.response.send_message(embed=embed)
@@ -2886,39 +2910,39 @@ tree.add_command(command_group_announce)
 
 
 #/replace <py file>
-@tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
-async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
-    await print_user(replace_logger,interaction.user)
-    embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
-    #デフォルトでコマンドを無効に
-    if not allow["replace"]:
-        embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    #管理者権限を要求
-    if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
-        await not_enough_permission(interaction,replace_logger)
-        return
-    #サーバー起動確認
-    if is_running_server(replace_logger): 
-        embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
-        await interaction.response.send_message(embed=embed)
-        return
-    replace_logger.info('replace started')
-    # ファイルをすべて読み込む
-    with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
-        f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
-    # discordにコードを置き換える
-    replace_logger.info('replace done')
-    embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
-    await interaction.response.send_message(embed=embed)
-    response = await interaction.original_response()
-    #interaction id を保存
-    msg_id = str(response.id)
-    channel_id = str(interaction.channel_id)
-    replace_logger.info("call update.py")
-    replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+# @tree.command(name="replace",description=COMMAND_DESCRIPTION[lang]["replace"])
+# async def replace(interaction: discord.Interaction,py_file:discord.Attachment):
+#     await print_user(replace_logger,interaction.user)
+#     embed = ModifiedEmbeds.DefaultEmbed(title= f"/replace {py_file.filename}")
+#     #デフォルトでコマンドを無効に
+#     if not allow["replace"]:
+#         embed.add_field(name=RESPONSE_MSG["replace"]["not_allow"]["name"],value=RESPONSE_MSG["replace"]["not_allow"]["value"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     #管理者権限を要求
+#     if await user_permission(interaction.user) < COMMAND_PERMISSION["replace"]:
+#         await not_enough_permission(interaction,replace_logger)
+#         return
+#     #サーバー起動確認
+#     if is_running_server(replace_logger): 
+#         embed.add_field(name="",value=RESPONSE_MSG["other"]["is_running"],inline=False)
+#         await interaction.response.send_message(embed=embed)
+#         return
+#     replace_logger.info('replace started')
+#     # ファイルをすべて読み込む
+#     with open(temp_path + "/new_source.py","w",encoding="utf-8") as f:
+#         f.write((await py_file.read()).decode("utf-8").replace("\r\n","\n"))
+#     # discordにコードを置き換える
+#     replace_logger.info('replace done')
+#     embed.add_field(name="",value=RESPONSE_MSG["replace"]["progress"],inline=False)
+#     await interaction.response.send_message(embed=embed)
+#     response = await interaction.original_response()
+#     #interaction id を保存
+#     msg_id = str(response.id)
+#     channel_id = str(interaction.channel_id)
+#     replace_logger.info("call update.py")
+#     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
+#     os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 #/ip
 @tree.command(name="ip",description=COMMAND_DESCRIPTION[lang]["ip"])
@@ -3299,6 +3323,34 @@ async def exit(interaction: discord.Interaction):
     sys.exit()
 
 # 拡張コマンドを読み込む
+
+#--------------------
+
+
+
+def get_process():
+    return process
+
+def append_tasks_func(func):
+    extension_tasks_func.append(func)
+    return
+
+is_write_server_block = False
+def write_server_in(command: str):
+    global is_write_server_block
+    if is_write_server_block:
+        return False, "write_server_block"
+    is_write_server_block = True
+    # サーバーが動いていれば、コマンドを送る
+    if is_stopped_server(sys_logger):
+        is_write_server_block = False
+        return False, "server_is_not_running"
+    process.stdin.write(command + "\n")
+    process.stdin.flush()
+    is_write_server_block = False
+    return True, "success"
+#--------------------
+
 
 #--------------------
 

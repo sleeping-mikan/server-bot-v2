@@ -1,6 +1,6 @@
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..logger.logger_create import *
 from ..minecraft.read_properties import *
 from ..assets.text_dat import *
@@ -88,7 +88,11 @@ async def on_message(message: discord.Message):
 async def on_ready():
     global process
     ready_logger.info('discord bot logging on')
+    # update_loopを開始
     update_loop.start()
+    # 拡張で読み込んだtasksを実行
+    for task in extension_tasks_func:
+        task.start()
     try:
         #サーバーの起動
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))

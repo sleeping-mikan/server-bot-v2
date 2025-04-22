@@ -32,7 +32,7 @@ async def rmdir(interaction: discord.Interaction, dir_path: str):
         stdin_rmdir_logger.info("directory not exists -> " + dir_path)
         return
     # 全ての条件を満たすが、権限が足りず、対象が重要なディレクトリか確認
-    if await is_important_bot_file(dir_path) and not await is_administrator(interaction.user):
+    if await is_important_bot_file(dir_path) and (not enable_advanced_features or (not await is_administrator(interaction.user))):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["permission_denied"].format(dir_path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_rmdir_logger.info("permission denied -> " + dir_path)
