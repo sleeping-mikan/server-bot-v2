@@ -108,8 +108,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 ```json
 {
     "allow": {
-        "ip": true,
-        "replace":false
+        "ip": true
     },
     "auto_update": true,
     "server_path": "path/to/serverdir/",
@@ -162,7 +161,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 
 |項目|説明|
 |---|---|
-|allow|各コマンドの実行を許可するかどうか。(現在は/ip,/replaceにのみ実装されています)|
+|allow|各コマンドの実行を許可するかどうか。(現在は/ipにのみ実装されています)|
 |auto_update|サーバー本体を自動更新するか否か|
 |server_path|server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
 |server_name|server本体の名前 java版minecraftの場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
@@ -188,7 +187,7 @@ server.pyはサーバ本体と同じ階層に配置することを推奨しま�
 
 ホストipアドレス:<configで設定したport>を用いて操作することができます。
 
-アクセス時にtokenを要求されるため、discordで`/token`を実行しtokenを入手してください。
+アクセス時にtokenを要求されるため、discordで`/tokengen`を実行しtokenを入手してください。
 
 現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
@@ -267,6 +266,8 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 ## 拡張機能
 
 拡張機能を追加する場合server.pyと同じディレクトリのmikanassets/extensionに配置してください。
+
+`構造はmikanassets/extension/拡張機能名/拡張機能を実装したファイル群`となります。
 
 拡張機能の実装仕様は[server-bot-extensions](https://github.com/sleeping-mikan/server-bot-extensions)で確認できます。
 
