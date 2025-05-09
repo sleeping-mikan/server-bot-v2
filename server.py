@@ -314,7 +314,7 @@ def make_config():
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
         config_dict = {\
-                            "allow":{"ip":True,"replace":False},\
+                            "allow":{"ip":True},\
                             "update":{
                                 "auto":True,\
                                 "branch":"main",\
@@ -356,11 +356,9 @@ def make_config():
         #要素がそろっているかのチェック
         def check(cfg):
             if "allow" not in cfg:
-                cfg["allow"] = {"ip":True,"replace":False}
+                cfg["allow"] = {"ip":True}
             if "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
-            if "replace" not in cfg["allow"]:
-                cfg["allow"]["replace"] = False
 
             if "update" not in cfg:
                 cfg["update"] = {"auto":True,"branch":"main"}
@@ -807,7 +805,7 @@ try:
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
-    allow = {"ip":config["allow"]["ip"],"replace":config["allow"]["replace"]}
+    allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
