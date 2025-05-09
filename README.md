@@ -267,7 +267,7 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 
 拡張機能を追加する場合server.pyと同じディレクトリのmikanassets/extensionに配置してください。
 
-`構造はmikanassets/extension/拡張機能名/拡張機能を実装したファイル群`となります。
+構造は`mikanassets/extension/拡張機能名/拡張機能を実装したファイル群`となります。
 
 拡張機能の実装仕様は[server-bot-extensions](https://github.com/sleeping-mikan/server-bot-extensions)で確認できます。
 
