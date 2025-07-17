@@ -22,8 +22,8 @@ import base64
 import subprocess
 import sys
 import json
-
-
+from contextlib import asynccontextmanager
+import pathlib
 #--------------------
 
 
@@ -52,12 +52,15 @@ for i in args:
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
     "discord.py": "2.3.2",
-    "requests": "2.32.2",
+    "requests": "2.32.4",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
     "waitress": "3.0.1",
-    "aiohttp": "3.10.11",
-    "psutil": "5.9.0"
+    "aiohttp": "3.12.14",
+    "psutil": "5.9.0",
+    "uvicorn": "0.35.0",
+    "fastapi": "0.116.1",
+    "zipstream-ng": "1.8.0"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
@@ -128,6 +131,12 @@ try:
     import aiohttp
 
     import psutil
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import uvicorn
+    import zipstream  # pip install zipstream-ng
+    from fastapi.middleware.wsgi import WSGIMiddleware
 except:
     print("import error. please run 'python3 <thisfile> -reinstall'")
 #--------------------
@@ -161,7 +170,7 @@ print()
 process = None
 
 #起動した時刻
-time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+start_time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
 
 #外部変数
 token = None
@@ -329,7 +338,8 @@ def make_config():
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
-                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                        "sys_files": [".config",".token","logs","mikanassets"],\
+                                        "send_discord":{"bits_capacity":2 * 1024 * 1024 * 1024},\
                                     },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
@@ -380,6 +390,14 @@ def make_config():
                 cfg["discord_commands"]["cmd"]["stdin"] = {}
             if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
                 cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
+            if "send_discord" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"] = {"mode":"selfserver","bits_capacity":2 * 1024 * 1024 * 1024}
+            # if "mode" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            # elif cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] not in ["selfserver","fileio"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            if "bits_capacity" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"] = 2 * 1024 * 1024 * 1024
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -625,13 +643,15 @@ class Formatter():
             formatted_message = f"{bold_black_asctime} {colored_levelname} {message}"
             
             return formatted_message
-    class FlaskFormatter(logging.Formatter):
-        COLORS = {
-            'FLASK': Color.BOLD + Color.CYAN,   # Green
-        }
-        RESET = '\033[0m'  # Reset color
-        BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
-
+    class WebFormatter(logging.Formatter):
+        def __init__(self, prefix, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.COLORS = {
+                'FLASK': Color.BOLD + Color.CYAN,   # Green
+            }
+            self.RESET = '\033[0m'  # Reset color
+            self.BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
@@ -639,7 +659,7 @@ class Formatter():
             
             # Apply color to the level name only
             color = self.COLORS["FLASK"]
-            colored_levelname = f"{color}FLASK   {self.RESET}"
+            colored_levelname = f"{color}{self.prefix.ljust(Formatter.levelname_size)}{self.RESET}"
             
             # Get the formatted message
             message = record.getMessage()
@@ -686,12 +706,15 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
-    class FlaskConsoleFormatter(logging.Formatter):
+    class WebConsoleFormatter(logging.Formatter):
+        def __init__(self, prefix, fmt = None, datefmt = None, style = "%", validate = True, *, defaults = None):
+            super().__init__(fmt, datefmt, style, validate, defaults=defaults)
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
             
-            padded_levelname = "FLASK".ljust(Formatter.levelname_size)
+            padded_levelname = self.prefix.ljust(Formatter.levelname_size)
             
             
             # Get the formatted message
@@ -701,6 +724,11 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
+        
+    # カスタムフィルタ（/get_console_data を除外）
+    class ExcludeConsoleDataFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return "/get_console_data" not in record.getMessage()
 
 
 #logger
@@ -746,7 +774,7 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     console.setFormatter(console_formatter)
     logger.addHandler(console)
     if log["all"]:
-        f = time + ".log"
+        f = start_time + ".log"
         file = logging.FileHandler(now_path + "/logs/all " + f,encoding="utf-8")
         file.setLevel(logging.DEBUG)
         file.setFormatter(file_formatter)
@@ -823,6 +851,8 @@ try:
         terminal_capacity = float("inf")
     else:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
+    # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
+    send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1286,6 +1316,7 @@ async def get_text_dat():
                         "is_file":"`{}`はファイルであるため送信します",
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                         "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
+                        "send_myserver_link": "<@{}> {} から、{}をダウンロードできます。有効期限は5分です。",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -1721,11 +1752,15 @@ async def user_permission(user:discord.User):
 def is_path_within_scope(path):
     # 絶対パスを取得
     path = os.path.abspath(path)
-    # server_path 以下にあるか確認
-    if path.startswith(os.path.abspath(server_path)):
+    resolved_target_path = pathlib.Path(path).resolve(strict=False)
+    resolved_server_path = pathlib.Path(server_path).resolve()
+    try:
+        resolved_target_path.relative_to(resolved_server_path)
+        sys_logger.info("valid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
         return True
-    sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
-    return False
+    except ValueError:
+        sys_logger.info("invalid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
+        return False
 
 async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
     """ディレクトリをZIP化し、非同期的に返す関数"""
@@ -2522,14 +2557,86 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
 
 stdin_send_discord_logger = stdin_logger.getChild("send-discord")
 
+# # !open ./repos/discord/command/cmd/stdin/send_discord/fileio.py
 
-discord_multi_thread_return_dict = {}
-def send_file_io(_id, file_obj, file_name) -> requests.Response:
-    response = requests.post("https://file.io/", files={"file": (file_name, file_obj)})
-    discord_multi_thread_return_dict[_id] = response
-    
+#--------------------
 
-send_discord_timeout_sec = 60 * 25
+
+
+class SendDiscordSelfServer:
+    # クラススコープで状態を保持
+    _download_registry: dict[str, tuple[str, float]] = {}
+    _lock = asyncio.Lock()
+    _ttl_default = 300  # 5分
+
+    @classmethod
+    async def register_download(cls, directory_path: str, ttl_seconds: int = None) -> str:
+        # if not os.path.isdir(directory_path):
+        #     raise ValueError("指定されたパスはディレクトリではありません")
+        ttl = ttl_seconds if ttl_seconds else cls._ttl_default
+        token = uuid.uuid4().hex
+        expire_at = datetime.now() + timedelta(seconds=ttl)
+        async with cls._lock:
+            cls._download_registry[token] = (directory_path, expire_at)
+        stdin_send_discord_logger.info("register download -> " + directory_path)
+        return f"http://{requests.get('https://api.ipify.org').text}:{web_port}/download/{token}"
+
+    @classmethod
+    async def _cleanup_loop(cls):
+        while True:
+            now = datetime.now()
+            async with cls._lock:
+                expired = [t for t, (_, exp) in cls._download_registry.items() if now > exp]
+                for t in expired:
+                    del cls._download_registry[t]
+                    stdin_send_discord_logger.info("cleanup download -> " + t)
+            await asyncio.sleep(30)
+
+    @classmethod
+    async def download(cls, token: str):
+        async with cls._lock:
+            entry = cls._download_registry.pop(token, None)
+        if not entry:
+            stdin_send_discord_logger.info("download not found -> " + token)
+            raise HTTPException(status_code=404, detail="リンクが無効または既に使用されました")
+        directory_path, expire_at = entry
+        if 	datetime.now() > expire_at > expire_at:
+            stdin_send_discord_logger.info("download expired -> " + token)
+            raise HTTPException(status_code=410, detail="このリンクは期限切れです")
+
+        # zipstreamでリアルタイムZIP
+        z = zipstream.ZipStream()
+        z.add_path(directory_path)
+        # for root, _, files in os.walk(directory_path):
+        #     for file in files:
+        #         full_path = os.path.join(root, file)
+        #         arcname = os.path.relpath(full_path, start=directory_path)
+        #         z.add(, arcname)
+        stdin_send_discord_logger.info("download -> " + directory_path)
+        filename = os.path.basename(directory_path) or "download"
+        return StreamingResponse(
+            z,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.zip"'}
+        )
+
+    @classmethod
+    def create_app(cls) -> FastAPI:
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            task = asyncio.create_task(cls._cleanup_loop())
+            yield
+            task.cancel()
+
+        app = FastAPI(lifespan=lifespan)
+        app.add_api_route("/download/{token}", cls.download, methods=["GET"])
+        return app
+
+#--------------------
+
+
+#--------------------
+
 
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
@@ -2538,7 +2645,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
-    file_size_limit_web = 2 * 1024 * 1024 * 1024  # 2GBを超えた場合file.ioでも無理なのでエラー
+    file_size_limit_web = send_discord_bits_capacity  # 2GBを超えた場合file.ioでも無理なのでエラー
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin send-discord"]:
         await not_enough_permission(interaction,stdin_send_discord_logger)
@@ -2555,88 +2662,12 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
-    # 該当のアイテムがディレクトリならzip圧縮をする
-    if os.path.isdir(file_path):
-        # とりあえずdiscordに送っておく
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path),inline=False)
-        await interaction.response.send_message(embed=embed,ephemeral=True)
-        stdin_send_discord_logger.info("make zip -> " + str(file_path))
-        zip_buffer,file_size = await create_zip_async(file_path)
-        base_file_path = file_path
-        file_path = zip_buffer
-        file_path.seek(0)
-        stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size))
-        file_name = file_name + ".zip"
-        file_obj = file_path
-    else:
-        # ファイルサイズをチェック
-        file_size = os.path.getsize(file_path)
-        stdin_send_discord_logger.info("file -> " + str(file_path))
-        # ファイルを開く
-        file_obj = open(file_path, "rb")
-    if file_size > file_size_limit_web:
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web),inline=False)
-        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
-    if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit),inline=False)
-        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
-        # file.ioにアップロード
-        try:
-            timeout_sec = send_discord_timeout_sec
-            # uuidを使って、POSTするスレッドの戻り値を待機する
-            discord_dict_id = uuid.uuid4()
-            io_thread = threading.Thread(target=send_file_io,args=(discord_dict_id,file_obj,file_name),daemon=True)
-            io_thread.start()
-            # discord_multi_thread_return_dict[discord_dict_id]にPOSTスレッドがresponseをセットするまで繰り返し
-            while discord_dict_id not in discord_multi_thread_return_dict:
-                await asyncio.sleep(1)
-                timeout_sec -= 1
-                if timeout_sec <= 0:
-                    raise asyncio.TimeoutError
-            if discord_multi_thread_return_dict[discord_dict_id].status_code != 200:
-                status = discord_multi_thread_return_dict[discord_dict_id].status_code
-                reason = discord_multi_thread_return_dict[discord_dict_id].reason
-                text = discord_multi_thread_return_dict[discord_dict_id].text
-                stdin_send_discord_logger.error("upload to file.io failed -> " + str(file_path) + " ,status -> " + str(status) + " , " + str(reason) + " :: " + str(text))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-                return
-            response = discord_multi_thread_return_dict[discord_dict_id]
-            stdin_send_discord_logger.info("content type -> " + str(response.headers.get("content-type")))
-            # responseがjsonで来ないことがあるので
-            if not response.headers.get("content-type").startswith("application/json"):
-                status = discord_multi_thread_return_dict[discord_dict_id].status_code
-                reason = discord_multi_thread_return_dict[discord_dict_id].reason
-                text = "Too Many Characters"
-                stdin_send_discord_logger.error("upload to file.io failed (not json) -> " + str(file_path))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-                return
-            link = response.json()["link"]
-            stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
-            embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link),inline=False)
-            await send_discord_message_or_edit(interaction=interaction,embed=embed)
-        except Exception as e:
-            if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
-                stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-            else:
-                import traceback
-                stdin_send_discord_logger.error(traceback.format_exc())
-                stdin_send_discord_logger.error("raise upload to file.io failed")
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-        finally:
-            # file_objが開いていたら閉じる(file_objはopen() or io.BytesIO()で開いたもの)
-            file_obj.close()
-            stdin_send_discord_logger.info("close file -> " + str(file_path))
-    else:
-        # Discordで直接送信
-        stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await send_discord_message_or_edit(interaction=interaction,file=discord.File(file_path,filename=file_name),embed=embed,ephemeral=True)
+    # if send_discord_mode == "fileio":
+    #     await send_discord_fileio(interaction, embed, stdin_send_discord_logger, file_size_limit_web, file_size_limit,file_path, file_name)
+    link = await SendDiscordSelfServer.register_download(file_path)
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link, file_path),inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+#--------------------
 
 
 #--------------------
@@ -3416,7 +3447,45 @@ async def on_error(interaction: discord.Interaction, error: Exception):
 
 app = Flask(__name__,template_folder="mikanassets/web",static_folder="mikanassets/web")
 app.secret_key = flask_secret_key
-flask_logger = create_logger("werkzeug",Formatter.FlaskFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.FlaskConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
+flask_logger = create_logger("werkzeug",Formatter.WebFormatter("FLASK",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("FLASK",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger_err = create_logger("uvicorn.error",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger = create_logger("uvicorn.access",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+
+class ExcludeGetConsoleDataFilter(logging.Filter):
+    def filter(self, record):
+        # record.args はログ出力の引数、record.msg が生ログ文字列
+        # "GET /get_console_data" を含むかどうかを確認
+        return "/get_console_data" not in str(record.getMessage())
+for logger in [flask_logger,uvicorn_logger_err,uvicorn_logger]:
+    logger.addFilter(ExcludeGetConsoleDataFilter())
+# def get_uvicorn_custom_log_config():
+#     from uvicorn.config import LOGGING_CONFIG
+#     uvicorn_custom_log_config = LOGGING_CONFIG.copy()
+#     uvicorn_custom_log_config["formatters"]["default"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+#     uvicorn_custom_log_config["formatters"]["access"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+
+#     class ExcludeGetConsoleDataFilter(logging.Filter):
+#         def filter(self, record):
+#             # record.args はログ出力の引数、record.msg が生ログ文字列
+#             # "GET /get_console_data" を含むかどうかを確認
+#             return "/get_console_data" not in str(record.getMessage())
+
+#     uvicorn_custom_log_config["filters"] = {
+#         "exclude_get_console_data": {
+#             "()": ExcludeGetConsoleDataFilter,
+#         }
+#     }
+#     uvicorn_custom_log_config["handlers"]["access"]["filters"] = ["exclude_get_console_data"]
+#     return uvicorn_custom_log_config
+
+# fastapi_logger = [
+#     create_logger("uvicorn.access", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn.error", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+
+#     ]
 
 class LogIPMiddleware:
     def __init__(self, app):
@@ -3436,6 +3505,25 @@ class LogIPMiddleware:
             flask_logger.info(f"Client IP: {client_ip}, Method: {request_method}, URL: {request_uri}, Query: {query_string}")
 
         return self.app(environ, start_response)
+    
+# class LogIPMiddlewareASGI:
+#     def __init__(self, app):
+#         self.app = app
+
+#     async def __call__(self, scope, receive, send):
+#         if scope["type"] == "http":
+#             client = scope.get("client")
+#             method = scope.get("method")
+#             path = scope.get("path")
+#             query_string = scope.get("query_string", b"").decode("utf-8")
+
+#             if path != "/get_console_data":
+#                 client_ip = client[0] if client else "unknown"
+#                 flask_logger.info(
+#                     f"Client IP: {client_ip}, Method: {method}, URL: {path}, Query: {query_string}"
+#                 )
+
+#         await self.app(scope, receive, send)
 
 # ミドルウェアをアプリに適用
 app.wsgi_app = LogIPMiddleware(app.wsgi_app)
@@ -3598,13 +3686,18 @@ def submit_data():
     # データを処理し、結果を返す（例: メッセージを返す）
     return jsonify(f"result: {user_input}")
 
-def run_web():
-    waitress.serve(app, host='0.0.0.0', port=web_port, _quiet=True)
+def run_webservice_server():
+    fastapi_app = SendDiscordSelfServer.create_app()
+    if use_flask_server:
+        fastapi_app.mount("/", WSGIMiddleware(app))
+    # fastapi_app = LogIPMiddlewareASGI(fastapi_app)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=web_port, log_config=None)
 
     
-if use_flask_server:
-    web_thread = threading.Thread(target=run_web, daemon=True)
-    web_thread.start()
+web_thread = threading.Thread(target=run_webservice_server, daemon=True)
+web_thread.start()
+
+
 #--------------------
 
 
@@ -3616,7 +3709,7 @@ if use_flask_server:
 # discord.py用のロガーを取得して設定
 discord_logger = logging.getLogger('discord')
 if log["all"]:
-    file_handler = logging.FileHandler(now_path + "/logs/all " + time + ".log")
+    file_handler = logging.FileHandler(now_path + "/logs/all " + start_time + ".log")
     file_handler.setFormatter(file_formatter)
     discord_logger.addHandler(file_handler)
 #--------------------

@@ -8,12 +8,15 @@ from .read_args import *
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
     "discord.py": "2.3.2",
-    "requests": "2.32.2",
+    "requests": "2.32.4",
     "Flask": "3.0.3",
     "ansi2html": "1.9.2",
     "waitress": "3.0.1",
-    "aiohttp": "3.10.11",
-    "psutil": "5.9.0"
+    "aiohttp": "3.12.14",
+    "psutil": "5.9.0",
+    "uvicorn": "0.35.0",
+    "fastapi": "0.116.1",
+    "zipstream-ng": "1.8.0"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 

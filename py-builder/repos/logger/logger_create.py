@@ -35,7 +35,7 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     console.setFormatter(console_formatter)
     logger.addHandler(console)
     if log["all"]:
-        f = time + ".log"
+        f = start_time + ".log"
         file = logging.FileHandler(now_path + "/logs/all " + f,encoding="utf-8")
         file.setLevel(logging.DEBUG)
         file.setFormatter(file_formatter)
