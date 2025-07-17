@@ -173,11 +173,15 @@ async def user_permission(user:discord.User):
 def is_path_within_scope(path):
     # 絶対パスを取得
     path = os.path.abspath(path)
-    # server_path 以下にあるか確認
-    if path.startswith(os.path.abspath(server_path)):
+    resolved_target_path = pathlib.Path(path).resolve(strict=False)
+    resolved_server_path = pathlib.Path(server_path).resolve()
+    try:
+        resolved_target_path.relative_to(resolved_server_path)
+        sys_logger.info("valid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
         return True
-    sys_logger.info("invalid path -> " + path + f"(server_path : {server_path})")
-    return False
+    except ValueError:
+        sys_logger.info("invalid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
+        return False
 
 async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
     """ディレクトリをZIP化し、非同期的に返す関数"""
