@@ -2,15 +2,8 @@
 from ..common import *
 from .fileio import *
 from .selfserver import *
+from ._header import *
 #!end-ignore
-
-stdin_send_discord_logger = stdin_logger.getChild("send-discord")
-
-
-
-    
-
-
 
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
