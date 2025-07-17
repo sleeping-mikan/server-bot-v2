@@ -122,7 +122,8 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "mc": true,
     "web": {
         "secret_key": "****",
-        "port": 80
+        "port": 80,
+        "use_front_page": true
     },
     "discord_commands": {
         "cmd": {
@@ -174,6 +175,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
 |web.port|webサーバーのポート番号を入力します。なお、/cmd stdin send-discordにおいてもこのポート番号を利用します|
+|web.use_front_page|webサーバーページからの操作を許可するか否か(Falseの場合にもファイルをやり取りはできます。)|
 |discord_commands.cmd.stdin.sys_files|/cmd stdin <mv/rmdir/rm/wget/mv>において、権限を持っていても操作を拒否するファイルのリスト|
 |discord_commands.cmd.stdin.send_discord.bits_capacity|/cmd stdin send-discordにおいて、送信を許可するファイルの最大容量|
 |discord_commands.cmd.serverin.allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
