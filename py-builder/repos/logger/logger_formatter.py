@@ -2,7 +2,7 @@
 loggerで用いるフォーマッタの定義
 """
 #!ignore
-from ..imports import *
+from ..entry.standard_imports import *
 from ..constant import *
 from ..colors import *
 #!end-ignore
@@ -90,13 +90,15 @@ class Formatter():
             formatted_message = f"{bold_black_asctime} {colored_levelname} {message}"
             
             return formatted_message
-    class FlaskFormatter(logging.Formatter):
-        COLORS = {
-            'FLASK': Color.BOLD + Color.CYAN,   # Green
-        }
-        RESET = '\033[0m'  # Reset color
-        BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
-
+    class WebFormatter(logging.Formatter):
+        def __init__(self, prefix, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.COLORS = {
+                'FLASK': Color.BOLD + Color.CYAN,   # Green
+            }
+            self.RESET = '\033[0m'  # Reset color
+            self.BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
@@ -104,7 +106,7 @@ class Formatter():
             
             # Apply color to the level name only
             color = self.COLORS["FLASK"]
-            colored_levelname = f"{color}FLASK   {self.RESET}"
+            colored_levelname = f"{color}{self.prefix.ljust(Formatter.levelname_size)}{self.RESET}"
             
             # Get the formatted message
             message = record.getMessage()
@@ -151,12 +153,15 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
-    class FlaskConsoleFormatter(logging.Formatter):
+    class WebConsoleFormatter(logging.Formatter):
+        def __init__(self, prefix, fmt = None, datefmt = None, style = "%", validate = True, *, defaults = None):
+            super().__init__(fmt, datefmt, style, validate, defaults=defaults)
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
             
-            padded_levelname = "FLASK".ljust(Formatter.levelname_size)
+            padded_levelname = self.prefix.ljust(Formatter.levelname_size)
             
             
             # Get the formatted message
@@ -166,6 +171,11 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
+        
+    # カスタムフィルタ（/get_console_data を除外）
+    class ExcludeConsoleDataFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return "/get_console_data" not in record.getMessage()
 
 
 #logger

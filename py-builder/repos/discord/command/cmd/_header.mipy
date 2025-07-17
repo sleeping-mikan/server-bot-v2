@@ -13,7 +13,7 @@
 #!open ./repos/discord/command/cmd/stdin/mkdir.py
 #!open ./repos/discord/command/cmd/stdin/rmdir.py
 #!open ./repos/discord/command/cmd/stdin/mv.py
-#!open ./repos/discord/command/cmd/stdin/send-discord/_header.mipy
+#!open ./repos/discord/command/cmd/stdin/send_discord/_header.mipy
 #!open ./repos/discord/command/cmd/stdin/wget.py
 
 #!open ./repos/discord/command/cmd/_append.py

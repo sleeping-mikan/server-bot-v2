@@ -18,7 +18,7 @@ class SendDiscordSelfServer:
         expire_at = datetime.now() + timedelta(seconds=ttl)
         async with cls._lock:
             cls._download_registry[token] = (directory_path, expire_at)
-        return f"http://localhost:8000/download/{token}"
+        return f"http://localhost:{web_port}/download/{token}"
 
     @classmethod
     async def _cleanup_loop(cls):
@@ -66,8 +66,3 @@ class SendDiscordSelfServer:
         app = FastAPI(lifespan=lifespan)
         app.add_api_route("/download/{token}", cls.download, methods=["GET"])
         return app
-
-threading.Thread(
-    target=lambda: uvicorn.run(SendDiscordSelfServer.create_app(), host="0.0.0.0", port=8000),
-    daemon=True
-).start()

@@ -136,6 +136,7 @@ try:
     from fastapi.responses import StreamingResponse
     import uvicorn
     import zipstream  # pip install zipstream-ng
+    from fastapi.middleware.wsgi import WSGIMiddleware
 except:
     print("import error. please run 'python3 <thisfile> -reinstall'")
 #--------------------
@@ -644,13 +645,15 @@ class Formatter():
             formatted_message = f"{bold_black_asctime} {colored_levelname} {message}"
             
             return formatted_message
-    class FlaskFormatter(logging.Formatter):
-        COLORS = {
-            'FLASK': Color.BOLD + Color.CYAN,   # Green
-        }
-        RESET = '\033[0m'  # Reset color
-        BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
-
+    class WebFormatter(logging.Formatter):
+        def __init__(self, prefix, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.COLORS = {
+                'FLASK': Color.BOLD + Color.CYAN,   # Green
+            }
+            self.RESET = '\033[0m'  # Reset color
+            self.BOLD_BLACK = Color.BOLD + Color.BLACK  # Bold Black
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
@@ -658,7 +661,7 @@ class Formatter():
             
             # Apply color to the level name only
             color = self.COLORS["FLASK"]
-            colored_levelname = f"{color}FLASK   {self.RESET}"
+            colored_levelname = f"{color}{self.prefix.ljust(Formatter.levelname_size)}{self.RESET}"
             
             # Get the formatted message
             message = record.getMessage()
@@ -705,12 +708,15 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
-    class FlaskConsoleFormatter(logging.Formatter):
+    class WebConsoleFormatter(logging.Formatter):
+        def __init__(self, prefix, fmt = None, datefmt = None, style = "%", validate = True, *, defaults = None):
+            super().__init__(fmt, datefmt, style, validate, defaults=defaults)
+            self.prefix = prefix
         def format(self, record):
             # Format the asctime
             record.asctime = self.formatTime(record, self.datefmt)
             
-            padded_levelname = "FLASK".ljust(Formatter.levelname_size)
+            padded_levelname = self.prefix.ljust(Formatter.levelname_size)
             
             
             # Get the formatted message
@@ -720,6 +726,11 @@ class Formatter():
             formatted_message = f"{record.asctime} {padded_levelname} {message}"
             
             return formatted_message
+        
+    # カスタムフィルタ（/get_console_data を除外）
+    class ExcludeConsoleDataFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return "/get_console_data" not in record.getMessage()
 
 
 #logger
@@ -2541,7 +2552,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
 
 #--------------------
 
-# # !open ./repos/discord/command/cmd/stdin/send-discord/fileio.py
+# # !open ./repos/discord/command/cmd/stdin/send_discord/fileio.py
 
 #--------------------
 
@@ -2562,7 +2573,7 @@ class SendDiscordSelfServer:
         expire_at = datetime.now() + timedelta(seconds=ttl)
         async with cls._lock:
             cls._download_registry[token] = (directory_path, expire_at)
-        return f"http://localhost:8000/download/{token}"
+        return f"http://localhost:{web_port}/download/{token}"
 
     @classmethod
     async def _cleanup_loop(cls):
@@ -2611,10 +2622,6 @@ class SendDiscordSelfServer:
         app.add_api_route("/download/{token}", cls.download, methods=["GET"])
         return app
 
-threading.Thread(
-    target=lambda: uvicorn.run(SendDiscordSelfServer.create_app(), host="0.0.0.0", port=8000),
-    daemon=True
-).start()
 #--------------------
 
 
@@ -3438,7 +3445,45 @@ async def on_error(interaction: discord.Interaction, error: Exception):
 
 app = Flask(__name__,template_folder="mikanassets/web",static_folder="mikanassets/web")
 app.secret_key = flask_secret_key
-flask_logger = create_logger("werkzeug",Formatter.FlaskFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.FlaskConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
+flask_logger = create_logger("werkzeug",Formatter.WebFormatter("FLASK",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("FLASK",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger_err = create_logger("uvicorn.error",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger = create_logger("uvicorn.access",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+
+class ExcludeGetConsoleDataFilter(logging.Filter):
+    def filter(self, record):
+        # record.args はログ出力の引数、record.msg が生ログ文字列
+        # "GET /get_console_data" を含むかどうかを確認
+        return "/get_console_data" not in str(record.getMessage())
+for logger in [flask_logger,uvicorn_logger_err,uvicorn_logger]:
+    logger.addFilter(ExcludeGetConsoleDataFilter())
+# def get_uvicorn_custom_log_config():
+#     from uvicorn.config import LOGGING_CONFIG
+#     uvicorn_custom_log_config = LOGGING_CONFIG.copy()
+#     uvicorn_custom_log_config["formatters"]["default"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+#     uvicorn_custom_log_config["formatters"]["access"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+
+#     class ExcludeGetConsoleDataFilter(logging.Filter):
+#         def filter(self, record):
+#             # record.args はログ出力の引数、record.msg が生ログ文字列
+#             # "GET /get_console_data" を含むかどうかを確認
+#             return "/get_console_data" not in str(record.getMessage())
+
+#     uvicorn_custom_log_config["filters"] = {
+#         "exclude_get_console_data": {
+#             "()": ExcludeGetConsoleDataFilter,
+#         }
+#     }
+#     uvicorn_custom_log_config["handlers"]["access"]["filters"] = ["exclude_get_console_data"]
+#     return uvicorn_custom_log_config
+
+# fastapi_logger = [
+#     create_logger("uvicorn.access", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn.error", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+
+#     ]
 
 class LogIPMiddleware:
     def __init__(self, app):
@@ -3458,6 +3503,25 @@ class LogIPMiddleware:
             flask_logger.info(f"Client IP: {client_ip}, Method: {request_method}, URL: {request_uri}, Query: {query_string}")
 
         return self.app(environ, start_response)
+    
+# class LogIPMiddlewareASGI:
+#     def __init__(self, app):
+#         self.app = app
+
+#     async def __call__(self, scope, receive, send):
+#         if scope["type"] == "http":
+#             client = scope.get("client")
+#             method = scope.get("method")
+#             path = scope.get("path")
+#             query_string = scope.get("query_string", b"").decode("utf-8")
+
+#             if path != "/get_console_data":
+#                 client_ip = client[0] if client else "unknown"
+#                 flask_logger.info(
+#                     f"Client IP: {client_ip}, Method: {method}, URL: {path}, Query: {query_string}"
+#                 )
+
+#         await self.app(scope, receive, send)
 
 # ミドルウェアをアプリに適用
 app.wsgi_app = LogIPMiddleware(app.wsgi_app)
@@ -3620,13 +3684,18 @@ def submit_data():
     # データを処理し、結果を返す（例: メッセージを返す）
     return jsonify(f"result: {user_input}")
 
-def run_web():
-    waitress.serve(app, host='0.0.0.0', port=web_port, _quiet=True)
+def run_webservice_server():
+    fastapi_app = SendDiscordSelfServer.create_app()
+    if use_flask_server:
+        fastapi_app.mount("/", WSGIMiddleware(app))
+    # fastapi_app = LogIPMiddlewareASGI(fastapi_app)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=web_port, log_config=None)
 
     
-if use_flask_server:
-    web_thread = threading.Thread(target=run_web, daemon=True)
-    web_thread.start()
+web_thread = threading.Thread(target=run_webservice_server, daemon=True)
+web_thread.start()
+
+
 #--------------------
 
 
