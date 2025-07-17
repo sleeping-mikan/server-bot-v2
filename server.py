@@ -22,7 +22,7 @@ import base64
 import subprocess
 import sys
 import json
-
+from contextlib import asynccontextmanager
 
 #--------------------
 
@@ -57,7 +57,10 @@ packages = {
     "ansi2html": "1.9.2",
     "waitress": "3.0.1",
     "aiohttp": "3.10.11",
-    "psutil": "5.9.0"
+    "psutil": "5.9.0",
+    "uvicorn": "0.35.0",
+    "fastapi": "0.116.1",
+    "zipstream-ng": "1.8.0"
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
@@ -128,6 +131,11 @@ try:
     import aiohttp
 
     import psutil
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import uvicorn
+    import zipstream  # pip install zipstream-ng
 except:
     print("import error. please run 'python3 <thisfile> -reinstall'")
 #--------------------
@@ -161,7 +169,7 @@ print()
 process = None
 
 #起動した時刻
-time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+start_time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
 
 #外部変数
 token = None
@@ -329,7 +337,8 @@ def make_config():
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
-                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                        "sys_files": [".config",".token","logs","mikanassets"],\
+                                        "send_discord":{"bits_capacity":2 * 1024 * 1024 * 1024},\
                                     },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
@@ -382,6 +391,14 @@ def make_config():
                 cfg["discord_commands"]["cmd"]["stdin"] = {}
             if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
                 cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
+            if "send_discord" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"] = {"mode":"selfserver","bits_capacity":2 * 1024 * 1024 * 1024}
+            # if "mode" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            # elif cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] not in ["selfserver","fileio"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            if "bits_capacity" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"] = 2 * 1024 * 1024 * 1024
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -748,7 +765,7 @@ def create_logger(name,console_formatter=console_formatter,file_formatter=file_f
     console.setFormatter(console_formatter)
     logger.addHandler(console)
     if log["all"]:
-        f = time + ".log"
+        f = start_time + ".log"
         file = logging.FileHandler(now_path + "/logs/all " + f,encoding="utf-8")
         file.setLevel(logging.DEBUG)
         file.setFormatter(file_formatter)
@@ -825,6 +842,8 @@ try:
         terminal_capacity = float("inf")
     else:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
+    # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
+    send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1288,6 +1307,7 @@ async def get_text_dat():
                         "is_file":"`{}`はファイルであるため送信します",
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                         "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
+                        "send_myserver_link": "<@{}> {} から、{}をダウンロードできます。有効期限は5分です。",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -2521,17 +2541,93 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
 
 #--------------------
 
+# # !open ./repos/discord/command/cmd/stdin/send-discord/fileio.py
+
+#--------------------
+
+
+
+class SendDiscordSelfServer:
+    # クラススコープで状態を保持
+    _download_registry: dict[str, tuple[str, float]] = {}
+    _lock = asyncio.Lock()
+    _ttl_default = 300  # 5分
+
+    @classmethod
+    async def register_download(cls, directory_path: str, ttl_seconds: int = None) -> str:
+        if not os.path.isdir(directory_path):
+            raise ValueError("指定されたパスはディレクトリではありません")
+        ttl = ttl_seconds if ttl_seconds else cls._ttl_default
+        token = uuid.uuid4().hex
+        expire_at = datetime.now() + timedelta(seconds=ttl)
+        async with cls._lock:
+            cls._download_registry[token] = (directory_path, expire_at)
+        return f"http://localhost:8000/download/{token}"
+
+    @classmethod
+    async def _cleanup_loop(cls):
+        while True:
+            now = datetime.now()
+            async with cls._lock:
+                expired = [t for t, (_, exp) in cls._download_registry.items() if now > exp]
+                for t in expired:
+                    del cls._download_registry[t]
+            await asyncio.sleep(30)
+
+    @classmethod
+    async def download(cls, token: str):
+        async with cls._lock:
+            entry = cls._download_registry.pop(token, None)
+        if not entry:
+            raise HTTPException(status_code=404, detail="リンクが無効または既に使用されました")
+        directory_path, expire_at = entry
+        if 	datetime.now() > expire_at > expire_at:
+            raise HTTPException(status_code=410, detail="このリンクは期限切れです")
+
+        # zipstreamでリアルタイムZIP
+        z = zipstream.ZipStream()
+        for root, _, files in os.walk(directory_path):
+            for file in files:
+                full_path = os.path.join(root, file)
+                arcname = os.path.relpath(full_path, start=directory_path)
+                z.add(full_path, arcname)
+
+        filename = os.path.basename(directory_path) or "download"
+        return StreamingResponse(
+            z,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.zip"'}
+        )
+
+    @classmethod
+    def create_app(cls) -> FastAPI:
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            task = asyncio.create_task(cls._cleanup_loop())
+            yield
+            task.cancel()
+
+        app = FastAPI(lifespan=lifespan)
+        app.add_api_route("/download/{token}", cls.download, methods=["GET"])
+        return app
+
+threading.Thread(
+    target=lambda: uvicorn.run(SendDiscordSelfServer.create_app(), host="0.0.0.0", port=8000),
+    daemon=True
+).start()
+#--------------------
+
+
+#--------------------
+
 
 stdin_send_discord_logger = stdin_logger.getChild("send-discord")
 
 
-discord_multi_thread_return_dict = {}
-def send_file_io(_id, file_obj, file_name) -> requests.Response:
-    response = requests.post("https://file.io/", files={"file": (file_name, file_obj)})
-    discord_multi_thread_return_dict[_id] = response
+
     
 
-send_discord_timeout_sec = 60 * 25
+
 
 @command_group_cmd_stdin.command(name="send-discord",description=COMMAND_DESCRIPTION[lang]["cmd"]["stdin"]["send-discord"])
 async def send_discord(interaction: discord.Interaction, path: str):
@@ -2540,7 +2636,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     file_path = os.path.abspath(os.path.join(server_path,path))  # ファイルのパス
     file_name = os.path.basename(file_path)
     file_size_limit = 9 * 1024 * 1024  # 9MB
-    file_size_limit_web = 2 * 1024 * 1024 * 1024  # 2GBを超えた場合file.ioでも無理なのでエラー
+    file_size_limit_web = send_discord_bits_capacity  # 2GBを超えた場合file.ioでも無理なのでエラー
     # 権限を要求
     if await user_permission(interaction.user) < COMMAND_PERMISSION["cmd stdin send-discord"]:
         await not_enough_permission(interaction,stdin_send_discord_logger)
@@ -2557,88 +2653,12 @@ async def send_discord(interaction: discord.Interaction, path: str):
         await interaction.response.send_message(embed=embed)
         stdin_send_discord_logger.info("invalid path -> " + file_path)
         return
-    # 該当のアイテムがディレクトリならzip圧縮をする
-    if os.path.isdir(file_path):
-        # とりあえずdiscordに送っておく
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["is_zip"].format(file_path),inline=False)
-        await interaction.response.send_message(embed=embed,ephemeral=True)
-        stdin_send_discord_logger.info("make zip -> " + str(file_path))
-        zip_buffer,file_size = await create_zip_async(file_path)
-        base_file_path = file_path
-        file_path = zip_buffer
-        file_path.seek(0)
-        stdin_send_discord_logger.info("zip -> " + str(file_path) + f"({base_file_path})" + " : " + str(file_size))
-        file_name = file_name + ".zip"
-        file_obj = file_path
-    else:
-        # ファイルサイズをチェック
-        file_size = os.path.getsize(file_path)
-        stdin_send_discord_logger.info("file -> " + str(file_path))
-        # ファイルを開く
-        file_obj = open(file_path, "rb")
-    if file_size > file_size_limit_web:
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit_web"].format(file_size,file_size_limit_web),inline=False)
-        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
-    if file_size > file_size_limit: # なぜか400errの時async loopが落ちてしまうっぽい問題が解決できなさそうな雰囲気なので一旦削除
-        stdin_send_discord_logger.info("file size over limit -> " + str(file_path) + " : " + str(file_size))
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["file_size_limit"].format(file_size,file_size_limit),inline=False)
-        await send_discord_message_or_edit(interaction=interaction,embed=embed,ephemeral=True)
-        # file.ioにアップロード
-        try:
-            timeout_sec = send_discord_timeout_sec
-            # uuidを使って、POSTするスレッドの戻り値を待機する
-            discord_dict_id = uuid.uuid4()
-            io_thread = threading.Thread(target=send_file_io,args=(discord_dict_id,file_obj,file_name),daemon=True)
-            io_thread.start()
-            # discord_multi_thread_return_dict[discord_dict_id]にPOSTスレッドがresponseをセットするまで繰り返し
-            while discord_dict_id not in discord_multi_thread_return_dict:
-                await asyncio.sleep(1)
-                timeout_sec -= 1
-                if timeout_sec <= 0:
-                    raise asyncio.TimeoutError
-            if discord_multi_thread_return_dict[discord_dict_id].status_code != 200:
-                status = discord_multi_thread_return_dict[discord_dict_id].status_code
-                reason = discord_multi_thread_return_dict[discord_dict_id].reason
-                text = discord_multi_thread_return_dict[discord_dict_id].text
-                stdin_send_discord_logger.error("upload to file.io failed -> " + str(file_path) + " ,status -> " + str(status) + " , " + str(reason) + " :: " + str(text))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-                return
-            response = discord_multi_thread_return_dict[discord_dict_id]
-            stdin_send_discord_logger.info("content type -> " + str(response.headers.get("content-type")))
-            # responseがjsonで来ないことがあるので
-            if not response.headers.get("content-type").startswith("application/json"):
-                status = discord_multi_thread_return_dict[discord_dict_id].status_code
-                reason = discord_multi_thread_return_dict[discord_dict_id].reason
-                text = "Too Many Characters"
-                stdin_send_discord_logger.error("upload to file.io failed (not json) -> " + str(file_path))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["file_io_error"].format(interaction.user.id,status,reason,text),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-                return
-            link = response.json()["link"]
-            stdin_send_discord_logger.info("upload to file.io -> " + str(file_path) + " : " + str(response.status_code))
-            embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["success"].format(interaction.user.id,link),inline=False)
-            await send_discord_message_or_edit(interaction=interaction,embed=embed)
-        except Exception as e:
-            if isinstance(e, asyncio.TimeoutError) or isinstance(e,aiohttp.ClientError):
-                stdin_send_discord_logger.error("upload to file.io failed (timeout) -> " + str(file_path))
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["timeout"].format(interaction.user.id,send_discord_timeout_sec),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-            else:
-                import traceback
-                stdin_send_discord_logger.error(traceback.format_exc())
-                stdin_send_discord_logger.error("raise upload to file.io failed")
-                embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["raise_error"].format(interaction.user.id,traceback.format_exc()),inline=False)
-                await send_discord_message_or_edit(interaction=interaction,embed=embed)
-        finally:
-            # file_objが開いていたら閉じる(file_objはopen() or io.BytesIO()で開いたもの)
-            file_obj.close()
-            stdin_send_discord_logger.info("close file -> " + str(file_path))
-    else:
-        # Discordで直接送信
-        stdin_send_discord_logger.info("send to discord -> " + str(file_path))
-        await send_discord_message_or_edit(interaction=interaction,file=discord.File(file_path,filename=file_name),embed=embed,ephemeral=True)
+    # if send_discord_mode == "fileio":
+    #     await send_discord_fileio(interaction, embed, stdin_send_discord_logger, file_size_limit_web, file_size_limit,file_path, file_name)
+    link = await SendDiscordSelfServer.register_download(file_path)
+    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link, file_path),inline=False)
+    await interaction.response.send_message(embed=embed)
+#--------------------
 
 
 #--------------------
@@ -3618,7 +3638,7 @@ if use_flask_server:
 # discord.py用のロガーを取得して設定
 discord_logger = logging.getLogger('discord')
 if log["all"]:
-    file_handler = logging.FileHandler(now_path + "/logs/all " + time + ".log")
+    file_handler = logging.FileHandler(now_path + "/logs/all " + start_time + ".log")
     file_handler.setFormatter(file_formatter)
     discord_logger.addHandler(file_handler)
 #--------------------

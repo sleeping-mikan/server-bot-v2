@@ -43,7 +43,8 @@ def make_config():
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
-                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                        "sys_files": [".config",".token","logs","mikanassets"],\
+                                        "send_discord":{"bits_capacity":2 * 1024 * 1024 * 1024},\
                                     },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
@@ -96,6 +97,14 @@ def make_config():
                 cfg["discord_commands"]["cmd"]["stdin"] = {}
             if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
                 cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
+            if "send_discord" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"] = {"mode":"selfserver","bits_capacity":2 * 1024 * 1024 * 1024}
+            # if "mode" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            # elif cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] not in ["selfserver","fileio"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            if "bits_capacity" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"] = 2 * 1024 * 1024 * 1024
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:

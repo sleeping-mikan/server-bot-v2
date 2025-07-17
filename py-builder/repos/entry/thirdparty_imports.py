@@ -13,5 +13,10 @@ try:
     import aiohttp
 
     import psutil
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import uvicorn
+    import zipstream  # pip install zipstream-ng
 except:
     print("import error. please run 'python3 <thisfile> -reinstall'")
