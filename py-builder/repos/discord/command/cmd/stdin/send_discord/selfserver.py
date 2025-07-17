@@ -18,7 +18,7 @@ class SendDiscordSelfServer:
         token = uuid.uuid4().hex
         expire_at = datetime.now() + timedelta(seconds=ttl)
         # ファイル容量がbits_capacityを超えるなら、ダウンロード不可
-        if (dir_size := await get_directory_size(directory_path)) > send_discord_bits_capacity:
+        if (dir_size := await get_directory_size(directory_path) if os.path.isdir(directory_path) else os.path.getsize(directory_path)) > send_discord_bits_capacity:
             return False, [1, str(dir_size),str(send_discord_bits_capacity)]
         async with cls._lock:
             cls._download_registry[token] = (directory_path, expire_at)

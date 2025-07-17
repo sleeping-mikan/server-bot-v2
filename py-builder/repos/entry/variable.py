@@ -17,7 +17,7 @@ intents.message_content = True
 client = discord.Client(intents=intents) 
 tree = app_commands.CommandTree(client)
 
-use_flask_server = True
+
 
 #プロンプトを送る
 print()

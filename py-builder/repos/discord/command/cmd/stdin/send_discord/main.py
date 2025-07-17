@@ -33,7 +33,7 @@ async def send_discord(interaction: discord.Interaction, path: str):
     #     await send_discord_fileio(interaction, embed, stdin_send_discord_logger, file_size_limit_web, file_size_limit,file_path, file_name)
     link = await SendDiscordSelfServer.register_download(file_path)
     if link[0]:
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link, file_path),inline=False)
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link[1], file_path),inline=False)
     else:
         # エラーコードを読む
         if link[1][0] == 1:
