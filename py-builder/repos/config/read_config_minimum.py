@@ -39,7 +39,7 @@ def make_config():
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
-                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
@@ -151,11 +151,13 @@ def make_config():
             if "mc" not in cfg:
                 cfg["mc"] = True
             if "web" not in cfg:
-                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
+                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "use_front_page" not in cfg["web"]:
+                cfg["web"]["use_front_page"] = True
             if "enable_advanced_features" not in cfg:
                 cfg["enable_advanced_features"] = False
             # バージョン移行処理

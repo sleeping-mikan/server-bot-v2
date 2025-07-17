@@ -235,3 +235,12 @@ async def parse_mimd(text: str):
         else:
             send_data[-1]["value"] += line
     return send_data, origin_data
+
+async def get_directory_size(path):
+    size = 0
+    for entry in os.scandir(path):
+        if entry.is_file():
+            size += entry.stat().st_size
+        elif entry.is_dir():
+            size += await get_directory_size(entry.path)
+    return size

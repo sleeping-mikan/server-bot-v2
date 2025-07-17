@@ -150,7 +150,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.3.1"
+__version__ = "2.4.0"
 
 def get_version():
     return __version__
@@ -161,7 +161,7 @@ intents.message_content = True
 client = discord.Client(intents=intents) 
 tree = app_commands.CommandTree(client)
 
-use_flask_server = True
+
 
 #プロンプトを送る
 print()
@@ -334,7 +334,7 @@ def make_config():
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
-                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
@@ -446,11 +446,13 @@ def make_config():
             if "mc" not in cfg:
                 cfg["mc"] = True
             if "web" not in cfg:
-                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
+                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "use_front_page" not in cfg["web"]:
+                cfg["web"]["use_front_page"] = True
             if "enable_advanced_features" not in cfg:
                 cfg["enable_advanced_features"] = False
             # バージョン移行処理
@@ -853,6 +855,7 @@ try:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
     # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
+    use_flask_server = config["web"]["use_front_page"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1317,6 +1320,7 @@ async def get_text_dat():
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                         "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
                         "send_myserver_link": "<@{}> {} から、{}をダウンロードできます。有効期限は5分です。",
+                        "send_capacity_error": "<@{}> 容量{}は制限容量{}を超えているため、送信できません。",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -1469,6 +1473,8 @@ async def get_text_dat():
                         "file_not_found":"`{}` not found",
                         "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
                         "is_file":"`{}` is a file, so it will be sent to discord",
+                        "send_myserver_link": "<@{}> Sent to {} a file link -> `{}`",
+                        "send_capacity_error": "<@{}> The file size of `{}` is over the limit of {} bytes and cannot be sent to discord",
                     },
                     "wget":{
                         "download_failed":"Download failed url:{}",
@@ -1815,6 +1821,14 @@ async def parse_mimd(text: str):
             send_data[-1]["value"] += line
     return send_data, origin_data
 
+async def get_directory_size(path):
+    size = 0
+    for entry in os.scandir(path):
+        if entry.is_file():
+            size += entry.stat().st_size
+        elif entry.is_dir():
+            size += await get_directory_size(entry.path)
+    return size
 #--------------------
 
 
@@ -2576,10 +2590,13 @@ class SendDiscordSelfServer:
         ttl = ttl_seconds if ttl_seconds else cls._ttl_default
         token = uuid.uuid4().hex
         expire_at = datetime.now() + timedelta(seconds=ttl)
+        # ファイル容量がbits_capacityを超えるなら、ダウンロード不可
+        if (dir_size := await get_directory_size(directory_path) if os.path.isdir(directory_path) else os.path.getsize(directory_path)) > send_discord_bits_capacity:
+            return False, [1, str(dir_size),str(send_discord_bits_capacity)]
         async with cls._lock:
             cls._download_registry[token] = (directory_path, expire_at)
-        stdin_send_discord_logger.info("register download -> " + directory_path)
-        return f"http://{requests.get('https://api.ipify.org').text}:{web_port}/download/{token}"
+        stdin_send_discord_logger.info("register download -> " + directory_path + f"({dir_size} Bytes)")
+        return True, f"http://{requests.get('https://api.ipify.org').text}:{web_port}/download/{token}"
 
     @classmethod
     async def _cleanup_loop(cls):
@@ -2665,7 +2682,12 @@ async def send_discord(interaction: discord.Interaction, path: str):
     # if send_discord_mode == "fileio":
     #     await send_discord_fileio(interaction, embed, stdin_send_discord_logger, file_size_limit_web, file_size_limit,file_path, file_name)
     link = await SendDiscordSelfServer.register_download(file_path)
-    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link, file_path),inline=False)
+    if link[0]:
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_myserver_link"].format(interaction.user.id, link[1], file_path),inline=False)
+    else:
+        # エラーコードを読む
+        if link[1][0] == 1:
+            embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["send-discord"]["send_capacity_error"].format(interaction.user.id, link[1][1], link[1][2]),inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 #--------------------
 

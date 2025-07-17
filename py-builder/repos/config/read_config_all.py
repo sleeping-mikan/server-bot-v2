@@ -33,6 +33,7 @@ try:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
     # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
+    use_flask_server = config["web"]["use_front_page"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")

@@ -17,10 +17,13 @@ class SendDiscordSelfServer:
         ttl = ttl_seconds if ttl_seconds else cls._ttl_default
         token = uuid.uuid4().hex
         expire_at = datetime.now() + timedelta(seconds=ttl)
+        # ファイル容量がbits_capacityを超えるなら、ダウンロード不可
+        if (dir_size := await get_directory_size(directory_path) if os.path.isdir(directory_path) else os.path.getsize(directory_path)) > send_discord_bits_capacity:
+            return False, [1, str(dir_size),str(send_discord_bits_capacity)]
         async with cls._lock:
             cls._download_registry[token] = (directory_path, expire_at)
-        stdin_send_discord_logger.info("register download -> " + directory_path)
-        return f"http://{requests.get('https://api.ipify.org').text}:{web_port}/download/{token}"
+        stdin_send_discord_logger.info("register download -> " + directory_path + f"({dir_size} Bytes)")
+        return True, f"http://{requests.get('https://api.ipify.org').text}:{web_port}/download/{token}"
 
     @classmethod
     async def _cleanup_loop(cls):
