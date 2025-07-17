@@ -150,7 +150,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.0"
+__version__ = "2.4.1"
 
 def get_version():
     return __version__
@@ -3315,7 +3315,7 @@ async def status(interaction: discord.Interaction):
     memorys = await get_process_memory(process)
     embed.add_field(name=RESPONSE_MSG["status"]["mem_title"],value=RESPONSE_MSG["status"]["mem_value"].format(round(memorys["origin_mem"],2)) + "\n" + RESPONSE_MSG["status"]["mem_server_value"].format(round(memorys["server_mem"],2)))
 
-    status_logger.info(f"get memory -> process {memorys['origin_mem']}, server {memorys["server_mem"]}")
+    status_logger.info(f"get memory -> process {memorys['origin_mem']}, server {memorys['server_mem']}")
 
     # online状態を取得する
     is_server_online = "🟢" if process is not None and process.poll() is None else "🔴"
