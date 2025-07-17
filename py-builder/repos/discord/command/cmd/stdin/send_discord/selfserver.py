@@ -28,7 +28,6 @@ class SendDiscordSelfServer:
             now = datetime.now()
             async with cls._lock:
                 expired = [t for t, (_, exp) in cls._download_registry.items() if now > exp]
-                print(expired)
                 for t in expired:
                     del cls._download_registry[t]
                     stdin_send_discord_logger.info("cleanup download -> " + t)
