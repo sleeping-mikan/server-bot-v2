@@ -208,7 +208,7 @@ async def get_text_dat():
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                         "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
                         "send_myserver_link": "<@{}> {} から、{}をダウンロードできます。有効期限は5分です。",
-                        "send_capacity_error": "<@{}> {}は容量{}を超えているため、送信できません。",
+                        "send_capacity_error": "<@{}> 容量{}は制限容量{}を超えているため、送信できません。",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
