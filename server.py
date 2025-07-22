@@ -98,7 +98,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.1"
+__version__ = "2.4.2"
 
 def get_version():
     return __version__
