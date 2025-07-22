@@ -6,7 +6,7 @@ from .standard_imports import *
 from .thirdparty_imports import *
 #!end-ignore
 
-__version__ = "2.3.1"
+__version__ = "2.4.1"
 
 def get_version():
     return __version__
@@ -17,7 +17,7 @@ intents.message_content = True
 client = discord.Client(intents=intents) 
 tree = app_commands.CommandTree(client)
 
-use_flask_server = True
+
 
 #プロンプトを送る
 print()
@@ -26,7 +26,7 @@ print()
 process = None
 
 #起動した時刻
-time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+start_time = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
 
 #外部変数
 token = None

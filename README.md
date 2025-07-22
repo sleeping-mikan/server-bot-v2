@@ -33,7 +33,7 @@ discordを用いて特定のサーバーを管理できます。
 |cmd stdin rm <path>|指定したファイルが存在する場合削除します。|2(*1)|
 |cmd stdin rmdir <path>|指定したディレクトリが存在する場合削除します。このコマンドは指定したディレクトリ内に対して再帰的に適用されます。|2(*1)|
 |cmd stdin mkdir <path>|指定したディレクトリを作成します。|2(*2)|
-|cmd stdin send-discord <path>|指定したディレクトリをdiscordに送信します。|2(*2)|
+|cmd stdin send-discord <path>|指定したディレクトリをdiscordに送信します。使用するにはwebポートが解放されている必要があります。|2(*2)|
 |cmd stdin wget <url> <path(optional)>|指定したパスのファイルをurlから得られるデータで上書きします。path引数を渡さない場合直下にファイルを生成します。|3(*1)|
 |cmd stdin mv <src> <dest>|指定したpathをdestに移動させます。|3(*1)|
 |logs <file(optional)>|サーバーログを表示します。引数が与えられる場合には該当のファイルを、与えられない場合には現在のサーバーログを表示できる限り表示します。|1|
@@ -108,8 +108,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 ```json
 {
     "allow": {
-        "ip": true,
-        "replace":false
+        "ip": true
     },
     "auto_update": true,
     "server_path": "path/to/serverdir/",
@@ -122,7 +121,8 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "mc": true,
     "web": {
         "secret_key": "****",
-        "port": 80
+        "port": 80,
+        "use_front_page": true
     },
     "discord_commands": {
         "cmd": {
@@ -132,7 +132,10 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
                     ".token",
                     "logs",
                     "mikanassets"
-                ]
+                ],
+                "send_discord": {
+                    "bits_capacity": 2147483648
+                }
             },
             "serverin": {
                 "allow_mccmd": [
@@ -162,7 +165,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 
 |項目|説明|
 |---|---|
-|allow|各コマンドの実行を許可するかどうか。(現在は/ip,/replaceにのみ実装されています)|
+|allow|各コマンドの実行を許可するかどうか。(現在は/ipにのみ実装されています)|
 |auto_update|サーバー本体を自動更新するか否か|
 |server_path|server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
 |server_name|server本体の名前 java版minecraftの場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
@@ -170,8 +173,10 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
-|web.port|webサーバーのポート番号を入力します。|
+|web.port|webサーバーのポート番号を入力します。なお、/cmd stdin send-discordにおいてもこのポート番号を利用します|
+|web.use_front_page|webサーバーページからの操作を許可するか否か(Falseの場合にもファイルをやり取りはできます。)|
 |discord_commands.cmd.stdin.sys_files|/cmd stdin <mv/rmdir/rm/wget/mv>において、権限を持っていても操作を拒否するファイルのリスト|
+|discord_commands.cmd.stdin.send_discord.bits_capacity|/cmd stdin send-discordにおいて、送信を許可するファイルの最大容量|
 |discord_commands.cmd.serverin.allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
 |discord_commands.terminal.discord|コンソールとして扱うチャンネルidを指定します。通常configを直接操作しません。指定したチャンネルではサーバー起動中の入出力が可能になります(但し、allow_mccmdで許可されている命令のみ)。|
 |discord_commands.terminal.capacity|discordにコンソール出力する予定の文字列長の最大を設定します。デフォルトでは送信に時間がかかったとしてもデータを捨てません。|
@@ -188,7 +193,7 @@ server.pyはサーバ本体と同じ階層に配置することを推奨しま�
 
 ホストipアドレス:<configで設定したport>を用いて操作することができます。
 
-アクセス時にtokenを要求されるため、discordで`/token`を実行しtokenを入手してください。
+アクセス時にtokenを要求されるため、discordで`/tokengen`を実行しtokenを入手してください。
 
 現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
@@ -267,6 +272,8 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 ## 拡張機能
 
 拡張機能を追加する場合server.pyと同じディレクトリのmikanassets/extensionに配置してください。
+
+構造は`mikanassets/extension/拡張機能名/拡張機能を実装したファイル群`となります。
 
 拡張機能の実装仕様は[server-bot-extensions](https://github.com/sleeping-mikan/server-bot-extensions)で確認できます。
 

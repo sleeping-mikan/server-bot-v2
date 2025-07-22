@@ -1,4 +1,5 @@
 #!ignore
+import uvicorn.config
 from ..imports import *
 from ..constant import *
 from ..logger.logger_create import *
@@ -7,12 +8,51 @@ from ..config.read_config_all import *
 from ..assets.utils import *
 from ..files.create import *
 from ..assets.core._header import *
+from ..discord.command.cmd.stdin.send_discord.selfserver import *
 #!end-ignore
 
 
 app = Flask(__name__,template_folder="mikanassets/web",static_folder="mikanassets/web")
 app.secret_key = flask_secret_key
-flask_logger = create_logger("werkzeug",Formatter.FlaskFormatter(f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.FlaskConsoleFormatter('%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt))
+flask_logger = create_logger("werkzeug",Formatter.WebFormatter("FLASK",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("FLASK",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger_err = create_logger("uvicorn.error",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+uvicorn_logger = create_logger("uvicorn.access",Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt),Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt))
+
+class ExcludeGetConsoleDataFilter(logging.Filter):
+    def filter(self, record):
+        # record.args はログ出力の引数、record.msg が生ログ文字列
+        # "GET /get_console_data" を含むかどうかを確認
+        return "/get_console_data" not in str(record.getMessage())
+for logger in [flask_logger,uvicorn_logger_err,uvicorn_logger]:
+    logger.addFilter(ExcludeGetConsoleDataFilter())
+# def get_uvicorn_custom_log_config():
+#     from uvicorn.config import LOGGING_CONFIG
+#     uvicorn_custom_log_config = LOGGING_CONFIG.copy()
+#     uvicorn_custom_log_config["formatters"]["default"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+#     uvicorn_custom_log_config["formatters"]["access"]["fmt"] = f'{Color.BOLD + Color.BLACK}%(asctime)s {Color.BOLD + Color.CYAN}UVICORN  {Color.RESET.value}%(name)s: %(message)s'
+#     uvicorn_custom_log_config["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+
+#     class ExcludeGetConsoleDataFilter(logging.Filter):
+#         def filter(self, record):
+#             # record.args はログ出力の引数、record.msg が生ログ文字列
+#             # "GET /get_console_data" を含むかどうかを確認
+#             return "/get_console_data" not in str(record.getMessage())
+
+#     uvicorn_custom_log_config["filters"] = {
+#         "exclude_get_console_data": {
+#             "()": ExcludeGetConsoleDataFilter,
+#         }
+#     }
+#     uvicorn_custom_log_config["handlers"]["access"]["filters"] = ["exclude_get_console_data"]
+#     return uvicorn_custom_log_config
+
+# fastapi_logger = [
+#     create_logger("uvicorn.access", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+#     create_logger("uvicorn.error", Formatter.WebFormatter("UVICORN",f'{Color.BOLD + Color.BG_BLACK}%(asctime)s %(levelname)s %(name)s: %(message)s', dt_fmt), Formatter.WebConsoleFormatter("UVICORN",'%(asctime)s %(levelname)s %(name)s: %(message)s', datefmt=dt_fmt)),
+
+#     ]
 
 class LogIPMiddleware:
     def __init__(self, app):
@@ -32,6 +72,25 @@ class LogIPMiddleware:
             flask_logger.info(f"Client IP: {client_ip}, Method: {request_method}, URL: {request_uri}, Query: {query_string}")
 
         return self.app(environ, start_response)
+    
+# class LogIPMiddlewareASGI:
+#     def __init__(self, app):
+#         self.app = app
+
+#     async def __call__(self, scope, receive, send):
+#         if scope["type"] == "http":
+#             client = scope.get("client")
+#             method = scope.get("method")
+#             path = scope.get("path")
+#             query_string = scope.get("query_string", b"").decode("utf-8")
+
+#             if path != "/get_console_data":
+#                 client_ip = client[0] if client else "unknown"
+#                 flask_logger.info(
+#                     f"Client IP: {client_ip}, Method: {method}, URL: {path}, Query: {query_string}"
+#                 )
+
+#         await self.app(scope, receive, send)
 
 # ミドルウェアをアプリに適用
 app.wsgi_app = LogIPMiddleware(app.wsgi_app)
@@ -194,10 +253,14 @@ def submit_data():
     # データを処理し、結果を返す（例: メッセージを返す）
     return jsonify(f"result: {user_input}")
 
-def run_web():
-    waitress.serve(app, host='0.0.0.0', port=web_port, _quiet=True)
+def run_webservice_server():
+    fastapi_app = SendDiscordSelfServer.create_app()
+    if use_flask_server:
+        fastapi_app.mount("/", WSGIMiddleware(app))
+    # fastapi_app = LogIPMiddlewareASGI(fastapi_app)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=web_port, log_config=None)
 
     
-if use_flask_server:
-    web_thread = threading.Thread(target=run_web, daemon=True)
-    web_thread.start()
+web_thread = threading.Thread(target=run_webservice_server, daemon=True)
+web_thread.start()
+

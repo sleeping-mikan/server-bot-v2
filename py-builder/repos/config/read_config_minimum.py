@@ -28,7 +28,7 @@ def make_config():
         default_backup_path = os.path.realpath(default_backup_path) + "/"
         print("default backup path: " + default_backup_path)
         config_dict = {\
-                            "allow":{"ip":True,"replace":False},\
+                            "allow":{"ip":True},\
                             "update":{
                                 "auto":True,\
                                 "branch":"main",\
@@ -39,11 +39,12 @@ def make_config():
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
-                            "web":{"secret_key":"YOURSECRETKEY","port":80},\
+                            "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
                                 "cmd":{\
                                     "stdin":{\
-                                        "sys_files": [".config",".token","logs","mikanassets"]
+                                        "sys_files": [".config",".token","logs","mikanassets"],\
+                                        "send_discord":{"bits_capacity":2 * 1024 * 1024 * 1024},\
                                     },
                                     "serverin":{\
                                         "allow_mccmd":["list","whitelist","tellraw","w","tell"]\
@@ -70,11 +71,9 @@ def make_config():
         #要素がそろっているかのチェック
         def check(cfg):
             if "allow" not in cfg:
-                cfg["allow"] = {"ip":True,"replace":False}
+                cfg["allow"] = {"ip":True}
             if "ip" not in cfg["allow"]:
                 cfg["allow"]["ip"] = True
-            if "replace" not in cfg["allow"]:
-                cfg["allow"]["replace"] = False
 
             if "update" not in cfg:
                 cfg["update"] = {"auto":True,"branch":"main"}
@@ -96,6 +95,14 @@ def make_config():
                 cfg["discord_commands"]["cmd"]["stdin"] = {}
             if "sys_files" not in cfg["discord_commands"]["cmd"]["stdin"]:
                 cfg["discord_commands"]["cmd"]["stdin"]["sys_files"] = [".config",".token","logs","mikanassets"]
+            if "send_discord" not in cfg["discord_commands"]["cmd"]["stdin"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"] = {"mode":"selfserver","bits_capacity":2 * 1024 * 1024 * 1024}
+            # if "mode" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            # elif cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] not in ["selfserver","fileio"]:
+            #     cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"] = "selfserver"
+            if "bits_capacity" not in cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]:
+                cfg["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"] = 2 * 1024 * 1024 * 1024
             if "serverin" not in cfg["discord_commands"]["cmd"]:
                 cfg["discord_commands"]["cmd"]["serverin"] = {}
             if "allow_mccmd" not in cfg["discord_commands"]["cmd"]["serverin"]:
@@ -144,11 +151,13 @@ def make_config():
             if "mc" not in cfg:
                 cfg["mc"] = True
             if "web" not in cfg:
-                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80}
+                cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True}
             if "port" not in cfg["web"]:
                 cfg["web"]["port"] = 80
             if "secret_key" not in cfg["web"]:
                 cfg["web"]["secret_key"] = "YOURSECRETKEY"
+            if "use_front_page" not in cfg["web"]:
+                cfg["web"]["use_front_page"] = True
             if "enable_advanced_features" not in cfg:
                 cfg["enable_advanced_features"] = False
             # バージョン移行処理

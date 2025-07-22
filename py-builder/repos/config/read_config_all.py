@@ -1,6 +1,6 @@
 #!ignore
-from ..imports import *
-from ..constant import *
+from ..entry.standard_imports import *
+from ..entry.variable import *
 from ..wait_for_keypress import *
 from ..logger.logger_create import *
 #!end-ignore
@@ -13,7 +13,7 @@ try:
     if not os.path.exists(server_path + server_name):
         sys_logger.error("not exist " + server_path + server_name + " file. please check your config.")
         wait_for_keypress()
-    allow = {"ip":config["allow"]["ip"],"replace":config["allow"]["replace"]}
+    allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
     backup_path = config["discord_commands"]["backup"]["path"]
@@ -31,6 +31,9 @@ try:
         terminal_capacity = float("inf")
     else:
         terminal_capacity = config["discord_commands"]["terminal"]["capacity"]
+    # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
+    send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
+    use_flask_server = config["web"]["use_front_page"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")

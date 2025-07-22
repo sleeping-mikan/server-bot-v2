@@ -207,6 +207,8 @@ async def get_text_dat():
                         "is_file":"`{}`はファイルであるため送信します",
                         "timeout":"<@{}> {} 秒を超えたため、送信を中断しました",
                         "raise_error":"<@{}> 送信中にエラーが発生しました\n```ansi\n{}```",
+                        "send_myserver_link": "<@{}> {} から、{}をダウンロードできます。有効期限は5分です。",
+                        "send_capacity_error": "<@{}> 容量{}は制限容量{}を超えているため、送信できません。",
                     },
                     "wget":{
                         "download_failed":"`{}`からファイルをダウンロードできません",
@@ -359,6 +361,8 @@ async def get_text_dat():
                         "file_not_found":"`{}` not found",
                         "is_zip":"`{}` is a directory, so it will be compressed and sent to discord",
                         "is_file":"`{}` is a file, so it will be sent to discord",
+                        "send_myserver_link": "<@{}> Sent to {} a file link -> `{}`",
+                        "send_capacity_error": "<@{}> The file size of `{}` is over the limit of {} bytes and cannot be sent to discord",
                     },
                     "wget":{
                         "download_failed":"Download failed url:{}",
