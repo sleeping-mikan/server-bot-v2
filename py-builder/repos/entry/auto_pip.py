@@ -2,9 +2,6 @@
 from .standard_imports import *
 from .read_args import *
 #!end-ignore
-
-
-
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
     "discord.py": "2.3.2",
@@ -20,6 +17,7 @@ packages = {
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
+#!ignore
 def get_mikanassets_dat_lib():
     now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
     try:
@@ -67,3 +65,4 @@ install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_p
 if install_packages:
     print(f"Installing the following packages: {', '.join(install_packages)}")
     subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
+#!end-ignore

@@ -32,22 +32,15 @@ import pathlib
 
 args = sys.argv[1:]
 do_init = False
-do_reinstall = False
 #引数を処理する。
 for i in args:
     arg = i.split("=")
     if arg[0] == "-init":
         do_init = True
-        # pass
-    if arg[0] == "-reinstall":
-        do_reinstall = True
 #--------------------
 
 
 #--------------------
-
-
-
 
 # インストールしたいパッケージのリスト（パッケージ名: バージョン）
 packages = {
@@ -64,53 +57,7 @@ packages = {
 }
 all_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items()]
 
-def get_mikanassets_dat_lib():
-    now_path = "/".join(__file__.replace("\\","/").split("/")[:-1])
-    try:
-        file = open(now_path + "/mikanassets/.dat", "r")
-        jfile = json.load(file)
-        file.close()
-        return jfile["installed_packages"]
-    except Exception as e:
-        return []
 
-already_install_packages = get_mikanassets_dat_lib()
-if do_reinstall:
-    already_install_packages = []
-for item in already_install_packages: 
-    pkg, ver = item.split("==")
-    # バージョンが一致していれば、確認対象から削除
-    if pkg not in packages:
-        print(f"not exist package in need packages: {pkg}")
-        continue
-    if ver == packages[pkg]:
-        del packages[pkg]
-
-
-# パッケージがすでにインストールされているかを確認する関数
-def is_package_installed(package, version):
-    print(f"Checking if {package} is installed with version {version}")
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "show", package],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            for line in result.stdout.splitlines():
-                if line.startswith("Version:"):
-                    installed_version = line.split(":", 1)[1].strip()
-                    return installed_version == version
-        return False
-    except subprocess.CalledProcessError:
-        return False
-
-# インストールが必要なパッケージをリストアップ
-install_packages = [f"{pkg}=={ver}" for pkg, ver in packages.items() if not is_package_installed(pkg, ver)]
-
-# 必要なパッケージのみインストール
-if install_packages:
-    print(f"Installing the following packages: {', '.join(install_packages)}")
-    subprocess.run([sys.executable, "-m", "pip", "install", *install_packages], check=True)
 #--------------------
 
 
@@ -138,7 +85,8 @@ try:
     import zipstream  # pip install zipstream-ng
     from fastapi.middleware.wsgi import WSGIMiddleware
 except:
-    print("import error. please run 'python3 <thisfile> -reinstall'")
+    print("import error. please run 'pip install -r requirements.txt'")
+    sys.exit(1)
 #--------------------
 
 
@@ -915,16 +863,6 @@ def save_mikanassets_dat():
         # 存在しなければデータファイルを作成する(現状 commit id 保管用)
         file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
         file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
-        file.close()
-    # 全てが記憶されているわけでないなら
-    if packages:
-        file = open(os.path.join(now_path, "mikanassets", ".dat"), "r")
-        jfile = json.load(file)
-        file.close()
-        file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
-        # 必要な全てのパッケージが入っていることを記憶
-        jfile["installed_packages"] = all_packages
-        file.write(json.dumps(jfile, indent=4))
         file.close()
 save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")
