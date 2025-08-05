@@ -1,3 +1,6 @@
+#!ignore
+import sys
+#!end-ignore
 
 try:
     from flask import Flask, render_template, jsonify, request, session, redirect, url_for, make_response, flash
@@ -20,4 +23,5 @@ try:
     import zipstream  # pip install zipstream-ng
     from fastapi.middleware.wsgi import WSGIMiddleware
 except:
-    print("import error. please run 'python3 <thisfile> -reinstall'")
+    print("import error. please run 'pip install -r requirements.txt'")
+    sys.exit(1)

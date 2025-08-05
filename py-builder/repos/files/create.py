@@ -53,6 +53,8 @@ def save_mikanassets_dat():
         file = open(os.path.join(now_path, "mikanassets", ".dat"), "w")
         file.write('{"commit_id":' + f'"{get_self_commit_id()}"' + '}')
         file.close()
+    #!ignore
+    #> auto-pipの削除に対応
     # 全てが記憶されているわけでないなら
     if packages:
         file = open(os.path.join(now_path, "mikanassets", ".dat"), "r")
@@ -63,6 +65,7 @@ def save_mikanassets_dat():
         jfile["installed_packages"] = all_packages
         file.write(json.dumps(jfile, indent=4))
         file.close()
+    #!end-ignore
 save_mikanassets_dat()
     #os.system("curl https://www.dropbox.com/scl/fi/w93o5sndwaiuie0otorm4/update.py?rlkey=gh3gqbt39iwg4afey11p99okp&st=2i9a9dzp&dl=1 -o ./update.py")
 if not os.path.exists(now_path + "/mikanassets/web"):

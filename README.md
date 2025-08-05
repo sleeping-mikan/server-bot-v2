@@ -78,11 +78,12 @@ server.pyを任意の場所に配置します。
 
 ### 実行
 
-server.pyを起動するとserver.pyと同じ階層に`.config`と`.token`が生成されます。
+ライブラリのインストール(`pip install -r requirements.txt`)後、server.pyを実行します。
+
+server.pyを実行するとserver.pyと同じ階層に`.config`と`.token`が生成されます。
 
 コンソール引数(これらは任意であるため、エラーが発生した場合などに利用してください)
  - `-init` update.pyなどの一部server.pyがダウンロードするファイルを再度ダウンロード (update.pyなどの[server_path]/mikanassetsが破損している場合に有効です)
- - `-reinstall` discord.pyなどの外部ライブラリを再度インストールチェック/存在しない場合にはインストール (初回起動以外で、外部ライブラリが存在しない/アンインストールした場合に有効です)
 
 > [!note]
 > この際.tokenが生成されない場合、.config内のserver_path+server_nameが存在していないので、サーバーが存在するパス+拡張子を含むサーバーの名前に変更してください
