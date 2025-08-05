@@ -32,6 +32,9 @@ async def update_loop():
                 if pop_flg:
                     await client.get_channel(where_terminal).send(f"データ件数が{terminal_capacity}件を超えたため以前のデータを破棄しました。より多くのログを出力するには.config内のterminal.capacityを変更してください。")
                     pop_flg = False
+                if len(discord_log_msg[0]) >= 1900:
+                    discord_log_msg.popleft()
+                    raise Exception("message is too long(skipped)")
                 discord_terminal_send_length += len(discord_log_msg[0]) + 1
                 if discord_terminal_send_length >= 1900:
                     # 送信処理(where_terminal chに送信)
@@ -49,7 +52,7 @@ async def update_loop():
                 discord_terminal_send_length = 0
         discord_loop_is_run = False
     except Exception as e:
-        sys_logger.error(e)
+        terminal_logger.error(e)
         discord_loop_is_run = False
 
 # メッセージが送信されたときの処理
