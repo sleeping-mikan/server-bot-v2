@@ -122,7 +122,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
 def server_logger(proc:subprocess.Popen,ret):
     global process,is_back_discord , use_stop
     if log["server"]:
-        file = open(file = server_path + "logs/server " + datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + ".log",mode = "w")
+        file = open(file = server_path + "logs/server " + datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + ".log",mode = "w", encoding="utf-8")
     while True:
         try:
             logs = proc.stdout.readline()
