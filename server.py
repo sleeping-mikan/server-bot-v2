@@ -98,7 +98,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.3"
+__version__ = "2.4.4"
 
 def get_version():
     return __version__
@@ -3271,7 +3271,7 @@ async def status(interaction: discord.Interaction):
     send_str += [RESPONSE_MSG["status"]["cpu_value_proc"].format(cpu_usage[key], key) for key in cpu_usage]
     # BOT PROCESS CPUの利用率を取得する
     cpu_usage = await get_thread_cpu_usage(os.getpid(), is_self=True)
-    send_str += ["Main"]
+    send_str += ["Self"]
     send_str += [RESPONSE_MSG["status"]["cpu_value_thread"].format(cpu_usage[key], key) for key in cpu_usage]
     embed.add_field(name=RESPONSE_MSG["status"]["cpu_title"],value="\n".join(send_str), inline=False)
 
