@@ -1341,7 +1341,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "基本情報",
                 "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
@@ -1495,7 +1495,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "Online Status",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "Basic Information",
                 "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }
@@ -1817,11 +1817,9 @@ async def update_loop():
                 if pop_flg:
                     await client.get_channel(where_terminal).send(f"データ件数が{terminal_capacity}件を超えたため以前のデータを破棄しました。より多くのログを出力するには.config内のterminal.capacityを変更してください。")
                     pop_flg = False
-                if len(discord_log_msg[0]) >= 2000:
+                if len(discord_log_msg[0]) >= 1900:
                     discord_log_msg.popleft()
-                    terminal_logger.error("message is too long(skipped)")
-                    discord_loop_is_run = False
-                    return
+                    raise Exception("message is too long(skipped)")
                 discord_terminal_send_length += len(discord_log_msg[0]) + 1
                 if discord_terminal_send_length >= 1900:
                     # 送信処理(where_terminal chに送信)

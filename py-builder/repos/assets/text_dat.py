@@ -291,7 +291,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "基本情報",
                 "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
@@ -445,7 +445,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "Online Status",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "Basic Information",
                 "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }
