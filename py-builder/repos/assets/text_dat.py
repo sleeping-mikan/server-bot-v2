@@ -163,6 +163,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                    "unicode_encode_error": "コマンドに不正な文字が含まれています(指定された文字コードに含まれない文字が利用されています。)",
                 },
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
@@ -291,7 +292,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "基本情報",
                 "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
@@ -319,6 +320,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"The command is not found or not allowed",
+                    "unicode_encode_error":"Failed to execute command due to UnicodeEncodeError(A character that is not included in the specified character code is used.)",
                 },
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
@@ -445,7 +447,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "Online Status",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "Basic Information",
                 "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }

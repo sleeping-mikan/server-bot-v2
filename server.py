@@ -98,7 +98,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.3"
+__version__ = "2.4.5"
 
 def get_version():
     return __version__
@@ -279,6 +279,7 @@ def make_config():
                             "server_path":now_path + "/",\
                             "server_name":"bedrock_server.exe",\
                             "server_args":"",\
+                            "server_char_encoding":"utf-8",\
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
@@ -330,6 +331,8 @@ def make_config():
                 cfg["server_path"] = now_path + "/"
             if "server_args" not in cfg:
                 cfg["server_args"] = ""
+            if "server_char_encoding" not in cfg:
+                cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
@@ -804,6 +807,7 @@ try:
     # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
+    server_char_code = config["server_char_encoding"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1213,6 +1217,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                    "unicode_encode_error": "コマンドに不正な文字が含まれています(指定された文字コードに含まれない文字が利用されています。)",
                 },
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
@@ -1341,7 +1346,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "オンライン状態",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "基本情報",
                 "base_value": "OS：**{}**\nPython：**{}**\nBot Version：**{}**",
             },
@@ -1369,6 +1374,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"The command is not found or not allowed",
+                    "unicode_encode_error":"Failed to execute command due to UnicodeEncodeError(A character that is not included in the specified character code is used.)",
                 },
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
@@ -1495,7 +1501,7 @@ async def get_text_dat():
                 "cpu_value_thread": "**{}%** Thread {}",
                 "cpu_value_proc": "**{}%** Process {}",
                 "online_title": "Online Status",
-                "online_value": "{} Main Server\n{} Waitress Server\n{} Bot",
+                "online_value": "{} Main Server\n{} Uvicorn Server\n{} Bot",
                 "base_title": "Basic Information",
                 "base_value": "OS: **{}**\nPython: **{}**\nBot Version: **{}**"
             }
@@ -1817,6 +1823,9 @@ async def update_loop():
                 if pop_flg:
                     await client.get_channel(where_terminal).send(f"データ件数が{terminal_capacity}件を超えたため以前のデータを破棄しました。より多くのログを出力するには.config内のterminal.capacityを変更してください。")
                     pop_flg = False
+                if len(discord_log_msg[0]) >= 1900:
+                    discord_log_msg.popleft()
+                    raise Exception("message is too long(skipped)")
                 discord_terminal_send_length += len(discord_log_msg[0]) + 1
                 if discord_terminal_send_length >= 1900:
                     # 送信処理(where_terminal chに送信)
@@ -1834,7 +1843,7 @@ async def update_loop():
                 discord_terminal_send_length = 0
         discord_loop_is_run = False
     except Exception as e:
-        sys_logger.error(e)
+        terminal_logger.error(e)
         discord_loop_is_run = False
 
 # メッセージが送信されたときの処理
@@ -1883,7 +1892,7 @@ async def on_ready():
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
         if process is  None:
             #server を実行する
-            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding=server_char_code)
             threading.Thread(target=server_logger,args=(process,deque())).start()
             ready_logger.info('server starting')
         else:
@@ -1924,7 +1933,7 @@ def core_start() -> str:
     if is_running_server(start_logger):
         return RESPONSE_MSG["other"]["is_running"]
     start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding=server_char_code)
     threading.Thread(target=server_logger,args=(process,deque())).start()
     return RESPONSE_MSG["start"]["success"]
 
@@ -2136,7 +2145,13 @@ async def cmd(interaction: discord.Interaction,command:str):
         await interaction.response.send_message(embed=embed)
         return
     serverin_logger.info("run command : " + command)
-    process.stdin.write(command + "\n")
+    try:
+        process.stdin.write(command + "\n")
+    except UnicodeEncodeError:
+        serverin_logger.error(f"UnicodeEncodeError({command})")
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["serverin"]["unicode_encode_error"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     process.stdin.flush()
     #結果の返却を要求する
     is_back_discord = True
@@ -3268,7 +3283,7 @@ async def status(interaction: discord.Interaction):
     send_str += [RESPONSE_MSG["status"]["cpu_value_proc"].format(cpu_usage[key], key) for key in cpu_usage]
     # BOT PROCESS CPUの利用率を取得する
     cpu_usage = await get_thread_cpu_usage(os.getpid(), is_self=True)
-    send_str += ["Main"]
+    send_str += ["Self"]
     send_str += [RESPONSE_MSG["status"]["cpu_value_thread"].format(cpu_usage[key], key) for key in cpu_usage]
     embed.add_field(name=RESPONSE_MSG["status"]["cpu_title"],value="\n".join(send_str), inline=False)
 

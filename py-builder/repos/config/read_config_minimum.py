@@ -36,6 +36,7 @@ def make_config():
                             "server_path":now_path + "/",\
                             "server_name":"bedrock_server.exe",\
                             "server_args":"",\
+                            "server_char_encoding":"utf-8",\
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
@@ -87,6 +88,8 @@ def make_config():
                 cfg["server_path"] = now_path + "/"
             if "server_args" not in cfg:
                 cfg["server_args"] = ""
+            if "server_char_encoding" not in cfg:
+                cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:

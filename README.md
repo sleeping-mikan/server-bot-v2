@@ -115,6 +115,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
     "server_path": "path/to/serverdir/",
     "server_name": "bedrock_server.exe",
     "server_args": "",
+    "server_char_encoding": "utf-8",
     "log": {
         "server": true,
         "all": false
@@ -170,7 +171,8 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |auto_update|サーバー本体を自動更新するか否か|
 |server_path|server本体のパス(例えば`D:\\a\\server.jar`に配置されていれば`D:\\a\\`または`D:/a/`)|
 |server_name|server本体の名前 java版minecraftの場合サーバ起動に利用される`server.bat`等を入力してください(GUI起動させないでください)|
-|server_args|server起動時のコンソール引数。例えばTerrariaを起動する場合`-world /path/to/world.wld`を入力してください||
+|server_args|server起動時のコンソール引数。例えばTerrariaを起動する場合`-world /path/to/world.wld`を入力してください|
+|server_char_encoding|serverのコンソール出力を受け取る際に使用する文字コードを入力します|
 |log|各種ログを保存するか否か serverをtrueにするとmcサーバーの実行ログをmcserverと同じディレクトリに保存し、allをtrueにするとすべてのログをserver.pyと同じディレクトリに保存します|
 |mc|サーバーがmcサーバーかどうかを記述します。現在trueに設定されている場合、/ip時にserver.propertiesからserver-portを読み出します|
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
@@ -196,7 +198,7 @@ server.pyはサーバ本体と同じ階層に配置することを推奨しま�
 
 アクセス時にtokenを要求されるため、discordで`/tokengen`を実行しtokenを入手してください。
 
-現在のところwaitressを利用し実装されています。そのためhttpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
+httpsを用いて実行する場合(推奨)リバースプロキシを利用してください。
 
 ## 動作確認済み環境(必要環境)
 <details>
