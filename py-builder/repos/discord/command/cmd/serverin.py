@@ -32,7 +32,13 @@ async def cmd(interaction: discord.Interaction,command:str):
         await interaction.response.send_message(embed=embed)
         return
     serverin_logger.info("run command : " + command)
-    process.stdin.write(command + "\n")
+    try:
+        process.stdin.write(command + "\n")
+    except UnicodeEncodeError:
+        serverin_logger.error(f"UnicodeEncodeError({command})")
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["serverin"]["unicode_encode_error"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     process.stdin.flush()
     #結果の返却を要求する
     is_back_discord = True

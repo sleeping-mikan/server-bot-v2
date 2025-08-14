@@ -1217,6 +1217,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"コマンドが存在しない、または許可されないコマンドです",
+                    "unicode_encode_error": "コマンドに不正な文字が含まれています(指定された文字コードに含まれない文字が利用されています。)",
                 },
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
@@ -1373,6 +1374,7 @@ async def get_text_dat():
             "cmd":{
                 "serverin":{
                     "skipped_cmd":"The command is not found or not allowed",
+                    "unicode_encode_error":"Failed to execute command due to UnicodeEncodeError(A character that is not included in the specified character code is used.)",
                 },
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
@@ -2143,7 +2145,13 @@ async def cmd(interaction: discord.Interaction,command:str):
         await interaction.response.send_message(embed=embed)
         return
     serverin_logger.info("run command : " + command)
-    process.stdin.write(command + "\n")
+    try:
+        process.stdin.write(command + "\n")
+    except UnicodeEncodeError:
+        serverin_logger.error(f"UnicodeEncodeError({command})")
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["serverin"]["unicode_encode_error"],inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     process.stdin.flush()
     #結果の返却を要求する
     is_back_discord = True
