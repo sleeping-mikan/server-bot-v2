@@ -279,6 +279,7 @@ def make_config():
                             "server_path":now_path + "/",\
                             "server_name":"bedrock_server.exe",\
                             "server_args":"",\
+                            "server_char_encoding":"utf-8",\
                             "log":{"server":True,"all":False},\
                             
                             "mc":True,\
@@ -330,6 +331,8 @@ def make_config():
                 cfg["server_path"] = now_path + "/"
             if "server_args" not in cfg:
                 cfg["server_args"] = ""
+            if "server_char_encoding" not in cfg:
+                cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
             if "cmd" not in cfg["discord_commands"]:
@@ -804,6 +807,7 @@ try:
     # send_discord_mode = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["mode"]
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
+    server_char_code = config["server_char_encoding"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1886,7 +1890,7 @@ async def on_ready():
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
         if process is  None:
             #server を実行する
-            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding=server_char_code)
             threading.Thread(target=server_logger,args=(process,deque())).start()
             ready_logger.info('server starting')
         else:
@@ -1927,7 +1931,7 @@ def core_start() -> str:
     if is_running_server(start_logger):
         return RESPONSE_MSG["other"]["is_running"]
     start_logger.info('server starting')
-    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+    process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding=server_char_code)
     threading.Thread(target=server_logger,args=(process,deque())).start()
     return RESPONSE_MSG["start"]["success"]
 
