@@ -101,7 +101,7 @@ async def on_ready():
         await client.change_presence(activity=discord.Game(ACTIVITY_NAME["starting"]))
         if process is  None:
             #server を実行する
-            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding="utf-8")
+            process = subprocess.Popen([server_path + server_name, *server_args],cwd=server_path,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,encoding=server_char_code)
             threading.Thread(target=server_logger,args=(process,deque())).start()
             ready_logger.info('server starting')
         else:
