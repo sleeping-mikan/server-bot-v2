@@ -127,6 +127,36 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
         "use_front_page": true
     },
     "discord_commands": {
+        "permission": {
+            "commands_level": {
+                "stop": 1,
+                "start": 1,
+                "exit": 2,
+                "cmd serverin": 1,
+                "cmd stdin mk": 3,
+                "cmd stdin rm": 2,
+                "cmd stdin mkdir": 2,
+                "cmd stdin rmdir": 2,
+                "cmd stdin ls": 2,
+                "cmd stdin mv": 3,
+                "cmd stdin send-discord": 2,
+                "cmd stdin wget": 3,
+                "help": 0,
+                "backup create": 1,
+                "backup apply": 5,
+                "ip": 5,
+                "logs": 1,
+                "permission view": 0,
+                "permission change": 4,
+                "lang": 2,
+                "tokengen": 1,
+                "terminal set": 1,
+                "terminal del": 1,
+                "update": 3,
+                "announce embed": 4,
+                "status": 0
+            }
+        },
         "cmd": {
             "stdin": {
                 "sys_files": [
@@ -178,6 +208,7 @@ tokenを記述し、configのserver_pathにserver.[exe/bat(jarを実行するフ
 |web.secret_key|Flaskで利用する鍵を設定します。(app.secret_key)十分に強固な文字列を設定してください。|
 |web.port|webサーバーのポート番号を入力します。なお、/cmd stdin send-discordにおいてもこのポート番号を利用します|
 |web.use_front_page|webサーバーページからの操作を許可するか否か(Falseの場合にもファイルをやり取りはできます。)|
+|discord_commands.permission.commands_level|すべてのコマンドについて、必要な権限を定義するためのリスト(コマンド実行には書き込まれた値以上の権限が必要)|
 |discord_commands.cmd.stdin.sys_files|/cmd stdin <mv/rmdir/rm/wget/mv>において、権限を持っていても操作を拒否するファイルのリスト|
 |discord_commands.cmd.stdin.send_discord.bits_capacity|/cmd stdin send-discordにおいて、送信を許可するファイルの最大容量|
 |discord_commands.cmd.serverin.allow_mccmd|/cmdで標準入力を許可するコマンド名のリスト|
