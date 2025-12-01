@@ -154,7 +154,7 @@ embed_thumbnail_url = "https://www.dropbox.com/scl/fi/a21ptajqddfkhilx1e4st/mi-2
 
 
 # 権限データ
-COMMAND_PERMISSION = {
+INITIAL_COMMAND_PERMISSION = {
     "stop":1,
     "start":1,
     "exit":2,
@@ -184,7 +184,7 @@ COMMAND_PERMISSION = {
     "status":0,
 }
 
-USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
+
 
 unti_GC_obj = deque()
 
@@ -285,6 +285,9 @@ def make_config():
                             "mc":True,\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
+                                "permission":{\
+                                    "commands_level":INITIAL_COMMAND_PERMISSION,\
+                                },\
                                 "cmd":{\
                                     "stdin":{\
                                         "sys_files": [".config",".token","logs","mikanassets"],\
@@ -335,6 +338,10 @@ def make_config():
                 cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
+            if "permission" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["permission"] = {}
+            if "commands_level" not in cfg["discord_commands"]["permission"]:
+                cfg["discord_commands"]["permission"]["commands_level"] = INITIAL_COMMAND_PERMISSION
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
             if "stdin" not in cfg["discord_commands"]["cmd"]:
@@ -808,10 +815,14 @@ try:
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
+    COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+# 関連の定数
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 sys_logger.info("advanced features -> " + str(enable_advanced_features))
 #--------------------
@@ -1204,7 +1215,7 @@ async def get_text_dat():
         send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
-                "no_permission":"管理者権限を持っていないため実行できません",
+                "no_permission":"権限が不足しています",
                 "is_running":"サーバーが起動しているため実行できません",
                 "is_not_running":"サーバーが起動していないため実行できません",
             },
@@ -1307,8 +1318,8 @@ async def get_text_dat():
                 "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
-                    "add_success":"`{}`にbotの管理者権限を与えました",
-                    "remove_success":"`{}`からbotの管理者権限を剥奪しました",
+                    "add_success":"`{}`のbot権限を変更しました",
+                    "remove_success":"`{}`のbot権限を変更しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
                     "invalid_level":"権限レベルには削除(0)または1-{}の整数を指定してください。(指定された値 : `{}`)",
                 },
@@ -2023,7 +2034,7 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
         await interaction.response.send_message(embed=embed)
         admin_logger.info(f"exec force admin add {user}")
     elif level == 0:
-        if user.id not in config["discord_commands"]["admin"]["members"]:
+        if str(user.id) not in config["discord_commands"]["admin"]["members"]:
             embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["already_removed"],inline=False)
             await interaction.response.send_message(embed=embed)
             return
