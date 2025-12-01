@@ -36,7 +36,7 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
         await interaction.response.send_message(embed=embed)
         admin_logger.info(f"exec force admin add {user}")
     elif level == 0:
-        if user.id not in config["discord_commands"]["admin"]["members"]:
+        if str(user.id) not in config["discord_commands"]["admin"]["members"]:
             embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["already_removed"],inline=False)
             await interaction.response.send_message(embed=embed)
             return

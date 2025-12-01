@@ -1215,7 +1215,7 @@ async def get_text_dat():
         send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
-                "no_permission":"管理者権限を持っていないため実行できません",
+                "no_permission":"権限が不足しています",
                 "is_running":"サーバーが起動しているため実行できません",
                 "is_not_running":"サーバーが起動していないため実行できません",
             },
@@ -1318,8 +1318,8 @@ async def get_text_dat():
                 "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
-                    "add_success":"`{}`にbotの管理者権限を与えました",
-                    "remove_success":"`{}`からbotの管理者権限を剥奪しました",
+                    "add_success":"`{}`のbot権限を変更しました",
+                    "remove_success":"`{}`のbot権限を変更しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
                     "invalid_level":"権限レベルには削除(0)または1-{}の整数を指定してください。(指定された値 : `{}`)",
                 },
@@ -2034,7 +2034,7 @@ async def change(interaction: discord.Interaction,level: int,user:discord.User):
         await interaction.response.send_message(embed=embed)
         admin_logger.info(f"exec force admin add {user}")
     elif level == 0:
-        if user.id not in config["discord_commands"]["admin"]["members"]:
+        if str(user.id) not in config["discord_commands"]["admin"]["members"]:
             embed.add_field(name="",value=RESPONSE_MSG["permission"]["change"]["already_removed"],inline=False)
             await interaction.response.send_message(embed=embed)
             return
