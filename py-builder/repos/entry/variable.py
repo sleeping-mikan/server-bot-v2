@@ -62,7 +62,7 @@ embed_thumbnail_url = "https://www.dropbox.com/scl/fi/a21ptajqddfkhilx1e4st/mi-2
 
 
 # 権限データ
-COMMAND_PERMISSION = {
+INITIAL_COMMAND_PERMISSION = {
     "stop":1,
     "start":1,
     "exit":2,
@@ -92,7 +92,7 @@ COMMAND_PERMISSION = {
     "status":0,
 }
 
-USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
+
 
 unti_GC_obj = deque()
 

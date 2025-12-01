@@ -42,6 +42,9 @@ def make_config():
                             "mc":True,\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
+                                "permission":{\
+                                    "commands_level":INITIAL_COMMAND_PERMISSION,\
+                                },\
                                 "cmd":{\
                                     "stdin":{\
                                         "sys_files": [".config",".token","logs","mikanassets"],\
@@ -92,6 +95,10 @@ def make_config():
                 cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
+            if "permission" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["permission"] = {}
+            if "commands_level" not in cfg["discord_commands"]["permission"]:
+                cfg["discord_commands"]["permission"]["commands_level"] = INITIAL_COMMAND_PERMISSION
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
             if "stdin" not in cfg["discord_commands"]["cmd"]:

@@ -35,9 +35,13 @@ try:
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
+    COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+# 関連の定数
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 sys_logger.info("advanced features -> " + str(enable_advanced_features))

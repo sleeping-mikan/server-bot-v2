@@ -154,7 +154,7 @@ embed_thumbnail_url = "https://www.dropbox.com/scl/fi/a21ptajqddfkhilx1e4st/mi-2
 
 
 # 権限データ
-COMMAND_PERMISSION = {
+INITIAL_COMMAND_PERMISSION = {
     "stop":1,
     "start":1,
     "exit":2,
@@ -184,7 +184,7 @@ COMMAND_PERMISSION = {
     "status":0,
 }
 
-USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
+
 
 unti_GC_obj = deque()
 
@@ -285,6 +285,9 @@ def make_config():
                             "mc":True,\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
+                                "permission":{\
+                                    "commands_level":INITIAL_COMMAND_PERMISSION,\
+                                },\
                                 "cmd":{\
                                     "stdin":{\
                                         "sys_files": [".config",".token","logs","mikanassets"],\
@@ -335,6 +338,10 @@ def make_config():
                 cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
+            if "permission" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["permission"] = {}
+            if "commands_level" not in cfg["discord_commands"]["permission"]:
+                cfg["discord_commands"]["permission"]["commands_level"] = INITIAL_COMMAND_PERMISSION
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
             if "stdin" not in cfg["discord_commands"]["cmd"]:
@@ -808,10 +815,14 @@ try:
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
+    COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+# 関連の定数
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 sys_logger.info("advanced features -> " + str(enable_advanced_features))
 #--------------------
