@@ -342,6 +342,10 @@ def make_config():
                 cfg["discord_commands"]["permission"] = {}
             if "commands_level" not in cfg["discord_commands"]["permission"]:
                 cfg["discord_commands"]["permission"]["commands_level"] = INITIAL_COMMAND_PERMISSION
+            # 特定コマンドのキーが不足していれば追加
+            for key in INITIAL_COMMAND_PERMISSION.keys():
+                if key not in cfg["discord_commands"]["permission"]["commands_level"]:
+                    cfg["discord_commands"]["permission"]["commands_level"][key] = INITIAL_COMMAND_PERMISSION[key]
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
             if "stdin" not in cfg["discord_commands"]["cmd"]:
