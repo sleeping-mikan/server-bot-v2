@@ -17,9 +17,10 @@ def read_extension_commands():
     # 拡張moduleに追加コマンドが存在すればするだけ読み込む(mikanassets/extension/<拡張名>/commands.py)
     for file in os.listdir(extension_path):
         extension_file_path = normalize_path(extension_path + "/" + file)
+        extension_command_file_path = normalize_path(extension_file_path + "/commands.py")
         if os.path.isdir(now_path + "/mikanassets/extension/" + file):
             sys_logger.info("read extension commands ->" + extension_file_path)
-            if os.path.exists(extension_file_path + "/commands.py"):
+            if os.path.exists(extension_command_file_path):
                 # <拡張名>コマンドグループを作成
                 extension_commands_group = app_commands.Group(name="extension-" + file,description="This commands group is extention.\nUse this code at your own risk." + file)
                 extension_commands_groups.append(extension_commands_group)
@@ -29,11 +30,11 @@ def read_extension_commands():
                     importlib.import_module("mikanassets.extension." + file + ".commands")
                     # コマンドを追加
                     tree.add_command(extension_commands_group)
-                    sys_logger.info("read extension commands success -> " + extension_file_path + "/commands.py")
+                    sys_logger.info("read extension commands success -> " + extension_command_file_path)
                 except Exception as e:
-                    sys_logger.info("cannot read extension commands " + extension_file_path + "/commands.py" + f"({e})")
+                    sys_logger.info("cannot read extension commands " + extension_command_file_path + f"({e})")
             else:
-                sys_logger.info("not exist extension commands file in " + extension_file_path + "/commands.py")
+                sys_logger.info("not exist extension commands file in " + extension_command_file_path)
         else:
             sys_logger.info("not directory -> " + extension_file_path)
 
