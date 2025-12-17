@@ -91,6 +91,7 @@ except:
 #--------------------
 
 
+
 # 基本的な変数の読み込み
 
 #--------------------
@@ -99,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.8"
+__version__ = "2.4.9"
 
 def get_version():
     return __version__
@@ -192,6 +193,21 @@ unti_GC_obj = deque()
 # 拡張機能から読み込むdiscord.tasks
 extension_tasks_func = []
 
+#--------------------
+
+
+#--------------------
+
+
+#ログをdiscordにも返す可能性がある
+is_back_discord = False
+#--------------------
+
+
+# オブジェクトのロード
+
+#--------------------
+
 
 class ModifiedEmbeds():# 名前空間として
     class DefaultEmbed(discord.Embed):
@@ -206,12 +222,270 @@ class ModifiedEmbeds():# 名前空間として
             self.set_thumbnail(url=embed_thumbnail_url)
 #--------------------
 
+# util関数のロード
 
 #--------------------
 
 
-#ログをdiscordにも返す可能性がある
-is_back_discord = False
+async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
+    logger.error('permission denied')
+    embed = ModifiedEmbeds.ErrorEmbed(title=RESPONSE_MSG["other"]["no_permission"])
+    await interaction.response.send_message(embed = embed,ephemeral = True)
+
+
+async def is_administrator(user: discord.User) -> bool:
+    if not user.guild_permissions.administrator:
+        return False
+    return True
+
+async def is_force_administrator(user: discord.User) -> bool:
+    #user idがforce_adminに含まれないなら
+    if user.id not in config["discord_commands"]["admin"]["members"]:
+        return False
+    return True
+
+#既にサーバが起動しているか
+def is_running_server(logger: logging.Logger) -> bool:
+    global process
+    if process is not None:
+        logger.error('server is still running')
+        return True
+    return False
+
+#サーバーが閉まっている状態か
+def is_stopped_server(logger: logging.Logger) -> bool:
+    global process
+    if process is None:
+        logger.error('server is not running')
+        return True
+    return False
+
+async def reload_config():
+    import json
+    with open(config_file_place, 'r') as f:
+        global config
+        config = json.load(f)
+        #TODO
+    
+
+async def rewrite_config(config: dict) -> bool:
+    try:
+        with open(config_file_place, 'w') as f:
+            json.dump(config, f,indent=4, ensure_ascii=False)
+        return True
+    except:
+        return False
+    
+
+
+
+# ファイルパスを"/"に統一する
+def normalize_path(path: str) -> str:
+    ## \\や//のような連続するスラッシュを1つにする
+    path = re.sub(r'\\+', '/', path)
+    path = re.sub(r'//+', '/', path)
+    return path.replace("\\", "/")
+
+
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
+    global exist_files, copyed_files
+    """
+    src : コピー元dir
+    dst : コピー先dir
+    symlinks : リンクをコピーするか
+    """
+    src = normalize_path(src)
+    dst = normalize_path(dst)
+    original_src = src
+    original_dst = dst
+    #表示サイズ
+    bar_width = 30
+    #送信制限
+    max_send = 20
+    # dstがbackuppathの場合だけ名前を操作する
+    if dst.startswith(backup_path):
+        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + "-" + os.path.basename(src))
+    exist_files = 0
+    for root, dirs, files in os.walk(top=src, topdown=False):
+        exist_files += len(files)
+    #何ファイルおきにdiscordへ送信するか(最大100回送信するようにする)
+    send_sens = int(exist_files / max_send) if exist_files > max_send else 1
+    copyed_files = 0
+    async def copytree(src, dst, symlinks=False):
+        global copyed_files
+        names = os.listdir(src)
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        errors = []
+        for name in names:
+            srcname = os.path.join(src, name)
+            dstname = os.path.join(dst, name)
+            try:
+                if symlinks and os.path.islink(srcname):
+                    linkto = os.readlink(srcname)
+                    os.symlink(linkto, dstname)
+                elif os.path.isdir(srcname):
+                    await copytree(srcname, dstname, symlinks)
+                else:
+                    await asyncio.to_thread(copy2, srcname, dstname)
+                    copyed_files += 1
+                    if copyed_files % send_sens == 0 or copyed_files == exist_files:
+                        now = RESPONSE_MSG["backup"]["now_backup"]
+                        if copyed_files == exist_files:
+                            now = RESPONSE_MSG["backup"]["success"]
+                        embed.clear_fields()
+                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        await interaction.edit_original_response(embed=embed)
+            except OSError as why:
+                errors.append((srcname, dstname, str(why)))
+            # catch the Error from the recursive copytree so that we can
+            # continue with other files
+            except Error as err:
+                errors.extend(err.args[0])
+        try:
+            copystat(src, dst)
+        except OSError as why:
+            # can't copy file access times on Windows
+            if why.winerror is None:
+                errors.extend((src, dst, str(why)))
+        if errors:
+            raise Error(errors)
+    await copytree(src, dst, symlinks)
+    
+#logger thread
+def server_logger(proc:subprocess.Popen,ret):
+    global process,is_back_discord , use_stop
+    if log["server"]:
+        file = open(file = server_path + "logs/server " + datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + ".log",mode = "w", encoding="utf-8")
+    while True:
+        try:
+            logs = proc.stdout.readline()
+        except Exception as e:
+            sys_logger.error(e)
+            continue
+        # プロセスが終了している
+        if logs == '': 
+            if proc.poll() is not None:
+                break
+            continue
+        #ログが\nのみであれば不要
+        if logs == "\n":
+            continue
+        #後ろが\nなら削除
+        logs = logs.rstrip("\n")
+        minecraft_logger.info(logs)
+        if log["server"]:
+            file.write(logs + "\n")
+            file.flush()
+        if is_back_discord:
+            cmd_logs.append(logs)
+            is_back_discord = False
+    #サーバーが終了したことをログに残す
+    sys_logger.info('server is ended')
+    #もし、stop命令が見当たらないなら、エラー出力をしておく
+    if not use_stop:
+        sys_logger.error('stop command is not found')
+        use_stop = True
+    #プロセスを終了させる
+    process = None
+
+async def print_user(logger: logging.Logger,user: discord.user):
+    logger.info('command used by ' + str(user))
+
+class ServerBootException(Exception):pass
+
+async def user_permission(user:discord.User):
+    # ユーザが管理者なら
+    if await is_administrator(user):
+        return USER_PERMISSION_MAX
+    # configに権限が書かれていないなら
+    if str(user.id) not in config["discord_commands"]["admin"]["members"]:
+        return 0
+    return config["discord_commands"]["admin"]["members"][str(user.id)]
+
+# 操作可能なパスかを確認
+def is_path_within_scope(path):
+    # 絶対パスを取得
+    path = os.path.abspath(path)
+    resolved_target_path = pathlib.Path(path).resolve(strict=False)
+    resolved_server_path = pathlib.Path(server_path).resolve()
+    try:
+        resolved_target_path.relative_to(resolved_server_path)
+        sys_logger.info("valid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
+        return True
+    except ValueError:
+        sys_logger.info("invalid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
+        return False
+
+async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
+    """ディレクトリをZIP化し、非同期的に返す関数"""
+    loop = asyncio.get_event_loop()
+    zip_buffer = io.BytesIO()
+
+    def zip_task():
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zipf:
+            for root, dirs, files in os.walk(file_path):
+                for file in files:
+                    full_file_path = os.path.join(root, file)
+                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
+        zip_buffer.seek(0)
+        return zip_buffer
+
+    # 非同期スレッドでZIP作成を実行
+    zip_buffer = await loop.run_in_executor(None, zip_task)
+    file_size = zip_buffer.getbuffer().nbytes
+    return zip_buffer, file_size
+
+async def send_discord_message_or_followup(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING):
+    if interaction.response.is_done():
+        await interaction.followup.send(message, file=file)
+    else:
+        await interaction.response.send_message(message, file=file)
+
+async def send_discord_message_or_edit(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING, embed = discord.utils.MISSING, ephemeral = False):
+    if interaction.response.is_done():
+        await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
+    else:
+        await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
+
+
+async def parse_mimd(text: str):
+    first_title_flag = False
+    send_data = deque([{"name":"","value":""}])
+    origin_data = {"title": ""}
+    for line in text.split("\n"):
+        parse_line = line
+        while parse_line.startswith(" "):
+            parse_line = parse_line[1:]
+        # #から始まる一文ならnameに
+        if parse_line[0] == "#":
+            send_data.append({"name":"","value":""})
+            send_data[-1]["name"] = parse_line[1:]
+        # タイトルの設定(先頭のみ有効)
+        elif parse_line.startswith("|title|") and not first_title_flag:
+            origin_data["title"] = parse_line[7:]
+            first_title_flag = True
+        # 何でもないテキストならデータをセット
+        else:
+            send_data[-1]["value"] += line
+    return send_data, origin_data
+
+async def get_directory_size(path):
+    size = 0
+    for entry in os.scandir(path):
+        if entry.is_file():
+            size += entry.stat().st_size
+        elif entry.is_dir():
+            size += await get_directory_size(entry.path)
+    return size
+#--------------------
+
+# 基本変数の加工処理
+
+#--------------------
+
+
+now_path = normalize_path(now_path)
 #--------------------
 
 
@@ -452,7 +726,7 @@ to_config_safe(config)
 #ロガー作成前なので最小限の読み込み
 try:
     log = config["log"]
-    server_path = config["server_path"]
+    server_path = normalize_path(config["server_path"])
     if not os.path.exists(server_path):
         print("not exist server_path dir")
         wait_for_keypress()
@@ -801,7 +1075,7 @@ try:
     allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
-    backup_path = config["discord_commands"]["backup"]["path"]
+    backup_path = normalize_path(config["discord_commands"]["backup"]["path"])
     lang = config["discord_commands"]["lang"]
     bot_admin = config["discord_commands"]["admin"]["members"]
     flask_secret_key = config["web"]["secret_key"]
@@ -1545,264 +1819,6 @@ sys_logger.info('create text data')
 #--------------------
 
 
-# util関数のロード
-
-#--------------------
-
-
-async def not_enough_permission(interaction: discord.Interaction,logger: logging.Logger) -> bool:
-    logger.error('permission denied')
-    embed = ModifiedEmbeds.ErrorEmbed(title=RESPONSE_MSG["other"]["no_permission"])
-    await interaction.response.send_message(embed = embed,ephemeral = True)
-
-
-async def is_administrator(user: discord.User) -> bool:
-    if not user.guild_permissions.administrator:
-        return False
-    return True
-
-async def is_force_administrator(user: discord.User) -> bool:
-    #user idがforce_adminに含まれないなら
-    if user.id not in config["discord_commands"]["admin"]["members"]:
-        return False
-    return True
-
-#既にサーバが起動しているか
-def is_running_server(logger: logging.Logger) -> bool:
-    global process
-    if process is not None:
-        logger.error('server is still running')
-        return True
-    return False
-
-#サーバーが閉まっている状態か
-def is_stopped_server(logger: logging.Logger) -> bool:
-    global process
-    if process is None:
-        logger.error('server is not running')
-        return True
-    return False
-
-async def reload_config():
-    import json
-    with open(config_file_place, 'r') as f:
-        global config
-        config = json.load(f)
-        #TODO
-    
-
-async def rewrite_config(config: dict) -> bool:
-    try:
-        with open(config_file_place, 'w') as f:
-            json.dump(config, f,indent=4, ensure_ascii=False)
-        return True
-    except:
-        return False
-    
-
-
-
-# ファイルパスを"/"に統一する
-def normalize_path(path: str) -> str:
-    ## \\や//のような連続するスラッシュを1つにする
-    path = re.sub(r'\\+', '/', path)
-    path = re.sub(r'//+', '/', path)
-    return path.replace("\\", "/")
-
-
-async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
-    global exist_files, copyed_files
-    """
-    src : コピー元dir
-    dst : コピー先dir
-    symlinks : リンクをコピーするか
-    """
-    src = normalize_path(src)
-    dst = normalize_path(dst)
-    original_src = src
-    original_dst = dst
-    #表示サイズ
-    bar_width = 30
-    #送信制限
-    max_send = 20
-    # dstがbackuppathの場合だけ名前を操作する
-    if dst.startswith(backup_path):
-        dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + "-" + os.path.basename(src))
-    exist_files = 0
-    for root, dirs, files in os.walk(top=src, topdown=False):
-        exist_files += len(files)
-    #何ファイルおきにdiscordへ送信するか(最大100回送信するようにする)
-    send_sens = int(exist_files / max_send) if exist_files > max_send else 1
-    copyed_files = 0
-    async def copytree(src, dst, symlinks=False):
-        global copyed_files
-        names = os.listdir(src)
-        if not os.path.exists(dst):
-            os.makedirs(dst)
-        errors = []
-        for name in names:
-            srcname = os.path.join(src, name)
-            dstname = os.path.join(dst, name)
-            try:
-                if symlinks and os.path.islink(srcname):
-                    linkto = os.readlink(srcname)
-                    os.symlink(linkto, dstname)
-                elif os.path.isdir(srcname):
-                    await copytree(srcname, dstname, symlinks)
-                else:
-                    await asyncio.to_thread(copy2, srcname, dstname)
-                    copyed_files += 1
-                    if copyed_files % send_sens == 0 or copyed_files == exist_files:
-                        now = RESPONSE_MSG["backup"]["now_backup"]
-                        if copyed_files == exist_files:
-                            now = RESPONSE_MSG["backup"]["success"]
-                        embed.clear_fields()
-                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
-                        await interaction.edit_original_response(embed=embed)
-            except OSError as why:
-                errors.append((srcname, dstname, str(why)))
-            # catch the Error from the recursive copytree so that we can
-            # continue with other files
-            except Error as err:
-                errors.extend(err.args[0])
-        try:
-            copystat(src, dst)
-        except OSError as why:
-            # can't copy file access times on Windows
-            if why.winerror is None:
-                errors.extend((src, dst, str(why)))
-        if errors:
-            raise Error(errors)
-    await copytree(src, dst, symlinks)
-    
-#logger thread
-def server_logger(proc:subprocess.Popen,ret):
-    global process,is_back_discord , use_stop
-    if log["server"]:
-        file = open(file = server_path + "logs/server " + datetime.now().strftime("%Y-%m-%d_%H_%M_%S") + ".log",mode = "w", encoding="utf-8")
-    while True:
-        try:
-            logs = proc.stdout.readline()
-        except Exception as e:
-            sys_logger.error(e)
-            continue
-        # プロセスが終了している
-        if logs == '': 
-            if proc.poll() is not None:
-                break
-            continue
-        #ログが\nのみであれば不要
-        if logs == "\n":
-            continue
-        #後ろが\nなら削除
-        logs = logs.rstrip("\n")
-        minecraft_logger.info(logs)
-        if log["server"]:
-            file.write(logs + "\n")
-            file.flush()
-        if is_back_discord:
-            cmd_logs.append(logs)
-            is_back_discord = False
-    #サーバーが終了したことをログに残す
-    sys_logger.info('server is ended')
-    #もし、stop命令が見当たらないなら、エラー出力をしておく
-    if not use_stop:
-        sys_logger.error('stop command is not found')
-        use_stop = True
-    #プロセスを終了させる
-    process = None
-
-async def print_user(logger: logging.Logger,user: discord.user):
-    logger.info('command used by ' + str(user))
-
-class ServerBootException(Exception):pass
-
-async def user_permission(user:discord.User):
-    # ユーザが管理者なら
-    if await is_administrator(user):
-        return USER_PERMISSION_MAX
-    # configに権限が書かれていないなら
-    if str(user.id) not in config["discord_commands"]["admin"]["members"]:
-        return 0
-    return config["discord_commands"]["admin"]["members"][str(user.id)]
-
-# 操作可能なパスかを確認
-def is_path_within_scope(path):
-    # 絶対パスを取得
-    path = os.path.abspath(path)
-    resolved_target_path = pathlib.Path(path).resolve(strict=False)
-    resolved_server_path = pathlib.Path(server_path).resolve()
-    try:
-        resolved_target_path.relative_to(resolved_server_path)
-        sys_logger.info("valid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
-        return True
-    except ValueError:
-        sys_logger.info("invalid path -> " + path + f"[{resolved_target_path}]" + f"(server_path : {server_path}[{resolved_server_path}])")
-        return False
-
-async def create_zip_async(file_path: str) -> tuple[io.BytesIO, int]:
-    """ディレクトリをZIP化し、非同期的に返す関数"""
-    loop = asyncio.get_event_loop()
-    zip_buffer = io.BytesIO()
-
-    def zip_task():
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_STORED) as zipf:
-            for root, dirs, files in os.walk(file_path):
-                for file in files:
-                    full_file_path = os.path.join(root, file)
-                    zipf.write(full_file_path, os.path.relpath(full_file_path, file_path))
-        zip_buffer.seek(0)
-        return zip_buffer
-
-    # 非同期スレッドでZIP作成を実行
-    zip_buffer = await loop.run_in_executor(None, zip_task)
-    file_size = zip_buffer.getbuffer().nbytes
-    return zip_buffer, file_size
-
-async def send_discord_message_or_followup(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING):
-    if interaction.response.is_done():
-        await interaction.followup.send(message, file=file)
-    else:
-        await interaction.response.send_message(message, file=file)
-
-async def send_discord_message_or_edit(interaction: discord.Interaction, message: str = discord.utils.MISSING, file = discord.utils.MISSING, embed = discord.utils.MISSING, ephemeral = False):
-    if interaction.response.is_done():
-        await interaction.edit_original_response(content=message, embed=embed, attachments=[file] if file is not discord.utils.MISSING else discord.utils.MISSING)
-    else:
-        await interaction.response.send_message(content=message, file=file, embed=embed, ephemeral=ephemeral)
-
-
-async def parse_mimd(text: str):
-    first_title_flag = False
-    send_data = deque([{"name":"","value":""}])
-    origin_data = {"title": ""}
-    for line in text.split("\n"):
-        parse_line = line
-        while parse_line.startswith(" "):
-            parse_line = parse_line[1:]
-        # #から始まる一文ならnameに
-        if parse_line[0] == "#":
-            send_data.append({"name":"","value":""})
-            send_data[-1]["name"] = parse_line[1:]
-        # タイトルの設定(先頭のみ有効)
-        elif parse_line.startswith("|title|") and not first_title_flag:
-            origin_data["title"] = parse_line[7:]
-            first_title_flag = True
-        # 何でもないテキストならデータをセット
-        else:
-            send_data[-1]["value"] += line
-    return send_data, origin_data
-
-async def get_directory_size(path):
-    size = 0
-    for entry in os.scandir(path):
-        if entry.is_file():
-            size += entry.stat().st_size
-        elif entry.is_dir():
-            size += await get_directory_size(entry.path)
-    return size
-#--------------------
-
 
 # 読み込み結果の出力
 
@@ -1812,8 +1828,8 @@ async def get_directory_size(path):
 #ローカルファイルの読み込み結果出力
 sys_logger.info("bot instance root -> " + now_path)
 sys_logger.info("server instance root -> " + server_path)
-sys_logger.info("read token file -> " + now_path + "/" +".token")
-sys_logger.info("read config file -> " + now_path + "/" +".config")
+sys_logger.info("read token file -> " + normalize_path(now_path + "/" +".token"))
+sys_logger.info("read config file -> " + normalize_path(now_path + "/" +".config"))
 view_config = config.copy()
 view_config["web"]["secret_key"] = "****"
 sys_logger.info("config -> " + str(view_config))
@@ -3392,12 +3408,14 @@ extension_logger = None
 def read_extension_commands():
     global extension_commands_group,extension_logger
     extension_commands_groups = deque()
-    sys_logger.info("read extension commands ->" + now_path + "/mikanassets/extension")
+    extension_path = normalize_path(now_path + "/mikanassets/extension")
+    sys_logger.info("read extension commands ->" + extension_path)
     # 拡張moduleに追加コマンドが存在すればするだけ読み込む(mikanassets/extension/<拡張名>/commands.py)
-    for file in os.listdir(now_path + "/mikanassets/extension"):
+    for file in os.listdir(extension_path):
+        extension_file_path = normalize_path(extension_path + "/" + file)
         if os.path.isdir(now_path + "/mikanassets/extension/" + file):
-            sys_logger.info("read extension commands ->" + now_path + "/mikanassets/extension/" + file)
-            if os.path.exists(now_path + "/mikanassets/extension/" + file + "/commands.py"):
+            sys_logger.info("read extension commands ->" + extension_file_path)
+            if os.path.exists(extension_file_path + "/commands.py"):
                 # <拡張名>コマンドグループを作成
                 extension_commands_group = app_commands.Group(name="extension-" + file,description="This commands group is extention.\nUse this code at your own risk." + file)
                 extension_commands_groups.append(extension_commands_group)
@@ -3407,25 +3425,26 @@ def read_extension_commands():
                     importlib.import_module("mikanassets.extension." + file + ".commands")
                     # コマンドを追加
                     tree.add_command(extension_commands_group)
-                    sys_logger.info("read extension commands success -> " + now_path + "/mikanassets/extension/" + file + "/commands.py")
+                    sys_logger.info("read extension commands success -> " + extension_file_path + "/commands.py")
                 except Exception as e:
-                    sys_logger.info("cannot read extension commands " + now_path + "/mikanassets/extension/" + file + "/commands.py" + f"({e})")
+                    sys_logger.info("cannot read extension commands " + extension_file_path + "/commands.py" + f"({e})")
             else:
-                sys_logger.info("not exist extension commands file in " + now_path + "/mikanassets/extension/" + file + "/commands.py")
+                sys_logger.info("not exist extension commands file in " + extension_file_path + "/commands.py")
         else:
-            sys_logger.info("not directory -> " + now_path + "/mikanassets/extension/" + file)
+            sys_logger.info("not directory -> " + extension_file_path)
 
     unti_GC_obj.append(extension_commands_groups)
 
+extension_path = normalize_path(now_path + "/mikanassets/extension")
 # mikanassets/extension/<extension_dir>にディレクトリが存在すれば
-if os.path.exists(now_path + "/mikanassets/extension"):
-    if len(os.listdir(now_path + "/mikanassets/extension")) > 0:
+if os.path.exists(extension_path):
+    if len(os.listdir(extension_path)) > 0:
         # 拡張コマンドを読み込む
         read_extension_commands()
     else:
-        sys_logger.info("no extension commands in " + now_path + "/mikanassets/extension")
+        sys_logger.info("no extension commands in " + extension_path)
 del extension_commands_group
-
+del extension_path
 
 #--------------------
 
