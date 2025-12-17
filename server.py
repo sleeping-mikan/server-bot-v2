@@ -3720,7 +3720,7 @@ def run_webservice_server():
     uvicorn.run(fastapi_app, host="0.0.0.0", port=web_port, log_config=None)
 
     
-web_thread = threading.Thread(target=run_webservice_server, daemon=True)
+web_thread = threading.Thread(target=run_webservice_server, daemon=True, name="web_thread")
 web_thread.start()
 
 
