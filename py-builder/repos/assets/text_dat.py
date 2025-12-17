@@ -168,6 +168,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
                     "not_file": "`{}`はファイルではありません",
+                    "not_file_or_directory":"`{}`はファイルまたはディレクトリではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
                     "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
                     "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
@@ -198,6 +199,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}`を`{}`に移動しました",
                         "not_exists":"`{}`は見つかりません",
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "file_not_found":"`{}`は見つかりません",
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
@@ -325,6 +328,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
                     "not_file": "`{}` is not a file",
+                    "not_file_or_directory":"`{}` is not a file or directory",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
                     "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
                     "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
@@ -355,6 +359,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}` has been moved to `{}`",
                         "file_not_found":"`{}` not found",
+                        "not_exists":"`{}` not found",
+                        "not_directory":"`{}` is not a directory",
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",

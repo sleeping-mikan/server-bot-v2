@@ -1512,6 +1512,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
                     "not_file": "`{}`はファイルではありません",
+                    "not_file_or_directory":"`{}`はファイルまたはディレクトリではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
                     "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
                     "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
@@ -1542,6 +1543,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}`を`{}`に移動しました",
                         "not_exists":"`{}`は見つかりません",
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "file_not_found":"`{}`は見つかりません",
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
@@ -1669,6 +1672,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
                     "not_file": "`{}` is not a file",
+                    "not_file_or_directory":"`{}` is not a file or directory",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
                     "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
                     "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
@@ -1699,6 +1703,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}` has been moved to `{}`",
                         "file_not_found":"`{}` not found",
+                        "not_exists":"`{}` not found",
+                        "not_directory":"`{}` is not a directory",
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
@@ -2538,16 +2544,22 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("invalid path -> " + path + " or " + dest)
         return
     # ファイルが存在しているかを確認
-    if not os.path.exists(path):
-        embed.add_field(name="",velue=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
+    if not os.path.exists(path) or not os.path.exists(dest):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("file not found -> " + path)
         return
-    # 該当のアイテムがファイルか
-    if not os.path.isfile(path):
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path),inline=False)
+    # 該当のアイテムがファイルかディレクトリ
+    if not os.path.isfile(path) and not os.path.isdir(path):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file_or_directory"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("not file -> " + path)
+        return
+    # 移動先がディレクトリではない
+    if not os.path.isdir(dest):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_directory"].format(dest),inline=False)
+        await interaction.response.send_message(embed=embed)
+        stdin_mv_logger.info("not directory -> " + dest)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if (not await is_administrator(interaction.user) or not enable_advanced_features) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
