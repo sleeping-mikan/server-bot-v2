@@ -53,6 +53,13 @@ async def rewrite_config(config: dict) -> bool:
         return True
     except:
         return False
+    
+
+
+
+# ファイルパスを"/"に統一する
+def normalize_path(path: str) -> str:
+    return path.replace("\\", "/")
 
 
 async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
@@ -62,6 +69,8 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     dst : コピー先dir
     symlinks : リンクをコピーするか
     """
+    src = normalize_path(src)
+    dst = normalize_path(dst)
     original_src = src
     original_dst = dst
     #表示サイズ
@@ -93,7 +102,7 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                 elif os.path.isdir(srcname):
                     await copytree(srcname, dstname, symlinks)
                 else:
-                    copy2(srcname, dstname)
+                    await asyncio.to_thread(copy2, srcname, dstname)
                     copyed_files += 1
                     if copyed_files % send_sens == 0 or copyed_files == exist_files:
                         now = RESPONSE_MSG["backup"]["now_backup"]
