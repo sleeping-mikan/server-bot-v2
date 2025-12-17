@@ -270,10 +270,10 @@ async def get_text_dat():
             },
             "update":{
                 "same":"存在するファイルは既に最新です",
-                "different":"コミットidが異なるため更新を行います",
+                "different":"ファイルidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
                 "replace":"ch_id {}\nmsg_id {}",
-                "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
+                "force":"forceオプションが指定されたため、ファイルidに関わらず更新を行います。",
             },
             "announce":{
                 "embed":{
@@ -425,7 +425,7 @@ async def get_text_dat():
             },
             "update":{
                 "same":"The same version is already installed",
-                "different":"The commit id is different to update",
+                "different":"The file id is different to update",
                 "download_failed":"Download failed",
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",
