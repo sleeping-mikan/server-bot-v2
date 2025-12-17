@@ -59,6 +59,9 @@ async def rewrite_config(config: dict) -> bool:
 
 # ファイルパスを"/"に統一する
 def normalize_path(path: str) -> str:
+    ## \\や//のような連続するスラッシュを1つにする
+    path = re.sub(r'\\+', '/', path)
+    path = re.sub(r'//+', '/', path)
     return path.replace("\\", "/")
 
 

@@ -24,6 +24,7 @@ import sys
 import json
 from contextlib import asynccontextmanager
 import pathlib
+import re
 #--------------------
 
 
@@ -98,7 +99,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.7"
+__version__ = "2.4.8"
 
 def get_version():
     return __version__
@@ -1603,6 +1604,9 @@ async def rewrite_config(config: dict) -> bool:
 
 # ファイルパスを"/"に統一する
 def normalize_path(path: str) -> str:
+    ## \\や//のような連続するスラッシュを1つにする
+    path = re.sub(r'\\+', '/', path)
+    path = re.sub(r'//+', '/', path)
     return path.replace("\\", "/")
 
 
