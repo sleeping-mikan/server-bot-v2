@@ -1143,7 +1143,7 @@ if not os.path.exists(now_path + "/mikanassets/extension"):
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/zo824cfk88uj52sospwo6/update_v2.2.py?rlkey=vwkh78smhdbm2pnfyegyxjpgf&st=6wdv9o5w&dl=1'
+    url='https://www.dropbox.com/scl/fi/fspz8u09iuo2ygfw1kisp/update_v2.3.py?rlkey=muwcsiik03r7xql0pxd55b7jo&st=67t3qukq&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
@@ -1256,8 +1256,8 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         update_logger.error("github commit is None.")
     # コミットid出力
     if interaction is not None and embed is not None:
-        embed.add_field(name="github commit", value=github_commit, inline=False)
-        embed.add_field(name="local commit", value=commit, inline=False)
+        embed.add_field(name="github file", value=github_commit, inline=False)
+        embed.add_field(name="local file", value=commit, inline=False)
         await sender(interaction=interaction,embed=embed)
     # 更新がない場合
     if commit == github_commit and not is_force: 
@@ -1298,7 +1298,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     if interaction is not None and embed is not None:
         msg_id = str((await interaction.original_response()).id)
         channel_id = str(interaction.channel_id)
-        embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
+        # embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
         await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
@@ -1614,10 +1614,10 @@ async def get_text_dat():
             },
             "update":{
                 "same":"存在するファイルは既に最新です",
-                "different":"コミットidが異なるため更新を行います",
+                "different":"ファイルidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
                 "replace":"ch_id {}\nmsg_id {}",
-                "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
+                "force":"forceオプションが指定されたため、ファイルidに関わらず更新を行います。",
             },
             "announce":{
                 "embed":{
@@ -1769,7 +1769,7 @@ async def get_text_dat():
             },
             "update":{
                 "same":"The same version is already installed",
-                "different":"The commit id is different to update",
+                "different":"The file id is different to update",
                 "download_failed":"Download failed",
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",
