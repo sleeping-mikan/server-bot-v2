@@ -210,7 +210,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+    os.execv(sys.executable,["python3","\"" + now_path + "/mikanassets/" + "update.py" + "\"",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 
 
