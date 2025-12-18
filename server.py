@@ -100,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.9"
+__version__ = "2.4.10"
 
 def get_version():
     return __version__
@@ -584,7 +584,7 @@ def make_config():
         config_changed = True
     else:
         try:
-            config_dict = json.load(open(now_path + "/"  + ".config","r"))
+            config_dict = json.load(open(now_path + "/"  + ".config","r", encoding="utf-8"))
             # 不要な要素があれば削除
             changed = delete_config(config_dict)
         except json.decoder.JSONDecodeError:
@@ -1143,7 +1143,7 @@ if not os.path.exists(now_path + "/mikanassets/extension"):
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/fspz8u09iuo2ygfw1kisp/update_v2.3.py?rlkey=muwcsiik03r7xql0pxd55b7jo&st=67t3qukq&dl=1'
+    url='https://www.dropbox.com/scl/fi/fyvorfgr9kb4wcwgpa6i4/update_v2.4.py?rlkey=ngict3xc7zpxk4v24s7ilrnem&st=k8163ldk&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
@@ -1302,7 +1302,7 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+    os.execv(sys.executable,["python3","\"" + now_path + "/mikanassets/" + "update.py" + "\"",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 
 

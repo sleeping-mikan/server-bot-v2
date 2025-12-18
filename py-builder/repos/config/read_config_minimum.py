@@ -67,7 +67,7 @@ def make_config():
         config_changed = True
     else:
         try:
-            config_dict = json.load(open(now_path + "/"  + ".config","r"))
+            config_dict = json.load(open(now_path + "/"  + ".config","r", encoding="utf-8"))
             # 不要な要素があれば削除
             changed = delete_config(config_dict)
         except json.decoder.JSONDecodeError:
