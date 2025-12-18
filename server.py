@@ -1143,7 +1143,7 @@ if not os.path.exists(now_path + "/mikanassets/extension"):
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/fspz8u09iuo2ygfw1kisp/update_v2.3.py?rlkey=muwcsiik03r7xql0pxd55b7jo&st=67t3qukq&dl=1'
+    url='https://www.dropbox.com/scl/fi/fyvorfgr9kb4wcwgpa6i4/update_v2.4.py?rlkey=ngict3xc7zpxk4v24s7ilrnem&st=k8163ldk&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
