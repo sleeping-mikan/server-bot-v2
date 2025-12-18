@@ -3,6 +3,7 @@ from ..entry.standard_imports import *
 from ..entry.variable import *
 from ..wait_for_keypress import *
 from ..logger.logger_create import *
+from .read_config_minimum import *
 #!end-ignore
 
 #configの読み込み
@@ -16,7 +17,7 @@ try:
     allow = {"ip":config["allow"]["ip"]}
     log = config["log"]
     now_dir = server_path.replace("\\","/").split("/")[-2]
-    backup_path = config["discord_commands"]["backup"]["path"]
+    backup_path = normalize_path(config["discord_commands"]["backup"]["path"])
     lang = config["discord_commands"]["lang"]
     bot_admin = config["discord_commands"]["admin"]["members"]
     flask_secret_key = config["web"]["secret_key"]
@@ -35,9 +36,13 @@ try:
     send_discord_bits_capacity = config["discord_commands"]["cmd"]["stdin"]["send_discord"]["bits_capacity"]
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
+    COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
     wait_for_keypress()
+
+# 関連の定数
+USER_PERMISSION_MAX = max(COMMAND_PERMISSION.values())
 
 sys_logger.info("advanced features -> " + str(enable_advanced_features))

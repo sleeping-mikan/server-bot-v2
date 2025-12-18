@@ -3,9 +3,17 @@
 #!open ./repos/entry/auto_pip.py
 #!open ./repos/entry/thirdparty_imports.py
 
+
 # 基本的な変数の読み込み
 #!open ./repos/entry/variable.py
 #!open ./repos/discord/is_log.py
+
+# オブジェクトのロード
+#!open ./repos/assets/objects.py
+# util関数のロード
+#!open ./repos/assets/utils.py
+# 基本変数の加工処理
+#!open ./repos/entry/preprocess_variable.py
 
 # エラー時の処理
 #!open ./repos/wait_for_keypress.py
@@ -34,8 +42,6 @@
 # テキスト関連データの作成
 #!open ./repos/assets/text_dat.py
 
-# util関数のロード
-#!open ./repos/assets/utils.py
 
 # 読み込み結果の出力
 #!open ./repos/files/output_read.py

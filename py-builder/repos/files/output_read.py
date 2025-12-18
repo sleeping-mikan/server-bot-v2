@@ -7,8 +7,8 @@ from ..logger.logger_create import *
 #ローカルファイルの読み込み結果出力
 sys_logger.info("bot instance root -> " + now_path)
 sys_logger.info("server instance root -> " + server_path)
-sys_logger.info("read token file -> " + now_path + "/" +".token")
-sys_logger.info("read config file -> " + now_path + "/" +".config")
+sys_logger.info("read token file -> " + normalize_path(now_path + "/" +".token"))
+sys_logger.info("read config file -> " + normalize_path(now_path + "/" +".config"))
 view_config = config.copy()
 view_config["web"]["secret_key"] = "****"
 sys_logger.info("config -> " + str(view_config))

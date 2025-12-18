@@ -5,6 +5,7 @@ configの読み込みと最小限の変数へのロードを行う
 from ..entry.standard_imports import *
 from ..entry.variable import *
 from ..wait_for_keypress import *
+from ..assets.utils import *
 #!end-ignore
 
 
@@ -42,6 +43,9 @@ def make_config():
                             "mc":True,\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
+                                "permission":{\
+                                    "commands_level":INITIAL_COMMAND_PERMISSION,\
+                                },\
                                 "cmd":{\
                                     "stdin":{\
                                         "sys_files": [".config",".token","logs","mikanassets"],\
@@ -92,6 +96,14 @@ def make_config():
                 cfg["server_char_encoding"] = "utf-8"
             if "discord_commands" not in cfg:
                 cfg["discord_commands"] = {}
+            if "permission" not in cfg["discord_commands"]:
+                cfg["discord_commands"]["permission"] = {}
+            if "commands_level" not in cfg["discord_commands"]["permission"]:
+                cfg["discord_commands"]["permission"]["commands_level"] = INITIAL_COMMAND_PERMISSION
+            # 特定コマンドのキーが不足していれば追加
+            for key in INITIAL_COMMAND_PERMISSION.keys():
+                if key not in cfg["discord_commands"]["permission"]["commands_level"]:
+                    cfg["discord_commands"]["permission"]["commands_level"][key] = INITIAL_COMMAND_PERMISSION[key]
             if "cmd" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["cmd"] = {}
             if "stdin" not in cfg["discord_commands"]["cmd"]:
@@ -197,7 +209,7 @@ to_config_safe(config)
 #ロガー作成前なので最小限の読み込み
 try:
     log = config["log"]
-    server_path = config["server_path"]
+    server_path = normalize_path(config["server_path"])
     if not os.path.exists(server_path):
         print("not exist server_path dir")
         wait_for_keypress()

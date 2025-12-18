@@ -29,16 +29,22 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("invalid path -> " + path + " or " + dest)
         return
     # ファイルが存在しているかを確認
-    if not os.path.exists(path):
-        embed.add_field(name="",velue=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
+    if not os.path.exists(path) or not os.path.exists(dest):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("file not found -> " + path)
         return
-    # 該当のアイテムがファイルか
-    if not os.path.isfile(path):
-        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file"].format(path),inline=False)
+    # 該当のアイテムがファイルかディレクトリ
+    if not os.path.isfile(path) and not os.path.isdir(path):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_file_or_directory"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("not file -> " + path)
+        return
+    # 移動先がディレクトリではない
+    if not os.path.isdir(dest):
+        embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_directory"].format(dest),inline=False)
+        await interaction.response.send_message(embed=embed)
+        stdin_mv_logger.info("not directory -> " + dest)
         return
     # 全ての条件を満たすがサーバー管理者権限を持たず、重要ファイルを操作しようとしている場合
     if (not await is_administrator(interaction.user) or not enable_advanced_features) and (await is_important_bot_file(path) or await is_important_bot_file(dest)):
