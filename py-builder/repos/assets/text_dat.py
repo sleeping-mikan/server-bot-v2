@@ -150,7 +150,7 @@ async def get_text_dat():
         send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
             "other":{
-                "no_permission":"管理者権限を持っていないため実行できません",
+                "no_permission":"権限が不足しています",
                 "is_running":"サーバーが起動しているため実行できません",
                 "is_not_running":"サーバーが起動していないため実行できません",
             },
@@ -168,6 +168,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "パス`{}`は不正/操作不可能な領域です",
                     "not_file": "`{}`はファイルではありません",
+                    "not_file_or_directory":"`{}`はファイルまたはディレクトリではありません",
                     "permission_denied":"`{}`を操作する権限がありません",
                     "file_size_limit":"サイズ`{}`は制限`{}`を超えている可能性があるためFile.ioにアップロードします\nアップロード後に再度メンションで通知します",
                     "file_size_limit_web":"サイズ`{}`は制限`{}`を超えているのでアップロードできません",
@@ -198,6 +199,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}`を`{}`に移動しました",
                         "not_exists":"`{}`は見つかりません",
+                        "not_directory":"`{}`はディレクトリではありません",
+                        "file_not_found":"`{}`は見つかりません",
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
@@ -253,8 +256,8 @@ async def get_text_dat():
                 "success":"{} の権限 : \n実行可能ディレクトリへの操作 : {} \ndiscord管理者権限 : {}\nbot管理者権限 : {}",
                 "change":{
                     "already_added":"このユーザーはすでにbotの管理者権限を持っています",
-                    "add_success":"`{}`にbotの管理者権限を与えました",
-                    "remove_success":"`{}`からbotの管理者権限を剥奪しました",
+                    "add_success":"`{}`のbot権限を変更しました",
+                    "remove_success":"`{}`のbot権限を変更しました",
                     "already_removed":"このユーザーはbotの管理者権限を持っていません",
                     "invalid_level":"権限レベルには削除(0)または1-{}の整数を指定してください。(指定された値 : `{}`)",
                 },
@@ -270,10 +273,10 @@ async def get_text_dat():
             },
             "update":{
                 "same":"存在するファイルは既に最新です",
-                "different":"コミットidが異なるため更新を行います",
+                "different":"ファイルidが異なるため更新を行います",
                 "download_failed":"更新のダウンロードに失敗しました",
                 "replace":"ch_id {}\nmsg_id {}",
-                "force":"forceオプションが指定されたため、コミットidに関わらず更新を行います。",
+                "force":"forceオプションが指定されたため、ファイルidに関わらず更新を行います。",
             },
             "announce":{
                 "embed":{
@@ -325,6 +328,7 @@ async def get_text_dat():
                 "stdin":{
                     "invalid_path": "`{}` is an invalid/operable area",
                     "not_file": "`{}` is not a file",
+                    "not_file_or_directory":"`{}` is not a file or directory",
                     "permission_denied": "`{}` cannot be modified because it is an important file",
                     "file_size_limit": "Upload to File.io because the file size of `{}` is over the limit of {} bytes\nmention to you if ended",
                     "file_size_limit_web" : "Cannot upload to File.io because the file size of `{}` is over the limit of {} bytes",
@@ -355,6 +359,8 @@ async def get_text_dat():
                     "mv":{
                         "success":"`{}` has been moved to `{}`",
                         "file_not_found":"`{}` not found",
+                        "not_exists":"`{}` not found",
+                        "not_directory":"`{}` is not a directory",
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
@@ -425,7 +431,7 @@ async def get_text_dat():
             },
             "update":{
                 "same":"The same version is already installed",
-                "different":"The commit id is different to update",
+                "different":"The file id is different to update",
                 "download_failed":"Download failed",
                 "replace":"ch_id {}\nmsg_id {}",
                 "force":"update server.py because force option is true",

@@ -1,5 +1,5 @@
 #!ignore
-from ....constant import *
+from ....entry.variable import *
 from ....assets.text_dat import *
 from ....assets.utils import *
 from ....config.read_config_all import *

@@ -38,7 +38,7 @@ if not os.path.exists(now_path + "/mikanassets/extension"):
 if not os.path.exists(now_path + "/mikanassets"):
     os.makedirs(now_path + "/mikanassets")
 if not os.path.exists(now_path + "/mikanassets/" + "update.py") or do_init:
-    url='https://www.dropbox.com/scl/fi/zo824cfk88uj52sospwo6/update_v2.2.py?rlkey=vwkh78smhdbm2pnfyegyxjpgf&st=6wdv9o5w&dl=1'
+    url='https://www.dropbox.com/scl/fi/fyvorfgr9kb4wcwgpa6i4/update_v2.4.py?rlkey=ngict3xc7zpxk4v24s7ilrnem&st=k8163ldk&dl=1'
     filename= now_path + '/mikanassets/' + 'update.py'
 
     urlData = requests.get(url).content
@@ -164,8 +164,8 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
         update_logger.error("github commit is None.")
     # コミットid出力
     if interaction is not None and embed is not None:
-        embed.add_field(name="github commit", value=github_commit, inline=False)
-        embed.add_field(name="local commit", value=commit, inline=False)
+        embed.add_field(name="github file", value=github_commit, inline=False)
+        embed.add_field(name="local file", value=commit, inline=False)
         await sender(interaction=interaction,embed=embed)
     # 更新がない場合
     if commit == github_commit and not is_force: 
@@ -206,11 +206,11 @@ async def update_self_if_commit_changed(interaction: discord.Interaction | None 
     if interaction is not None and embed is not None:
         msg_id = str((await interaction.original_response()).id)
         channel_id = str(interaction.channel_id)
-        embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
+        # embed.add_field(name="", value=text_pack["replace"].format(channel_id,msg_id), inline=False)
         await sender(interaction=interaction,embed=embed)
     replace_logger.info("call update.py")
     replace_logger.info('replace args : ' + msg_id + " " + channel_id)
-    os.execv(sys.executable,["python3",now_path + "/mikanassets/" + "update.py",temp_path + "/new_source.py",msg_id,channel_id,now_file])
+    os.execv(sys.executable,["python3","\"" + now_path + "/mikanassets/" + "update.py" + "\"",temp_path + "/new_source.py",msg_id,channel_id,now_file])
 
 
 
