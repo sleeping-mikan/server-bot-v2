@@ -100,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.10"
+__version__ = "2.4.11"
 
 def get_version():
     return __version__
@@ -2544,7 +2544,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("invalid path -> " + path + " or " + dest)
         return
     # ファイルが存在しているかを確認
-    if not os.path.exists(path) or not os.path.exists(dest):
+    if not os.path.exists(path):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mv"]["file_not_found"].format(path),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("file not found -> " + path)
@@ -2556,7 +2556,7 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         stdin_mv_logger.info("not file -> " + path)
         return
     # 移動先がディレクトリではない
-    if not os.path.isdir(dest):
+    if not os.path.isdir(os.path.dirname(dest)):
         embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["not_directory"].format(dest),inline=False)
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("not directory -> " + dest)
