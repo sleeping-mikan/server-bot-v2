@@ -64,8 +64,12 @@ def normalize_path(path: str) -> str:
     path = re.sub(r'//+', '/', path)
     return path.replace("\\", "/")
 
+def safe_item_move(src, dst):
+    dst = pathlib.Path(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    return shutil_move(src, dst)
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False, mode = "copy") -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -105,12 +109,15 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                 elif os.path.isdir(srcname):
                     await copytree(srcname, dstname, symlinks)
                 else:
-                    await asyncio.to_thread(copy2, srcname, dstname)
+                    if mode == "copy":
+                        await asyncio.to_thread(copy2, srcname, dstname)
+                    elif mode == "move":
+                        await asyncio.to_thread(safe_item_move, srcname, dstname)
                     copyed_files += 1
                     if copyed_files % send_sens == 0 or copyed_files == exist_files:
-                        now = RESPONSE_MSG["backup"]["now_backup"]
+                        now = RESPONSE_MSG["dircp_discord"]["now_copy"][mode]
                         if copyed_files == exist_files:
-                            now = RESPONSE_MSG["backup"]["success"]
+                            now = RESPONSE_MSG["dircp_discord"]["success"][mode]
                         embed.clear_fields()
                         embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
                         await interaction.edit_original_response(embed=embed)

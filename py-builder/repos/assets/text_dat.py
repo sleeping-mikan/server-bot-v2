@@ -149,6 +149,16 @@ async def get_text_dat():
     if lang == "ja":
         send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
+            "dircp_discord":{
+                "success": {
+                    "copy":"ファイルコピーが完了しました！",
+                    "move":"ファイル移動が完了しました！",
+                },
+                "now_copy": {
+                    "copy":"コピー中",
+                    "move":"移動中",
+                }
+            },
             "other":{
                 "no_permission":"権限が不足しています",
                 "is_running":"サーバーが起動しているため実行できません",
@@ -197,10 +207,11 @@ async def get_text_dat():
                         "not_exists":"`{}`は見つかりません",
                     },
                     "mv":{
-                        "success":"`{}`を`{}`に移動しました",
+                        "success":"ファイル移動が完了しました",
                         "not_exists":"`{}`は見つかりません",
                         "not_directory":"`{}`はディレクトリではありません",
                         "file_not_found":"`{}`は見つかりません",
+                        "now_copy": "ファイルを移動中・・・",
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
@@ -222,7 +233,7 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"ファイルをコピー中・・・",
+                "now_copy":"ファイルをコピー中・・・",
                 "success":"ファイルコピーが完了しました！",
                 "create":{
                     "data_not_found":"データが見つかりません",
@@ -310,6 +321,16 @@ async def get_text_dat():
     elif lang == "en":
         send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
+            "dircp_discord":{
+                "success": {
+                    "copy": "file copy complete",
+                    "move": "file move complete",
+                },
+                "now_copy": {
+                    "copy": "copying",
+                    "move": "moving",
+                }
+            },
             "other":{
                 "no_permission":"Permission denied",
                 "is_running":"Server is still running",
@@ -358,10 +379,11 @@ async def get_text_dat():
                         "not_exists":"`{}` not found",
                     },
                     "mv":{
-                        "success":"`{}` has been moved to `{}`",
+                        "success":"File move complete!",
                         "file_not_found":"`{}` not found",
                         "not_exists":"`{}` not found",
                         "not_directory":"`{}` is not a directory",
+                        "now_copy":"File move in progress",
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
@@ -381,7 +403,7 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"File copy in progress",
+                "now_copy":"File copy in progress",
                 "success":"File copy complete!",
                 "create":{
                     "data_not_found":"Data not found",

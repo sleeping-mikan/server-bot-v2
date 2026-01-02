@@ -286,8 +286,12 @@ def normalize_path(path: str) -> str:
     path = re.sub(r'//+', '/', path)
     return path.replace("\\", "/")
 
+def safe_item_move(src, dst):
+    dst = pathlib.Path(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    return shutil_move(src, dst)
 
-async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False) -> None:
+async def dircp_discord(src, dst, interaction: discord.Interaction, embed: ModifiedEmbeds.DefaultEmbed, symlinks=False, mode = "copy") -> None:
     global exist_files, copyed_files
     """
     src : コピー元dir
@@ -327,12 +331,15 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                 elif os.path.isdir(srcname):
                     await copytree(srcname, dstname, symlinks)
                 else:
-                    await asyncio.to_thread(copy2, srcname, dstname)
+                    if mode == "copy":
+                        await asyncio.to_thread(copy2, srcname, dstname)
+                    elif mode == "move":
+                        await asyncio.to_thread(safe_item_move, srcname, dstname)
                     copyed_files += 1
                     if copyed_files % send_sens == 0 or copyed_files == exist_files:
-                        now = RESPONSE_MSG["backup"]["now_backup"]
+                        now = RESPONSE_MSG["dircp_discord"]["now_copy"][mode]
                         if copyed_files == exist_files:
-                            now = RESPONSE_MSG["backup"]["success"]
+                            now = RESPONSE_MSG["dircp_discord"]["success"][mode]
                         embed.clear_fields()
                         embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
                         await interaction.edit_original_response(embed=embed)
@@ -1493,6 +1500,16 @@ async def get_text_dat():
     if lang == "ja":
         send_help = "詳細なHelpはこちらを参照してください\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
+            "dircp_discord":{
+                "success": {
+                    "copy":"ファイルコピーが完了しました！",
+                    "move":"ファイル移動が完了しました！",
+                },
+                "now_copy": {
+                    "copy":"コピー中",
+                    "move":"移動中",
+                }
+            },
             "other":{
                 "no_permission":"権限が不足しています",
                 "is_running":"サーバーが起動しているため実行できません",
@@ -1541,10 +1558,11 @@ async def get_text_dat():
                         "not_exists":"`{}`は見つかりません",
                     },
                     "mv":{
-                        "success":"`{}`を`{}`に移動しました",
+                        "success":"ファイル移動が完了しました",
                         "not_exists":"`{}`は見つかりません",
                         "not_directory":"`{}`はディレクトリではありません",
                         "file_not_found":"`{}`は見つかりません",
+                        "now_copy": "ファイルを移動中・・・",
                     },
                     "send-discord":{
                         "success":"<@{}> {} にファイルを送信しました",
@@ -1566,7 +1584,7 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"ファイルをコピー中・・・",
+                "now_copy":"ファイルをコピー中・・・",
                 "success":"ファイルコピーが完了しました！",
                 "create":{
                     "data_not_found":"データが見つかりません",
@@ -1654,6 +1672,16 @@ async def get_text_dat():
     elif lang == "en":
         send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
         RESPONSE_MSG = {
+            "dircp_discord":{
+                "success": {
+                    "copy": "file copy complete",
+                    "move": "file move complete",
+                },
+                "now_copy": {
+                    "copy": "copying",
+                    "move": "moving",
+                }
+            },
             "other":{
                 "no_permission":"Permission denied",
                 "is_running":"Server is still running",
@@ -1702,10 +1730,11 @@ async def get_text_dat():
                         "not_exists":"`{}` not found",
                     },
                     "mv":{
-                        "success":"`{}` has been moved to `{}`",
+                        "success":"File move complete!",
                         "file_not_found":"`{}` not found",
                         "not_exists":"`{}` not found",
                         "not_directory":"`{}` is not a directory",
+                        "now_copy":"File move in progress",
                     },
                     "send-discord":{
                         "success":"<@{}> Sent to {} a file",
@@ -1725,7 +1754,7 @@ async def get_text_dat():
                 }
             },
             "backup":{
-                "now_backup":"File copy in progress",
+                "now_copy":"File copy in progress",
                 "success":"File copy complete!",
                 "create":{
                     "data_not_found":"Data not found",
@@ -2569,11 +2598,10 @@ async def cmd_stdin_mv(interaction: discord.Interaction, path: str, dest: str):
         await interaction.response.send_message(embed=embed)
         stdin_mv_logger.info("permission denied -> " + path + " or " + dest)
         return
-    # ファイルを移動
-    shutil_move(path,dest)
-    stdin_mv_logger.info("move file -> " + path + " -> " + dest)
-    embed.add_field(name="",value=RESPONSE_MSG["cmd"]["stdin"]["mv"]["success"].format(path,dest),inline=False)
     await interaction.response.send_message(embed=embed)
+    # ファイルを移動
+    await dircp_discord(path, dest, interaction, embed, mode = "move")
+    stdin_mv_logger.info("move file -> " + path + " -> " + dest)
 #--------------------
 
 
