@@ -231,6 +231,7 @@ async def get_text_dat():
                 "apply":{
                     "path_not_found":"指定されたパスが見つかりません",
                     "path_not_allowed":"許可されないパス",
+                    "path_not_directory":"指定されたパスはディレクトリではありません",
                 },
             },
             # "replace":{
@@ -389,6 +390,7 @@ async def get_text_dat():
                 "apply":{
                     "path_not_found":"Path is not exists",
                     "path_not_allowed":"Path not allowed",
+                    "path_not_directory":"Path is not directory",
                 },
             },
             # "replace":{

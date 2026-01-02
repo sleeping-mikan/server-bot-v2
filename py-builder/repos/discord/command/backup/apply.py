@@ -47,6 +47,12 @@ async def backup_apply(interaction:discord.Interaction, witch:str, path:str = ""
         embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_allowed"] + ":" + os.path.join(server_path,path),inline=False)
         await interaction.response.send_message(embed=embed)
         return
+    # 移動先がdirectoryか
+    if not os.path.isdir(os.path.join(server_path,path)):
+        backup_logger.error("path not directory : " + os.path.join(server_path,path))
+        embed.add_field(name="",value = RESPONSE_MSG["backup"]["apply"]["path_not_directory"] + ":" + os.path.join(server_path,path),inline=False)
+        await interaction.response.send_message(embed=embed)
+        return
     backup_apply_logger.info('backup apply started' + " -> " + witch + " to " + os.path.join(server_path,path,witch))
     await interaction.response.send_message(embed=embed)
     # dircp_discordを用いて進捗を出しつつ、コピーする
