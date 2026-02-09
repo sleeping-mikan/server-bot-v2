@@ -3,7 +3,7 @@ requests == 2.32.4
 Flask == 3.0.3
 ansi2html == 1.9.2
 waitress == 3.0.1
-aiohttp == 3.12.14
+aiohttp == 3.13.3
 psutil == 5.9.0
 fastapi == 0.116.1
 zipstream-ng == 1.8.0
