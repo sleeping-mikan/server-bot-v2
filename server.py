@@ -1645,10 +1645,10 @@ async def get_text_dat():
             },
         }
         ACTIVITY_NAME = {
-            "starting":"さーばーきどう",
-            "running":"さーばーじっこう",
-            "ending":"さーばーおしまい",
-            "ended":"さーばーとじてる",
+            "starting":"プロセス起動中",
+            "running":"{}を実行中",
+            "ending":"プロセス終了中",
+            "ended":"プロセス終了",
         }
     elif lang == "en":
         send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
@@ -1804,7 +1804,7 @@ async def get_text_dat():
         }
         ACTIVITY_NAME = {
             "starting":"Server go!",
-            "running":"Server whoosh!",
+            "running":"Server exec({})!",
             "ending":"Server stopping!",
             "ended":"Server stop!",
         }
@@ -1856,7 +1856,7 @@ async def update_loop():
         discord_loop_is_run = True
         with status_lock:
             if process is not None:
-                await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["running"]))
+                await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["running"].format(server_name)))
             else:
                 await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["ended"]))
             # discord_log_msgにデータがあれば送信
@@ -1948,7 +1948,7 @@ async def on_ready():
         else:
             ready_logger.info('skip server starting because server already running')
         # アクティビティを設定 
-        await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"])) 
+        await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"].format(server_name))) 
         # スラッシュコマンドを同期 
         await tree.sync()
     except Exception as e:
@@ -2012,7 +2012,7 @@ async def start(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
         return
-    await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
+    await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"].format(server_name)))
 
 #/stop
 @tree.command(name="stop",description=COMMAND_DESCRIPTION[lang]["stop"])

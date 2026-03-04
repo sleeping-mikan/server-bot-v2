@@ -301,10 +301,10 @@ async def get_text_dat():
             },
         }
         ACTIVITY_NAME = {
-            "starting":"さーばーきどう",
-            "running":"さーばーじっこう",
-            "ending":"さーばーおしまい",
-            "ended":"さーばーとじてる",
+            "starting":"プロセス起動中",
+            "running":"{}を実行中",
+            "ending":"プロセス終了中",
+            "ended":"プロセス終了",
         }
     elif lang == "en":
         send_help = "Details on the help can be found here\n<https://github.com/sleeping-mikan/server-bot-v2/blob/main/README.md>\n"
@@ -460,7 +460,7 @@ async def get_text_dat():
         }
         ACTIVITY_NAME = {
             "starting":"Server go!",
-            "running":"Server whoosh!",
+            "running":"Server exec({})!",
             "ending":"Server stopping!",
             "ended":"Server stop!",
         }

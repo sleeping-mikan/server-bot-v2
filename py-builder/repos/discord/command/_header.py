@@ -25,7 +25,7 @@ async def start(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
     if result == RESPONSE_MSG["other"]["is_running"]:
         return
-    await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"]))
+    await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"].format(server_name)))
 
 #/stop
 @tree.command(name="stop",description=COMMAND_DESCRIPTION[lang]["stop"])

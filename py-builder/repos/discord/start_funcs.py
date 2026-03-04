@@ -15,7 +15,7 @@ async def update_loop():
         discord_loop_is_run = True
         with status_lock:
             if process is not None:
-                await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["running"]))
+                await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["running"].format(server_name)))
             else:
                 await client.change_presence(activity=discord.Game(name=ACTIVITY_NAME["ended"]))
             # discord_log_msgにデータがあれば送信
@@ -107,7 +107,7 @@ async def on_ready():
         else:
             ready_logger.info('skip server starting because server already running')
         # アクティビティを設定 
-        await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"])) 
+        await client.change_presence(activity=discord.Game(ACTIVITY_NAME["running"].format(server_name))) 
         # スラッシュコマンドを同期 
         await tree.sync()
     except Exception as e:
