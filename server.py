@@ -100,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.11"
+__version__ = "2.4.12"
 
 def get_version():
     return __version__
@@ -306,13 +306,22 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
     if dst.startswith(backup_path):
         dst = os.path.join(dst,datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + "-" + os.path.basename(src))
     exist_files = 0
+    total_size, copied_size = 0, 0
     for root, dirs, files in os.walk(top=src, topdown=False):
         exist_files += len(files)
+        for file in files:
+            filepath = os.path.join(root, file)
+            if not os.path.islink(filepath):
+                try:
+                    total_size += os.path.getsize(filepath)
+                except OSError:
+                    pass
     #何ファイルおきにdiscordへ送信するか(最大100回送信するようにする)
     send_sens = int(exist_files / max_send) if exist_files > max_send else 1
     copyed_files = 0
     async def copytree(src, dst, symlinks=False):
         global copyed_files
+        nonlocal total_size, copied_size
         names = os.listdir(src)
         if not os.path.exists(dst):
             os.makedirs(dst)
@@ -328,13 +337,19 @@ async def dircp_discord(src, dst, interaction: discord.Interaction, embed: Modif
                     await copytree(srcname, dstname, symlinks)
                 else:
                     await asyncio.to_thread(copy2, srcname, dstname)
+                    # コピーサイズ加算
+                    try:
+                        file_size = os.path.getsize(srcname)
+                    except OSError:
+                        file_size = 0
+                    copied_size += file_size
                     copyed_files += 1
                     if copyed_files % send_sens == 0 or copyed_files == exist_files:
                         now = RESPONSE_MSG["backup"]["now_backup"]
                         if copyed_files == exist_files:
                             now = RESPONSE_MSG["backup"]["success"]
                         embed.clear_fields()
-                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}  ({'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)}) {'{: 3.3f}'.format(copyed_files / exist_files * 100)}%```", inline = False)
+                        embed.add_field(name = f"{now}",value=f"copy {original_src} -> {original_dst}\n```{int((copyed_files / exist_files * bar_width) - 1) * '='}☆{((bar_width) - int(copyed_files / exist_files * bar_width)) * '-'}\n{'{: 5}'.format(copyed_files)} / {'{: 5}'.format(exist_files)} ({'{: 3.2f} / {: 3.2f} GB'.format(copied_size / 1024 / 1024 / 1024, total_size / 1024 / 1024 / 1024)})```", inline = False)
                         await interaction.edit_original_response(embed=embed)
             except OSError as why:
                 errors.append((srcname, dstname, str(why)))
@@ -2786,7 +2801,7 @@ backup_create_logger = backup_logger.getChild("create")
 
 #/backup()
 @command_group_backup.command(name="create",description=COMMAND_DESCRIPTION[lang]["backup"]["create"])
-async def backup(interaction: discord.Interaction,path:str = "worlds"):
+async def backup(interaction: discord.Interaction,path:str):
     from_backup = normalize_path(os.path.join(server_path,path))
     world_name = path
     await print_user(backup_logger,interaction.user)
