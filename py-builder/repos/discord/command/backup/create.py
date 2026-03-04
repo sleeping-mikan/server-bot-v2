@@ -12,7 +12,7 @@ backup_create_logger = backup_logger.getChild("create")
 
 #/backup()
 @command_group_backup.command(name="create",description=COMMAND_DESCRIPTION[lang]["backup"]["create"])
-async def backup(interaction: discord.Interaction,path:str = "worlds"):
+async def backup(interaction: discord.Interaction,path:str):
     from_backup = normalize_path(os.path.join(server_path,path))
     world_name = path
     await print_user(backup_logger,interaction.user)
