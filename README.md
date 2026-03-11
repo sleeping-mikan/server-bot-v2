@@ -27,8 +27,8 @@ discordを用いて特定のサーバーを管理できます。
 |start|サーバーを開始します。但し、server.py起動時には自動的に開始されます。|1|
 |stop|サーバーを停止します。但しserver.pyは実行状態から遷移しないため他のコマンドを使用できます。|1|
 |exit|server.pyを終了します(このコマンドを利用すると次回サーバー管理者がserver.pyを起動するまでbotを利用できません)。サーバー停止中にのみ使用できます。|2|
-|backup create <path(optional)>|サーバーデータをバックアップします。引数が与えられない場合`./worlds`をバックアップします。|1|
-|backup apply <path(optional)>|バックアップを指定したディレクトリに展開します。引数が与えられない場合直下に展開します。|3|
+|backup create <path>|サーバーデータをバックアップします。|1|
+|backup apply <witch> <path(optional)>|バックアップを指定したディレクトリに展開します。pathが与えられない場合直下に展開します。|3|
 |cmd serverin <server command>|サーバーに対してコマンドを送信します。|1|
 |cmd stdin ls <path(optional)>|ディレクトリ内のファイル一覧を返します。rootディレクトリはサーバー直下になります。|2(*2)|
 |cmd stdin mk <path> <file(optional)>|ファイルを作成または上書きします。file引数を渡さない場合空のファイルを作成します。|3(*1)|
@@ -320,5 +320,6 @@ java版serverをWindowsで起動する際一般に利用されるような以下
 ![server.mp4](https://github.com/mikatan-mikan/server-bot/assets/78290592/32df51eb-7166-40a8-b817-e1057d2aabd0)
 
 以下の画像は、webアクセス時の画面です。(PC/スマホ)
+
 
 ![PCサイズ](https://github.com/user-attachments/assets/a1b09ad4-9fde-4df9-abd8-cb6628589a67)![スマホサイズ](https://github.com/user-attachments/assets/6b59139f-363d-4a92-b7c8-398ed9d03d78)
