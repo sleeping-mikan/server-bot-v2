@@ -1378,10 +1378,10 @@ async def get_text_dat():
             "/stop             ":"サーバーを停止します。但し起動していない場合にはエラーメッセージを返します。",
             "/start            ":"サーバーを起動します。但し起動している場合にはエラーメッセージを返します。",
             "/exit             ":"botを終了します。サーバーを停止してから実行してください。終了していない場合にはエラーメッセージを返します。\nまたこのコマンドを実行した場合次にbotが起動するまですべてのコマンドが無効になります。",
-            "/cmd serverin     ":f"/cmd <mcコマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
+            "/cmd serverin     ":f"/cmd <コマンド> を用いてサーバーコンソール上でコマンドを実行できます。使用できるコマンドは{allow_cmd}です。",
             "/cmd stdin        ":"/cmd stdin <ls|rm|mk|mv|rmdir|mkdir|wget|send-discord>を用いて、ファイル確認/削除/作成/移動/フォルダ作成/フォルダ削除/urlからダウンロード/discord送信を実行できます。例えばサーバーディレクトリ直下にa.txtを作成する場合は/cmd stdin mk a.txtと入力します。",
-            "/backup create    ":"/backup create [directory] でデータをバックアップします。ディレクトリ名を省略した場合worldsをコピーします。",
-            "/backup apply     ":"/backup apply <directory> でデータをバックアップから復元します。",
+            "/backup create    ":"/backup create <directory> でデータをバックアップします。",
+            "/backup apply     ":"/backup apply <backup item> <directory> でデータをバックアップから復元します。",
             # "/replace          ":"/replace <py file> によってbotのコードを置き換えます。",
             "/ip               ":"サーバーのIPアドレスを表示します。",
             "/logs             ":"サーバーのログを表示します。引数を与えた場合にはそのファイルを、与えられなければ動作中に得られたログから最新の10件を返します。",
@@ -3772,3 +3772,4 @@ if log["all"]:
 
 # 事実上のエントリポイント(client.runを実行)
 client.run(token, log_formatter=console_formatter)
+
