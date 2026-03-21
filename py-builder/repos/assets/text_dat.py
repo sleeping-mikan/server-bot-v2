@@ -78,7 +78,7 @@ async def get_text_dat():
                 },
             },
             "backup":{
-                "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。入力しない場合worldsが選択されます。",
+                "create":"サーバーデータをバックアップします。引数にはバックアップを取りたい対象のパスを指定します。",
 
             },
             # "replace":"<非推奨> このbotのコードを<py file>に置き換えます。このコマンドはbotを破壊する可能性があります。",
@@ -86,7 +86,7 @@ async def get_text_dat():
             "logs":"サーバーのログを表示します。引数にはファイル名を指定します。入力しない場合は最新の10件のログを返します。",
             "help":"このbotのコマンド一覧を表示します。",
             "permission":{
-                "change":"選択したユーザに対してbotをdiscord管理者と同等の権限で操作できるようにします。",
+                "change":"選択したユーザのbot操作権限を変更します。",
                 "view":"選択したユーザに対してbot操作権限を表示します。",
             },
             "lang":"botの言語を変更します。引数には言語コードを指定します。",
@@ -108,28 +108,28 @@ async def get_text_dat():
             "cmd":{
                 "serverin":"Send a Minecraft command to the server.",
                 "stdin":{
-                    "main":"Execute the command in the server's directory outside the server.",
-                    "mk":"Set the file specified by the relative path from the server.",
+                    "main":"Execute a shell command in the server directory (outside the server process).",
+                    "mk":"Create or overwrite a file at the specified relative path using the provided file, or create an empty file.",
                     "rm":"Delete the file specified by the relative path from the server.",
-                    "ls":"Display the file specified by the relative path from the server.",
+                    "ls":"List files in the specified relative path from the server.",
                     "mkdir":"Create a new directory specified by the relative path from the server.",
                     "rmdir":"Recursively delete the directory specified by the relative path from the server.",
                     "mv":"Move the file specified by the path to another path.",
-                    "send-discord":"Send a file to discord.",
-                    "wget":"Download a file from a url.",
+                    "send-discord":"Send a file to Discord.",
+                    "wget":"Download a file from a URL.",
                 },
             },
             "backup":{
-                "create":"Create a backup of the server's data. Specify the path of the backup to be created.",
+                "create":"Create a backup of the server data. Specify the destination path.",
 
             },
             # "replace":"<Not recommended> Replace the bot's code with <py file>.",
-            "ip":"The server's IP address will be displayed to discord.",
-            "logs":"Display server logs. With an argument, return that file. Without, return the latest 10 logs.",
+            "ip":"Display the server's IP address in Discord.",
+            "logs":"Display server logs. If a file is specified, return that file. Otherwise, return the latest 10 logs.",
             "help":"Display this bot's command list.",
             "permission":{
                 "view": "Display the bot operation rights of the selected user.",
-                "change":"Force the selected user to have the same permissions as the bot, as discord administrator.",
+                "change":"Modify the selected user's bot permissions.",
             },
             "lang":"Change the bot's language. With an argument, specify the language code.",
             "tokengen":"Generate a token for login to the web.",
