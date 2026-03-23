@@ -25,7 +25,7 @@ def properties_to_dict(filename):
         return {}
 
 #minecraftサーバーであればpropertiesを読み込む
-if config["mc"]:
+if SUBPROCESS_PROCESS_TYPE == "mc-server":
     properties = properties_to_dict(server_path + "server.properties")
     sys_logger.info("read properties file -> " + server_path + "server.properties")
 

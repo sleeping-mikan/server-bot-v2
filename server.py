@@ -100,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.12"
+__version__ = "2.4.13"
 
 def get_version():
     return __version__
@@ -549,6 +549,11 @@ def delete_config(config_dict):
     if "auto_update" in config_dict:
         del config_dict["auto_update"]
         changed = True
+    # v2.4.12まで存在した -> 現在は他のprocessに対応するため形式を変更
+    if "mc" in config_dict:
+        config_dict["process_type"] = "mc-server"
+        del config_dict["mc"]
+        changed = True
     return changed
 
 def make_config():
@@ -572,7 +577,7 @@ def make_config():
                             "server_char_encoding":"utf-8",\
                             "log":{"server":True,"all":False},\
                             
-                            "mc":True,\
+                            "process_type":"mc-server",\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
                                 "permission":{\
@@ -670,8 +675,8 @@ def make_config():
                 cfg["discord_commands"]["admin"]["members"] = {}
             if "lang" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["lang"] = "en"
-            if "mc" not in cfg:
-                cfg["mc"] = True
+            if "process_type" not in cfg:
+                cfg["process_type"] = "mc-server"
             if "server_name" not in cfg:
                 cfg["server_name"] = "bedrock_server.exe"
             if "log" not in cfg:
@@ -1110,6 +1115,7 @@ try:
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
     COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
+    SUBPROCESS_PROCESS_TYPE = config["process_type"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
@@ -1353,7 +1359,7 @@ def properties_to_dict(filename):
         return {}
 
 #minecraftサーバーであればpropertiesを読み込む
-if config["mc"]:
+if SUBPROCESS_PROCESS_TYPE == "mc-server":
     properties = properties_to_dict(server_path + "server.properties")
     sys_logger.info("read properties file -> " + server_path + "server.properties")
 
@@ -3041,7 +3047,7 @@ async def ip(interaction: discord.Interaction):
         embed.add_field(name="",value=RESPONSE_MSG["ip"]["get_ip_failed"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
-    if config["mc"]:
+    if SUBPROCESS_PROCESS_TYPE == "mc-server":
         ip_logger.info('get ip : ' + addr.text + ":" + properties["server-port"])
         embed.add_field(name=RESPONSE_MSG["ip"]["msg_startwith"] + addr.text + ":" + properties["server-port"],value=f"(ip:{addr.text} port(ポート):{properties['server-port']})",inline=False)
         await interaction.response.send_message(embed=embed)

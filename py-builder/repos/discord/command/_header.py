@@ -170,7 +170,7 @@ async def ip(interaction: discord.Interaction):
         embed.add_field(name="",value=RESPONSE_MSG["ip"]["get_ip_failed"],inline=False)
         await interaction.response.send_message(embed=embed)
         return
-    if config["mc"]:
+    if SUBPROCESS_PROCESS_TYPE == "mc-server":
         ip_logger.info('get ip : ' + addr.text + ":" + properties["server-port"])
         embed.add_field(name=RESPONSE_MSG["ip"]["msg_startwith"] + addr.text + ":" + properties["server-port"],value=f"(ip:{addr.text} port(ポート):{properties['server-port']})",inline=False)
         await interaction.response.send_message(embed=embed)
