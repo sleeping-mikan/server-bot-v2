@@ -700,8 +700,6 @@ def make_config():
                 cfg["discord_commands"]["backup"]["path"] = os.path.realpath(cfg["discord_commands"]["backup"]["path"]) + "/"
                 if not os.path.exists(cfg["discord_commands"]["backup"]["path"]):
                     os.makedirs(cfg["discord_commands"]["backup"]["path"])
-            if "mc" not in cfg:
-                cfg["mc"] = True
             if "web" not in cfg:
                 cfg["web"] = {"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True}
             if "port" not in cfg["web"]:
