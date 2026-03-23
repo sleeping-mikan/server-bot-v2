@@ -17,6 +17,11 @@ def delete_config(config_dict):
     if "auto_update" in config_dict:
         del config_dict["auto_update"]
         changed = True
+    # v2.4.12まで存在した -> 現在は他のprocessに対応するため形式を変更
+    if "mc" in config_dict:
+        config_dict["process_type"] = "mc-server"
+        del config_dict["mc"]
+        changed = True
     return changed
 
 def make_config():
@@ -40,7 +45,7 @@ def make_config():
                             "server_char_encoding":"utf-8",\
                             "log":{"server":True,"all":False},\
                             
-                            "mc":True,\
+                            "process_type":"mc-server",\
                             "web":{"secret_key":"YOURSECRETKEY","port":80,"use_front_page": True},\
                             "discord_commands":{\
                                 "permission":{\
@@ -138,8 +143,8 @@ def make_config():
                 cfg["discord_commands"]["admin"]["members"] = {}
             if "lang" not in cfg["discord_commands"]:
                 cfg["discord_commands"]["lang"] = "en"
-            if "mc" not in cfg:
-                cfg["mc"] = True
+            if "process_type" not in cfg:
+                cfg["process_type"] = "mc-server"
             if "server_name" not in cfg:
                 cfg["server_name"] = "bedrock_server.exe"
             if "log" not in cfg:

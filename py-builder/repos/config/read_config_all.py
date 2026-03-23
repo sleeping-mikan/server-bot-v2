@@ -37,6 +37,7 @@ try:
     use_flask_server = config["web"]["use_front_page"]
     server_char_code = config["server_char_encoding"]
     COMMAND_PERMISSION = config["discord_commands"]["permission"]["commands_level"]
+    SUBPROCESS_PROCESS_TYPE = config["process_type"]
     
 except KeyError:
     sys_logger.error("config file is broken. please delete .config and try again.")
