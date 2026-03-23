@@ -100,7 +100,7 @@ except:
 処理に必要な定数を宣言する
 """
 
-__version__ = "2.4.12"
+__version__ = "2.4.13"
 
 def get_version():
     return __version__
